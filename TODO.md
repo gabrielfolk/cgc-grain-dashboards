@@ -12,3 +12,9 @@
 - [ ] **Extend the forecast to wheat and durum exports,** using StatCan production estimates the same way as canola.
 - [ ] **Add more supply data to the forecast:** StatCan's September canola estimate and on-farm stocks (table 32-10-0007).
 - [ ] **Re-score the forecast each season.** The backtest has only eight test years.
+- [ ] **Decide on repo visibility.** The repo is public for now. To make the code private while keeping the site
+  public, either upgrade to GitHub Pro and switch the repo to private (same site address), or use two repos: this one
+  private, plus a small public repo that holds only the built `docs/` site. On GitHub Free, a private repo can't serve
+  a public Pages site.
+- [ ] **Consider a GitHub no-reply commit email** (Settings → Emails) so the personal email isn't shown in the
+  public commit history.
