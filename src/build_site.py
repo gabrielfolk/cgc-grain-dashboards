@@ -13,6 +13,7 @@ from __future__ import annotations
 import os
 import shutil
 from pathlib import Path
+from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "dashboard"
@@ -28,11 +29,24 @@ PAGES = {
 }
 DATA_FILES = ["data.json", "forecast.json"]
 
+# Bar-chart favicon, embedded so every page has it without a separate file.
+# (claude.ai adds its own icon; on GitHub Pages the page must declare one.)
+FAVICON_SVG = (
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>"
+    "<rect width='32' height='32' rx='7' fill='#101311'/>"
+    "<rect x='7' y='17' width='4' height='8' rx='1.5' fill='#1baf7a'/>"
+    "<rect x='14' y='11' width='4' height='14' rx='1.5' fill='#eb6834'/>"
+    "<rect x='21' y='6' width='4' height='19' rx='1.5' fill='#3987e5'/>"
+    "</svg>"
+)
+FAVICON = "data:image/svg+xml," + quote(FAVICON_SVG)
+
 HEAD = """<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/svg+xml" href="__FAVICON__">
 <style>
   :root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
   body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: #f9f9f7; }
@@ -40,6 +54,7 @@ HEAD = """<!doctype html>
   [hidden] { display: none !important; }
 </style>
 """
+HEAD = HEAD.replace("__FAVICON__", FAVICON)
 
 
 def relink(text: str, page: str) -> str:
