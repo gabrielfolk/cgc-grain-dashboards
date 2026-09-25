@@ -22,7 +22,7 @@ the current year is re-downloaded. `--refresh` re-downloads everything.
   - `gsw`: the parquet file
   - `producer_deliveries`: weekly farmer deliveries by grain / province / channel (see docstring)
   - `commercial_stocks`: week-end stocks by grain in country elevators, processors and port terminals;
-    the sum matches CGC's published commercial stocks total
+    western grain only (Canada Eastern grades excluded); add those back to match CGC's published total
 
 ## Dashboard
 

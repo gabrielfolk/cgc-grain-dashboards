@@ -163,6 +163,7 @@
   .flash tr.sub td:first-child { padding-left: 22px; color: var(--ink-2); }
   .flash tr.total td { font-weight: 600; }
   .flash td.neg { color: var(--ink-2); }
+  .flash tr.memo td { color: var(--muted); font-style: italic; }
   .flash td.sep, .flash th.sep { border-left: 1px solid var(--grid); }
   .flash-note { font-size: 12px; color: var(--muted); max-width: 110ch; }
   #tip { position: fixed; z-index: 10; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14); padding: 8px 10px; font-size: 12px; min-width: 150px; max-width: 280px; }
@@ -766,9 +767,11 @@
     deltas(dl, delNow, series.deliveries, W_NOW);
     // each use at its latest reported week (feed grain reporting can lag)
     const movedNow = USES.reduce((a, u) => { const c = series[u.key](cur); const w = lastWeek(c, W_NOW); return a + (w ? at(c, w) : 0); }, 0);
-    const verbs = USES.map((u) => u.verb.toLowerCase().replace(/ at .*/, ""));
-    const verbText = verbs.length > 1 ? verbs.slice(0, -1).join(", ") + " or " + verbs[verbs.length - 1] : verbs[0];
-    note(dl, `${Math.round(100 * movedNow / delNow)}% of it has already been ${verbText}`);
+    const names = USES.map((u) => u.label.toLowerCase());
+    const nameText = names.length > 1 ? names.slice(0, -1).join(", ") + " and " + names[names.length - 1] : names[0];
+    const ratio = movedNow / delNow;
+    note(dl, `${nameText.replace(/^./, (c) => c.toUpperCase())} so far equal ${Math.round(100 * ratio)}% of deliveries` +
+      (ratio > 1 ? ", drawing on stocks carried in from last crop year" : ""));
 
     const stNow = at(series.stocks(cur), W_NOW);
     const st = tile(`Commercial stocks, week ${W_NOW}`);
@@ -779,6 +782,8 @@
   }
 
   // ---------- weekly flash ----------
+  // eastern-graded (Ontario/Quebec) grain in recent years: shown as a memo line and explained in the notes
+  const hasEastern = () => !!D.flows.eastern_exports && [cur, ...ref].some((y) => (finalOf(flow("eastern_exports", y)) || 0) > 0);
   const wkOf = (arr, w) => { const d = diff(arr); return w >= 1 ? d[w - 1] : null; };
   const lastWeek = (arr, w) => { let x = w; while (x > 1 && at(arr, x) == null) x--; return at(arr, x) == null ? null : x; };
   const n1 = (v) => v == null || !isFinite(v) ? "–" : (Math.abs(v) >= 100 ? Math.round(v).toLocaleString() : v.toFixed(1));
@@ -846,6 +851,7 @@
         flowRow("Total exports", series.exports, "total"),
         ...PORT_ROWS.map(([k, l]) => flowRow(l, (y) => flow(k, y), "sub")),
         flowRow("Direct (rail, containers)", (y) => flow("exports_direct", y), "sub"),
+        hasEastern() ? flowRow("Memo: Eastern Canadian (CE grades), excluded", (y) => flow("eastern_exports", y), "sub memo") : null,
       ]],
       ["Terminal receipts", RECEIPT_ROWS.map(([k, l]) => flowRow(l, (y) => flow(k, y), "sub"))],
       ["Commercial stocks (levels)", [
@@ -1280,7 +1286,8 @@
     for (const n of META.notes || []) li(n);
     li("Exports are shipments from licensed port terminals, plus shipments from country elevators that go straight to export or to container loaders. Before 2018-19 CGC reports Vancouver and Prince Rupert together as Pacific.");
     if (META.feed) li("Domestic feed is CGC's domestic feed grain table: shipments of feed grain from primary elevators. It is a subset of the all-grains figures, so the feed grain farmers deliver to elevators is already in producer deliveries. CGC notes that the licensed elevator system handles only about 10–15% of feed grain use; most is fed on farms or sold farm-to-farm and farm-to-feedlot.");
-    li(`Commercial stocks cover licensed country elevators, ${(META.process ? META.process.site : "processors").toLowerCase()} and port terminals, matching CGC's published commercial stocks total. Grain stored on farms is not included. Ending stocks are the Jul 31 figure.`);
+    li(`Commercial stocks cover licensed country elevators, ${(META.process ? META.process.site : "processors").toLowerCase()} and port terminals. Grain stored on farms is not included. Ending stocks are the Jul 31 figure.`);
+    if (hasEastern()) li(`Western Canadian ${NAME.toLowerCase()} only: exports, terminal receipts and terminal stocks leave out grain graded Canada Eastern (CE grades, grown in Ontario and Quebec and handled at eastern terminals). Eastern exports are shown as a memo line in the weekly flash; add them back to match CGC's all-Canada totals.`);
     li("Producer deliveries cover licensed elevators, direct deliveries to processors and producer cars. Grain fed on farms or sold directly to feedlots is not tracked by CGC.");
     li("Weekly values are week-over-week changes in CGC's crop-year totals, so revisions are included. Weeks 21–22 are one combined holiday report.");
     const gen = document.createElement("li");

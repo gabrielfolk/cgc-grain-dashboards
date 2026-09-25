@@ -18,6 +18,9 @@ week-end levels.
     port_<port>     terminal exports by individual port (no zero-fill: Vancouver and Prince
                     Rupert only exist from 2018-19; before that CGC reports Pacific combined)
     receipts_<port> terminal receipts (unloads at port), ports grouped like exports_<port>
+    eastern_exports terminal exports graded Canada Eastern (Ontario/Quebec wheat and corn).
+                    Kept out of every other terminal series so they cover Western Canadian
+                    grain only; shown as a memo line so totals reconcile with CGC's.
     stocks_<site>   commercial stocks at country elevators, processors and port terminals
 """
 
@@ -29,7 +32,7 @@ import html
 import sys
 from pathlib import Path
 
-from db import connect
+from db import EASTERN_GRADE, connect
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = ROOT / "dashboard" / "pipeline.html"
@@ -110,17 +113,21 @@ group by all
 union all
 select 'exports_' || case {" ".join(f"when region = '{k}' then '{v}'" for k, v in PORTS.items())} end,
        crop_year, grain_week, sum(ktonnes) from gsw
-where grain = '{grain}' and worksheet = 'Terminal Exports' and period = 'Crop Year'
+where grain = '{grain}' and worksheet = 'Terminal Exports' and period = 'Crop Year' and not {EASTERN_GRADE}
 group by all
 union all
 select 'port_' || case {" ".join(f"when region = '{k}' then '{v}'" for k, v in PORT_SLUGS.items())} end,
        crop_year, grain_week, sum(ktonnes) from gsw
-where grain = '{grain}' and worksheet = 'Terminal Exports' and period = 'Crop Year'
+where grain = '{grain}' and worksheet = 'Terminal Exports' and period = 'Crop Year' and not {EASTERN_GRADE}
 group by all
 union all
 select 'receipts_' || case {" ".join(f"when region = '{k}' then '{v}'" for k, v in PORTS.items())} end,
        crop_year, grain_week, sum(ktonnes) from gsw
-where grain = '{grain}' and worksheet = 'Terminal Receipts' and period = 'Crop Year'
+where grain = '{grain}' and worksheet = 'Terminal Receipts' and period = 'Crop Year' and not {EASTERN_GRADE}
+group by all
+union all
+select 'eastern_exports', crop_year, grain_week, sum(ktonnes) from gsw
+where grain = '{grain}' and worksheet = 'Terminal Exports' and period = 'Crop Year' and {EASTERN_GRADE}
 group by all
 union all
 select 'exports_direct', crop_year, grain_week, sum(ktonnes) from gsw
@@ -163,7 +170,7 @@ def build(con, slug: str) -> None:
     if not cfg["feed"]:
         flows.pop("feed", None)
     # A flow with nothing in a year has no rows; fill with zeros so sums and charts work.
-    for name in [n for n in flows if n != "deliveries" and not n.startswith("port_")]:
+    for name in [n for n in flows if n != "deliveries" and not n.startswith("port_") and n != "eastern_exports"]:
         for y in years:
             flows[name].setdefault(y, [0.0] * WEEKS)
 

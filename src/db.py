@@ -26,9 +26,11 @@ commercial_stocks
         location = 'country'    primary (country) elevators
                    'process'    processors (crushers, mills...)
                    'terminal'   port terminals (all ports)
-    Summed across locations, this matches CGC's published "Commercial Stocks"
-    total (which CGC only publishes in the CSVs for 2014-15 to 2024-25). Grain
-    stored on farms is not included.
+    Western Canadian grain only: terminal stocks graded Canada Eastern (CE grades,
+    wheat and corn grown in Ontario and Quebec, held at eastern terminals) are left
+    out. With those added back, the sum matches CGC's published "Commercial Stocks"
+    total (which CGC only publishes in the CSVs for 2014-15 to 2024-25). Grain stored
+    on farms is not included.
 """
 
 from __future__ import annotations
@@ -39,6 +41,14 @@ import duckdb
 
 ROOT = Path(__file__).resolve().parent.parent
 GSW_PATH = ROOT / "data" / "processed" / "gsw.parquet"
+
+# SQL condition for Canada Eastern grades ("No.2 CE", "OTHER (CE)", "Canada Eastern", ...):
+# grain grown in Ontario and Quebec that shows up in eastern terminal data but was
+# never delivered by Prairie farmers.
+EASTERN_GRADE = (
+    "(grade ilike '%CE' or grade ilike '%(CE)' or grade ilike 'CE %' "
+    "or grade ilike '% CE %' or grade ilike '%eastern%')"
+)
 
 
 def connect(path: str = ":memory:") -> duckdb.DuckDBPyConnection:
@@ -75,7 +85,7 @@ def connect(path: str = ":memory:") -> duckdb.DuckDBPyConnection:
         """
     )
     con.execute(
-        """
+        f"""
         create or replace view commercial_stocks as
         select
             crop_year, grain_week, week_ending, grain,
@@ -84,6 +94,7 @@ def connect(path: str = ":memory:") -> duckdb.DuckDBPyConnection:
         from gsw
         where period = 'Current Week' and metric = 'Stocks'
           and worksheet in ('Primary', 'Process', 'Terminal Stocks')
+          and not (worksheet = 'Terminal Stocks' and {EASTERN_GRADE})
         group by all
         """
     )
