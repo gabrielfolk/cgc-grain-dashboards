@@ -1,7 +1,9 @@
 # TODO
 
-- [ ] **Automate the weekly refresh.** CGC publishes on Thursdays. Schedule a job to run the four refresh scripts
-  (see README) and republish the five dashboard pages.
+- [ ] **Automate the weekly refresh.** CGC publishes on Thursdays. Add a scheduled GitHub Action that runs the refresh
+  scripts and `src/build_site.py`, then commits `docs/`. The site updates on push. Pushing workflow files first
+  needs the `workflow` token scope: run `gh auth refresh -s workflow`. The claude.ai copies of the pages still need
+  republishing separately.
 - [ ] **Add more crop deep dives:** peas, lentils, oats. Each needs one entry in `GRAINS` in `src/grain_data.py`,
   plus its URL in `LINKS` after publishing.
 - [ ] **Re-test the canola forecast with real prices.** Get ICE canola futures and canola oil and meal prices
