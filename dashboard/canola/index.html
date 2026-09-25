@@ -1,0 +1,1286 @@
+<title>Canola Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --page: #f2f4f1;
+    --surface: #fcfcfb;
+    --ink: #101311;
+    --ink-2: #4c524d;
+    --muted: #767d77;
+    --grid: #e4e7e2;
+    --axis: #c3c8c1;
+    --border: rgba(16, 19, 17, 0.10);
+    --chip: #e9ece7;
+    --hover: rgba(16, 19, 17, 0.04);
+    --process: #2a78d6;
+    --exports: #eb6834;
+    --deliveries: #1baf7a;
+    --feed: #eda100;
+    --avg: #4c524d;
+    --band: rgba(76, 82, 77, 0.13);
+    --other: rgba(76, 82, 77, 0.28);
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0e100f;
+      --surface: #181a19;
+      --ink: #f3f5f2;
+      --ink-2: #c1c7c0;
+      --muted: #8b928b;
+      --grid: #282b29;
+      --axis: #3b3f3c;
+      --border: rgba(255, 255, 255, 0.10);
+      --chip: #252826;
+      --hover: rgba(255, 255, 255, 0.05);
+      --process: #3987e5;
+      --exports: #d95926;
+      --deliveries: #199e70;
+      --feed: #c98500;
+      --avg: #c1c7c0;
+      --band: rgba(193, 199, 192, 0.12);
+      --other: rgba(193, 199, 192, 0.26);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0e100f;
+    --surface: #181a19;
+    --ink: #f3f5f2;
+    --ink-2: #c1c7c0;
+    --muted: #8b928b;
+    --grid: #282b29;
+    --axis: #3b3f3c;
+    --border: rgba(255, 255, 255, 0.10);
+    --chip: #252826;
+    --hover: rgba(255, 255, 255, 0.05);
+    --process: #3987e5;
+    --exports: #d95926;
+    --deliveries: #199e70;
+    --feed: #c98500;
+    --avg: #c1c7c0;
+    --band: rgba(193, 199, 192, 0.12);
+    --other: rgba(193, 199, 192, 0.26);
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font: 14px/1.5 var(--sans);
+    padding-inline: 16px;
+    padding-block: 28px 56px;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 40px; }
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.15; }
+  h2 { font-size: 18px; font-weight: 600; }
+  h3 { font-size: 14px; font-weight: 600; }
+  p { margin: 0; }
+  .eyebrow { font: 500 11px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .sub { color: var(--ink-2); max-width: 70ch; }
+  :focus-visible { outline: 2px solid var(--process); outline-offset: 2px; }
+  a { color: var(--process); }
+  header { display: grid; gap: 12px; }
+  .asof { font-size: 13px; color: var(--muted); }
+
+  .btn, .seg { font: 500 13px var(--sans); color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
+  .btn { padding: 6px 12px; cursor: pointer; }
+  .btn:hover { background: var(--hover); }
+  .seg { display: inline-flex; overflow: hidden; }
+  .seg button { font: inherit; color: var(--ink-2); background: none; border: 0; padding: 6px 12px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--chip); color: var(--ink); }
+
+  /* summary */
+  .summary {
+    display: grid; grid-template-columns: minmax(0, 1.3fr) repeat(var(--rest, 3), minmax(0, 1fr));
+    gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  }
+  .tile { background: var(--surface); padding: 18px 20px; display: grid; gap: 6px; align-content: start; }
+  .tile .label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .hero-value { font-size: 48px; font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; }
+  .hero-value small, .tile-value small { font-size: 0.42em; font-weight: 500; color: var(--ink-2); margin-left: 4px; letter-spacing: 0; }
+  .tile-value { font-size: 28px; font-weight: 600; line-height: 1.15; }
+  .deltas { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--ink-2); font-size: 13px; }
+  .note { font-size: 13px; color: var(--muted); }
+  @media (max-width: 900px) { .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .summary .tile:first-child { grid-column: 1 / -1; } }
+  @media (max-width: 480px) { .summary { grid-template-columns: minmax(0, 1fr); } .hero-value { font-size: 40px; } }
+  .chip { display: inline-flex; align-items: center; gap: 3px; font: 500 12px/1 var(--mono); font-variant-numeric: tabular-nums; background: var(--chip); color: var(--ink); border-radius: 4px; padding: 4px 6px; white-space: nowrap; }
+  .chip .arr { font-size: 9px; color: var(--ink-2); }
+  .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex: none; }
+
+  section { display: grid; gap: 16px; }
+  .section-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px 24px; }
+  .section-head > div:first-child { display: grid; gap: 4px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--ink-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .key-line { width: 16px; height: 2px; border-radius: 1px; display: inline-block; }
+  .key-band { width: 16px; height: 10px; border-radius: 2px; display: inline-block; background: var(--band); }
+  .key-rect { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .key-mark { width: 12px; height: 2px; display: inline-block; background: var(--ink); }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+  .panel-head { display: grid; gap: 2px; }
+  .panel-head p { font-size: 12px; color: var(--muted); }
+  .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .two .wide { grid-column: 1 / -1; }
+  @media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } }
+  .chart { position: relative; }
+
+  .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 8px 12px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--grid); }
+  th { font: 500 11px var(--mono); letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  th:first-child, td:first-child { text-align: left; }
+  td { font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tr.current td { font-weight: 600; }
+
+  /* flash tables */
+  .flash-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+  .flash { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .flash th, .flash td { padding: 6px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--grid); }
+  .flash thead th { font: 500 11px var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); background: var(--surface); }
+  .flash th:first-child, .flash td:first-child { text-align: left; position: sticky; left: 0; background: var(--surface); }
+  .flash td { font-variant-numeric: tabular-nums; }
+  .flash tr.grp td { font: 500 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding-top: 12px; border-bottom: 1px solid var(--axis); }
+  .flash tr.sub td:first-child { padding-left: 22px; color: var(--ink-2); }
+  .flash tr.total td { font-weight: 600; }
+  .flash td.neg { color: var(--ink-2); }
+  .flash td.sep, .flash th.sep { border-left: 1px solid var(--grid); }
+  .flash-note { font-size: 12px; color: var(--muted); max-width: 110ch; }
+  #tip { position: fixed; z-index: 10; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14); padding: 8px 10px; font-size: 12px; min-width: 150px; max-width: 280px; }
+  #tip .tip-head { color: var(--muted); margin-bottom: 4px; }
+  #tip .tip-row { display: grid; grid-template-columns: 14px auto 1fr; align-items: center; gap: 6px; }
+  #tip .tip-row b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  #tip .tip-row span:last-child { color: var(--ink-2); }
+  #tip .tip-row.em span:last-child { color: var(--ink); font-weight: 500; }
+  svg text { font-family: var(--sans); }
+  .fc-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+  .fc-value { font-size: 32px; font-weight: 600; line-height: 1.1; letter-spacing: -0.01em; }
+  .fc-value small { font-size: 14px; font-weight: 500; color: var(--ink-2); margin-left: 4px; }
+  .fc-sub { font-size: 13px; color: var(--ink-2); }
+  .fc-note { font-size: 12px; color: var(--muted); }
+  .fc-label { font-size: 12px; font-weight: 600; color: var(--ink-2); margin-top: 6px; }
+  #acc-table td.best { font-weight: 600; }
+  #acc-table tr.now td { background: var(--hover); }
+  .notes { display: grid; gap: 8px; font-size: 13px; color: var(--ink-2); max-width: 80ch; }
+  .notes ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  @media (prefers-reduced-motion: no-preference) { .btn { transition: background 0.12s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">CGC Grain Statistics Weekly · Canola</div>
+    <h1>Canola Pipeline</h1>
+    <p class="sub" id="lede">Western Canadian canola supply and disappearance from CGC weekly data: producer deliveries, crush, exports by port, terminal receipts and commercial stocks, with a backtested crush and export forecast.</p>
+    <p class="asof" id="asof"></p>
+  </header>
+
+  <div class="summary" id="summary"></div>
+
+  <section aria-labelledby="flash-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="flash-eyebrow"></div>
+        <h2 id="flash-h">Weekly flash</h2>
+      </div>
+      <button type="button" class="btn" data-copy="flash-table">Copy table</button>
+    </div>
+    <div class="flash-wrap"><table class="flash" id="flash-table"></table></div>
+    <p class="flash-note" id="flash-note"></p>
+  </section>
+
+  <section aria-labelledby="pace-h">
+    <div class="section-head">
+      <div>
+        <h2 id="pace-h">Pace math</h2>
+        <p class="sub" id="pace-sub"></p>
+      </div>
+      <button type="button" class="btn" data-copy="pace-table">Copy table</button>
+    </div>
+    <div class="flash-wrap"><table class="flash" id="pace-table"></table></div>
+    <p class="flash-note" id="cover-note"></p>
+  </section>
+
+  <section aria-labelledby="yr-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="yr-eyebrow"></div>
+        <h2 id="yr-h">This crop year, week by week</h2>
+        <p class="sub">Against the previous five crop years; hover for last year's value.</p>
+      </div>
+      <div class="seg" role="group" aria-label="Chart mode">
+        <button type="button" id="mode-cum" aria-pressed="true">Cumulative</button>
+        <button type="button" id="mode-week" aria-pressed="false">Weekly</button>
+      </div>
+    </div>
+    <div class="two" id="year-panels"></div>
+  </section>
+
+  <section aria-labelledby="fc-h" id="fc-section" hidden>
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="fc-eyebrow"></div>
+        <h2 id="fc-h">Forecast</h2>
+        <p class="sub" id="fc-sub"></p>
+      </div>
+    </div>
+    <div class="two">
+      <div class="panel" id="fc-crush"></div>
+      <div class="panel" id="fc-exports"></div>
+      <div class="panel wide">
+        <div class="panel-head"><h3>How accurate has it been?</h3><p id="acc-p"></p></div>
+        <div class="table-wrap" id="acc-table" style="border:0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="hist-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Since 2013-14</div>
+        <h2 id="hist-h">Past crop years</h2>
+      </div>
+      <button type="button" class="btn" id="toggle-table" aria-expanded="false">Show data table</button>
+    </div>
+    <div class="two">
+      <div class="panel wide">
+        <div class="panel-head"><h3 id="use-h"></h3><p id="use-p"></p></div>
+        <div class="legend" id="leg-use"></div>
+        <div class="chart" id="ch-use" style="height:300px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3 id="heroall-h"></h3><p id="heroall-p"></p></div>
+        <div class="legend" id="leg-heroall"></div>
+        <div class="chart" id="ch-heroall" style="height:280px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Terminal exports by port</h3><p>Thousand tonnes through licensed port terminals in each completed crop year</p></div>
+        <div class="legend" id="leg-ports"></div>
+        <div class="chart" id="ch-ports" style="height:280px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Commercial stocks, every crop year</h3><p>Thousand tonnes at week end, all locations. Hover to compare all years at one week.</p></div>
+        <div class="legend" id="leg-stkall"></div>
+        <div class="chart" id="ch-stkall" style="height:280px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Crop-year ending stocks</h3><p>Thousand tonnes in commercial storage on Jul 31, by location. The label is ending stocks as a share of that year's <span id="use-words"></span>.</p></div>
+        <div class="legend" id="leg-end"></div>
+        <div class="chart" id="ch-end" style="height:280px"></div>
+      </div>
+      <div class="panel wide">
+        <div class="panel-head"><h3 id="stk-h">Commercial stocks at this week</h3><p id="stk-p"></p></div>
+        <div class="legend" id="leg-stkyr"></div>
+        <div class="chart" id="ch-stkyr"></div>
+      </div>
+      <div class="table-wrap wide" id="hist-table" hidden></div>
+    </div>
+  </section>
+
+  <footer class="notes">
+    <h3 style="color:var(--ink)">About the data</h3>
+    <ul id="notes-list"></ul>
+  </footer>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+(async function () {
+  const WEEKS = 52;
+  const MONTH_TICKS = [["Sep", 31], ["Nov", 92], ["Jan", 153], ["Mar", 212], ["May", 273], ["Jul", 334]];
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const NS = "http://www.w3.org/2000/svg";
+  const TERMINAL_PORTS = ["exports_pacific", "exports_thunder_bay", "exports_st_lawrence", "exports_churchill"];
+  const EAST_TONE = "color-mix(in oklab, var(--exports) 42%, var(--surface))";
+
+  const $ = (id) => document.getElementById(id);
+  let D;
+  try {
+    D = await (await fetch("data.json")).json();
+  } catch (e) {
+    $("lede").textContent = "The data file (data.json) could not be loaded. Run src/grain_data.py and republish.";
+    return;
+  }
+  const META = D.meta;
+  const NAME = META.title.replace(" Pipeline", "");
+  const STOCKS = [
+    { key: "stocks_country", label: "Country elevators", color: "var(--deliveries)" },
+    { key: "stocks_process", label: META.process ? META.process.site : "Processors", color: "var(--process)" },
+    { key: "stocks_terminals", label: "Port terminals", color: "var(--exports)" },
+  ];
+  // the uses of the grain CGC tracks, in stacking order (bottom first)
+  const USES = [
+    ...(META.feed ? [{ key: "feed", label: "Feed grains", verb: "Delivered to feed-grain facilities", color: "var(--feed)", unit: "Thousand tonnes reported by licensed feed-grain facilities" }] : []),
+    ...(META.process ? [{ key: "process", label: META.process.label, verb: META.process.verb, color: "var(--process)", unit: "Thousand tonnes" }] : []),
+    { key: "exports", label: "Exports", verb: "Exported", color: "var(--exports)", unit: "Thousand tonnes, port terminals plus direct shipments" },
+  ];
+  const HERO = USES.find((u) => u.key === META.hero);
+  const useWords = USES.map((u) => u.label.toLowerCase()).join(" + ");
+  const years = D.years, cur = D.meta.current_year, W_NOW = D.meta.latest_week;
+  const ref = years.slice(-6, -1), lastYr = ref[ref.length - 1];
+  const completed = years.filter((y) => y !== cur || W_NOW >= WEEKS);
+  const state = { mode: "cum", table: false };
+  try { if (localStorage.getItem(META.slug + "-mode") === "week") state.mode = "week"; } catch (e) {}
+
+  // ---------- helpers ----------
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const short = (y) => y.slice(0, 5) + y.slice(7);
+  function fmtKt(v) {
+    if (v == null || !isFinite(v)) return "–";
+    const a = Math.abs(v);
+    if (a >= 1000) return (v / 1000).toFixed(a >= 10000 ? 1 : 2) + " Mt";
+    if (a >= 10) return Math.round(v).toLocaleString() + " kt";
+    return v.toFixed(1) + " kt";
+  }
+  const fmtNum = (v) => v == null ? "–" : Math.abs(v) >= 100 ? Math.round(v).toLocaleString() : v.toFixed(1);
+  const pct = (a, b) => (a == null || b == null || b < 1) ? null : a / b - 1;
+  const ordinal = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
+  function chip(p) {
+    const el = document.createElement("span");
+    el.className = "chip";
+    if (p == null) { el.textContent = "n/a"; return el; }
+    const r = Math.round(p * 100);
+    const arr = document.createElement("span");
+    arr.className = "arr";
+    arr.textContent = r > 0 ? "▲" : r < 0 ? "▼" : "●";
+    el.append(arr, document.createTextNode(Math.abs(r) + "%"));
+    el.setAttribute("aria-label", (r >= 0 ? "up " : "down ") + Math.abs(r) + " percent");
+    return el;
+  }
+  function weekDate(y, w) {
+    const start = +y.slice(0, 4);
+    const d = new Date(Date.UTC(start, 7, 1 + 7 * w + 1));
+    const end = new Date(Date.UTC(start + 1, 6, 31));
+    const x = d > end ? end : d;
+    return MONTHS[x.getUTCMonth()] + " " + x.getUTCDate();
+  }
+  const empty = () => new Array(WEEKS).fill(null);
+  const flow = (k, y) => D.flows[k]?.[y] || empty();
+  const stock = (k, y) => D.stocks[k]?.[y] || empty();
+  const sumArr = (arrs) => arrs[0].map((_, i) => { const v = arrs.map((a) => a[i]); return v.every((x) => x == null) ? null : v.reduce((s, x) => s + (x || 0), 0); });
+  const series = {
+    process: (y) => flow("process", y),
+    feed: (y) => flow("feed", y),
+    exports: (y) => sumArr([...TERMINAL_PORTS, "exports_direct"].map((k) => flow(k, y))),
+    deliveries: (y) => flow("deliveries", y),
+    terminal: (y) => sumArr(TERMINAL_PORTS.map((k) => flow(k, y))),
+    stocks: (y) => sumArr(STOCKS.map((s) => stock(s.key, y))),
+    use: (y) => sumArr(USES.map((u) => series[u.key](y))),
+  };
+  const at = (arr, w) => arr[w - 1];
+  const upTo = (arr, w) => arr.map((v, i) => i < w ? v : null);
+  const mean = (a) => { const v = a.filter((x) => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+  const finalOf = (arr) => { for (let i = arr.length - 1; i >= 0; i--) if (arr[i] != null) return arr[i]; return null; };
+  const diff = (c) => c.map((v, i) => v == null ? null : i === 0 ? v : c[i - 1] == null ? null : v - c[i - 1]);
+  function stat(list) {
+    const avg = [], lo = [], hi = [];
+    for (let i = 0; i < WEEKS; i++) {
+      const v = list.map((s) => s[i]).filter((x) => x != null);
+      avg.push(v.length ? v.reduce((a, b) => a + b, 0) / v.length : null);
+      lo.push(v.length ? Math.min(...v) : null);
+      hi.push(v.length ? Math.max(...v) : null);
+    }
+    return { avg, lo, hi };
+  }
+  function el(tag, attrs, parent) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function svgText(parent, attrs, text) { const t = el("text", attrs, parent); t.textContent = text; return t; }
+  function niceStep(max, n) {
+    const raw = max / n;
+    const e = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+    const f = raw / e;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e;
+  }
+  // rounded-top bar path (grows up from yb to yt)
+  function barPath(x0, bw, yb, yt, r) {
+    const rr = Math.max(0, Math.min(r, (yb - yt), bw / 2));
+    return `M${x0},${yb}V${yt + rr}Q${x0},${yt} ${x0 + rr},${yt}H${x0 + bw - rr}Q${x0 + bw},${yt} ${x0 + bw},${yt + rr}V${yb}Z`;
+  }
+  function makeSvg(host, W, H, aria, focusable) {
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": aria });
+    if (focusable) svg.setAttribute("tabindex", 0);
+    svg.style.display = "block";
+    svg.style.overflow = "visible";
+    host.appendChild(svg);
+    return svg;
+  }
+  function yAxis(svg, m, W, y, min, max, step) {
+    for (let v = min; v <= max + 1e-9; v += step) {
+      el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: v === 0 ? css("--axis") : css("--grid") }, svg);
+      svgText(svg, { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, Math.round(v).toLocaleString());
+    }
+  }
+
+  // ---------- tooltip ----------
+  const tip = $("tip");
+  function showTip(x, y, head, rows) {
+    tip.replaceChildren();
+    const h = document.createElement("div");
+    h.className = "tip-head";
+    h.textContent = head;
+    tip.appendChild(h);
+    for (const r of rows) {
+      const row = document.createElement("div");
+      row.className = "tip-row" + (r.em ? " em" : "");
+      const key = document.createElement("span");
+      if (r.kind === "band") key.style.cssText = "width:14px;height:8px;border-radius:2px;background:var(--band)";
+      else if (r.kind === "rect") key.style.cssText = `width:10px;height:10px;border-radius:2px;background:${r.color}`;
+      else if (r.kind === "mark") key.style.cssText = "width:12px;height:2px;background:var(--ink)";
+      else if (r.color) key.style.cssText = `width:14px;height:2px;border-radius:1px;background:${r.color}`;
+      const b = document.createElement("b");
+      b.textContent = r.value;
+      const l = document.createElement("span");
+      l.textContent = r.label;
+      row.append(key, b, l);
+      tip.appendChild(row);
+    }
+    tip.hidden = false;
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let left = x + 14, top = y + 14;
+    if (left + tw > innerWidth - 8) left = x - tw - 14;
+    if (top + th > innerHeight - 8) top = y - th - 14;
+    tip.style.left = Math.max(8, left) + "px";
+    tip.style.top = Math.max(8, top) + "px";
+  }
+  const hideTip = () => { tip.hidden = true; };
+  addEventListener("scroll", hideTip, { passive: true });
+
+  function legend(host, items) {
+    host.replaceChildren();
+    for (const it of items) {
+      const s = document.createElement("span");
+      const k = document.createElement("span");
+      k.className = { band: "key-band", rect: "key-rect", mark: "key-mark" }[it.kind] || "key-line";
+      if (it.color) k.style.background = it.color;
+      s.append(k, document.createTextNode(it.label));
+      host.appendChild(s);
+    }
+  }
+
+  // ---------- week chart ----------
+  // opts: series [{label,color,values,width,dot,em,hidden}], band {lo,hi,label}, bars {label,color,values},
+  //       stack [{label,color,values}], sortTip, aria
+  function weekChart(host, opts) {
+    host.replaceChildren();
+    const W = host.clientWidth, H = host.clientHeight;
+    if (!W) return;
+    const m = { l: 48, r: 14, t: 10, b: 24 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const vals = [];
+    for (const s of opts.series || []) vals.push(...s.values);
+    if (opts.band) vals.push(...opts.band.hi, ...opts.band.lo);
+    if (opts.bars) vals.push(...opts.bars.values);
+    const stackTot = opts.stack ? sumArr(opts.stack.map((s) => s.values)) : null;
+    if (stackTot) vals.push(...stackTot);
+    const clean = vals.filter((v) => v != null);
+    let max = Math.max(1, ...clean), min = Math.min(0, ...clean);
+    const step = niceStep(max - min, 4);
+    max = Math.ceil(max / step) * step;
+    min = Math.floor(min / step) * step;
+    const x = (w) => m.l + ((w - 0.5) / WEEKS) * iw;
+    const y = (v) => m.t + ih - ((v - min) / (max - min)) * ih;
+    const svg = makeSvg(host, W, H, opts.aria, true);
+    yAxis(svg, m, W, y, min, max, step);
+    for (const [name, days] of MONTH_TICKS) svgText(svg, { x: x((days - 1) / 7), y: H - 6, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, name);
+
+    if (opts.band) {
+      const pts = [];
+      for (let i = 0; i < WEEKS; i++) if (opts.band.hi[i] != null) pts.push([i + 1, opts.band.hi[i], opts.band.lo[i]]);
+      if (pts.length) el("path", { d: "M" + pts.map((p) => `${x(p[0])},${y(p[1])}`).join("L") + "L" + pts.slice().reverse().map((p) => `${x(p[0])},${y(p[2])}`).join("L") + "Z", fill: css("--band") }, svg);
+    }
+    const bw = Math.max(1, Math.min(24, iw / WEEKS - 2));
+    if (opts.bars) {
+      opts.bars.values.forEach((v, i) => {
+        if (v == null || v === 0) return;
+        const x0 = x(i + 1) - bw / 2;
+        if (v > 0) el("path", { d: barPath(x0, bw, y(0), y(v), 4), fill: opts.bars.color }, svg);
+        else el("rect", { x: x0, y: y(0), width: bw, height: y(v) - y(0), fill: opts.bars.color }, svg);
+      });
+    }
+    if (opts.stack) {
+      for (let i = 0; i < WEEKS; i++) {
+        let acc = 0;
+        const segs = opts.stack.filter((s) => s.values[i] > 0);
+        segs.forEach((s, j) => {
+          const v = s.values[i];
+          const top = j === segs.length - 1;
+          const yb = y(acc) - (j === 0 ? 0 : 1);
+          const yt = y(acc + v) + (top ? 0 : 1);
+          acc += v;
+          if (yb - yt <= 0) return;
+          const p = el("path", { d: top ? barPath(x(i + 1) - bw / 2, bw, yb, yt, 4) : `M${x(i + 1) - bw / 2},${yb}V${yt}h${bw}V${yb}Z` }, svg);
+          p.style.fill = s.color;
+        });
+      }
+    }
+    for (const s of opts.series || []) {
+      if (s.hidden) continue;
+      const pts = [];
+      s.values.forEach((v, i) => { if (v != null) pts.push([x(i + 1), y(v)]); });
+      if (!pts.length) continue;
+      const path = el("path", { d: "M" + pts.map((p) => p.join(",")).join("L"), fill: "none", "stroke-width": s.width || 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+      path.style.stroke = s.color;
+      if (s.dot) {
+        const p = pts[pts.length - 1];
+        const c = el("circle", { cx: p[0], cy: p[1], r: 4, "stroke-width": 2 }, svg);
+        c.style.fill = s.color;
+        c.style.stroke = "var(--surface)";
+      }
+    }
+
+    const cross = el("line", { y1: m.t, y2: m.t + ih, stroke: css("--axis"), visibility: "hidden" }, svg);
+    const hit = el("rect", { x: m.l, y: 0, width: iw, height: H, fill: "transparent" }, svg);
+    let focusW = null;
+    function show(w, cx, cy) {
+      w = Math.max(1, Math.min(WEEKS, w));
+      cross.setAttribute("x1", x(w)); cross.setAttribute("x2", x(w)); cross.setAttribute("visibility", "visible");
+      let rows = [];
+      if (opts.stack) {
+        rows.push({ value: fmtNum(stackTot[w - 1]), label: "Total " + short(cur), em: true });
+        for (const s of opts.stack.slice().reverse()) rows.push({ value: fmtNum(s.values[w - 1]), label: s.label, color: s.color, kind: "rect" });
+      }
+      if (opts.bars) rows.push({ value: fmtNum(opts.bars.values[w - 1]), label: opts.bars.label, color: opts.bars.color, kind: "rect", em: true });
+      for (const s of opts.series || []) {
+        const v = s.values[w - 1];
+        if (opts.sortTip && v == null) continue;
+        rows.push({ value: fmtNum(v), raw: v, label: s.label, color: s.hidden ? null : (s.tipColor || s.color), em: s.em });
+      }
+      if (opts.sortTip) rows.sort((a, b) => (b.raw ?? -Infinity) - (a.raw ?? -Infinity));
+      if (opts.band) rows.push({ value: `${fmtNum(opts.band.lo[w - 1])}–${fmtNum(opts.band.hi[w - 1])}`, label: opts.band.label, kind: "band" });
+      showTip(cx, cy, `Week ${w} · ends ~${weekDate(cur, w)} · kt`, rows);
+    }
+    const hide = () => { cross.setAttribute("visibility", "hidden"); hideTip(); };
+    hit.addEventListener("pointermove", (e) => { const r = svg.getBoundingClientRect(); show(Math.round(((e.clientX - r.left - m.l) / iw) * WEEKS + 0.5), e.clientX, e.clientY); });
+    hit.addEventListener("pointerleave", hide);
+    svg.addEventListener("blur", hide);
+    svg.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      focusW = Math.max(1, Math.min(WEEKS, (focusW || W_NOW) + (e.key === "ArrowRight" ? 1 : -1)));
+      const r = svg.getBoundingClientRect();
+      show(focusW, r.left + x(focusW), r.top + m.t + 10);
+    });
+  }
+
+  // ---------- stacked kt columns by crop year ----------
+  // opts: keys [{key,label,color}], getVals(yr) -> {key: kt}, marker {label, get(yr)}, shareLabel(yr) -> text for bottom segment
+  function yearStack(host, opts) {
+    host.replaceChildren();
+    const W = host.clientWidth, H = host.clientHeight;
+    if (!W) return;
+    const ys = opts.years;
+    const m = { l: 52, r: 8, t: 18, b: 24 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const totals = ys.map((yr) => { const v = opts.getVals(yr); return opts.keys.reduce((s, k) => s + (v[k.key] || 0), 0); });
+    const marks = opts.marker ? ys.map((yr) => opts.marker.get(yr)) : [];
+    let max = Math.max(1, ...totals, ...marks.filter((v) => v != null));
+    const step = niceStep(max, 4);
+    max = Math.ceil(max / step) * step;
+    const y = (v) => m.t + ih - (v / max) * ih;
+    const svg = makeSvg(host, W, H, opts.aria);
+    yAxis(svg, m, W, y, 0, max, step);
+    const band = iw / ys.length, bw = Math.max(6, Math.min(opts.maxBar || 24, band - 6));
+    const labelEvery = band < 34 ? 2 : 1;
+    ys.forEach((yr, i) => {
+      const cx = m.l + band * (i + 0.5), x0 = cx - bw / 2;
+      if ((ys.length - 1 - i) % labelEvery === 0) svgText(svg, { x: cx, y: H - 6, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, band >= 44 ? short(yr) : "'" + yr.slice(2, 4));
+      const vals = opts.getVals(yr);
+      const segs = opts.keys.filter((k) => vals[k.key] > 0);
+      let acc = 0;
+      segs.forEach((k, j) => {
+        const v = vals[k.key], top = j === segs.length - 1;
+        const yb = y(acc) - (j === 0 ? 0 : 1), yt = y(acc + v) + (top ? 0 : 1);
+        acc += v;
+        if (yb - yt <= 0) return;
+        const p = el("path", { d: top ? barPath(x0, bw, yb, yt, 4) : `M${x0},${yb}V${yt}h${bw}V${yb}Z` }, svg);
+        p.style.fill = k.color;
+        if (k.key === opts.shareKey && opts.shareLabel && yb - yt >= 18 && bw >= 26) {
+          svgText(svg, { x: cx, y: yb - 7, "text-anchor": "middle", "font-size": 10, "font-weight": 500, fill: "#ffffff", "pointer-events": "none" }, opts.shareLabel(yr));
+        }
+      });
+      if (opts.capLabel) svgText(svg, { x: cx, y: y(totals[i]) - 5, "text-anchor": "middle", "font-size": 10, "font-weight": 500, fill: css("--ink-2") }, opts.capLabel(yr));
+      if (opts.marker && marks[i] != null) {
+        const my = y(marks[i]);
+        el("line", { x1: x0 - 5, x2: x0 + bw + 5, y1: my, y2: my, stroke: css("--ink"), "stroke-width": 2, "stroke-linecap": "round" }, svg);
+      }
+      const hit = el("rect", { x: cx - band / 2, y: m.t, width: band, height: ih, fill: "transparent", tabindex: 0, "aria-label": `${short(yr)}: ` + opts.keys.map((k) => `${k.label} ${fmtKt(vals[k.key])}`).join(", ") }, svg);
+      const rows = () => [
+        ...opts.keys.slice().reverse().map((k) => ({ value: fmtKt(vals[k.key]), label: k.label, color: k.color, kind: "rect" })),
+        { value: fmtKt(totals[i]), label: "Total", em: true },
+        ...(opts.marker && marks[i] != null ? [{ value: fmtKt(marks[i]), label: opts.marker.label, kind: "mark" }] : []),
+        ...(opts.tipExtra ? opts.tipExtra(yr) : []),
+      ];
+      hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, short(yr), rows()));
+      hit.addEventListener("pointerleave", hideTip);
+      hit.addEventListener("focus", () => { const r = hit.getBoundingClientRect(); showTip(r.right, r.top + 20, short(yr), rows()); });
+      hit.addEventListener("blur", hideTip);
+    });
+  }
+
+  // ---------- horizontal stacked bars, newest crop year first ----------
+  function yearBars(host, opts) {
+    host.replaceChildren();
+    const W = host.clientWidth;
+    if (!W) return;
+    const rows = opts.years.slice().reverse().map((yr) => ({ yr, vals: opts.getVals(yr) })).filter((r) => r.vals);
+    rows.forEach((r) => { r.total = opts.keys.reduce((s, k) => s + (r.vals[k.key] || 0), 0); });
+    const rowH = 22, m = { l: 58, r: 64, t: 4, b: 4 };
+    const H = m.t + m.b + rows.length * rowH;
+    host.style.height = H + "px";
+    const iw = W - m.l - m.r;
+    const max = Math.max(1, ...rows.map((r) => r.total));
+    const svg = makeSvg(host, W, H, opts.aria);
+    el("line", { x1: m.l, x2: m.l, y1: m.t, y2: H - m.b, stroke: css("--axis") }, svg);
+    const ranked = rows.slice().sort((a, b) => b.total - a.total);
+    rows.forEach((r, i) => {
+      const yc = m.t + i * rowH + rowH / 2, isCur = r.yr === cur, bh = 14;
+      svgText(svg, { x: m.l - 8, y: yc + 4, "text-anchor": "end", "font-size": 12, fill: isCur ? css("--ink") : css("--ink-2"), "font-weight": isCur ? 600 : 400 }, short(r.yr));
+      let acc = 0;
+      const segs = opts.keys.filter((k) => r.vals[k.key] > 0);
+      segs.forEach((k, j) => {
+        const v = r.vals[k.key], last = j === segs.length - 1;
+        const xa = m.l + (acc / max) * iw + (j === 0 ? 0 : 1), xb = m.l + ((acc + v) / max) * iw - (last ? 0 : 1);
+        acc += v;
+        if (xb - xa <= 0) return;
+        const rr = last ? Math.min(4, xb - xa) : 0;
+        const p = el("path", { d: `M${xa},${yc - bh / 2}H${xb - rr}Q${xb},${yc - bh / 2} ${xb},${yc - bh / 2 + rr}V${yc + bh / 2 - rr}Q${xb},${yc + bh / 2} ${xb - rr},${yc + bh / 2}H${xa}Z` }, svg);
+        p.style.fill = k.color;
+        if (!isCur) p.style.opacity = 0.55;
+      });
+      svgText(svg, { x: m.l + (r.total / max) * iw + 6, y: yc + 4, "font-size": 11, fill: isCur ? css("--ink") : css("--muted"), "font-weight": isCur ? 600 : 400 }, fmtKt(r.total));
+      const hit = el("rect", { x: 0, y: yc - rowH / 2, width: W, height: rowH, fill: "transparent", tabindex: 0, "aria-label": `${short(r.yr)}: ${fmtKt(r.total)}` }, svg);
+      const rank = ranked.indexOf(r) + 1;
+      const tipRows = [
+        { value: fmtKt(r.total), label: `Total (${ordinal(rank)} highest of ${rows.length})`, em: true },
+        ...opts.keys.slice().reverse().map((k) => ({ value: fmtKt(r.vals[k.key]), label: k.label, color: k.color, kind: "rect" })),
+      ];
+      hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, short(r.yr), tipRows));
+      hit.addEventListener("pointerleave", hideTip);
+      hit.addEventListener("focus", () => { const b = hit.getBoundingClientRect(); showTip(b.left + m.l + (r.total / max) * iw, b.bottom, short(r.yr), tipRows); });
+      hit.addEventListener("blur", hideTip);
+    });
+  }
+
+  // ---------- summary ----------
+  function rate4(key, y, w) {
+    const v = diff(series[key](y)).slice(Math.max(0, w - 4), w).filter((x) => x != null);
+    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+  }
+  function recordRate(key) {
+    let best = { v: 0 };
+    for (const y of years) {
+      const wk = diff(series[key](y));
+      for (let w = 4; w <= WEEKS; w++) {
+        const v = wk.slice(w - 4, w);
+        if (v.some((x) => x == null)) continue;
+        const r = v.reduce((a, b) => a + b, 0) / 4;
+        if (r > best.v) best = { v: r, y, w };
+      }
+    }
+    return best;
+  }
+  function renderSummary() {
+    const host = $("summary");
+    host.replaceChildren();
+    const tile = (label, color) => {
+      const t = document.createElement("div");
+      t.className = "tile";
+      const l = document.createElement("div");
+      l.className = "label";
+      if (color) { const d = document.createElement("span"); d.className = "dot"; d.style.background = color; l.appendChild(d); }
+      l.appendChild(document.createTextNode(label));
+      t.appendChild(l);
+      host.appendChild(t);
+      return t;
+    };
+    const valueEl = (parent, v, cls) => {
+      const d = document.createElement("div");
+      d.className = cls;
+      if (v >= 1000) { d.textContent = (v / 1000).toFixed(2); const s = document.createElement("small"); s.textContent = "million t"; d.appendChild(s); }
+      else { d.textContent = v >= 10 ? Math.round(v).toLocaleString() : (v || 0).toFixed(1); const s = document.createElement("small"); s.textContent = "thousand t"; d.appendChild(s); }
+      parent.appendChild(d);
+    };
+    const deltas = (parent, now, fn, w) => {
+      const avg = mean(ref.map((r) => at(fn(r), w))), last = at(fn(lastYr), w);
+      const d = document.createElement("div");
+      d.className = "deltas";
+      const a = document.createElement("span"), b = document.createElement("span");
+      a.append(chip(pct(now, avg)), document.createTextNode(" vs 5-yr average"));
+      b.append(chip(pct(now, last)), document.createTextNode(` vs ${short(lastYr)}`));
+      d.append(a, b);
+      parent.appendChild(d);
+    };
+    const note = (parent, text) => { const n = document.createElement("div"); n.className = "note"; n.textContent = text; parent.appendChild(n); };
+    const noteFor = (u, t) => {
+      if (u.key === "exports") {
+        const pac = at(flow("exports_pacific", cur), W_NOW), term = at(series.terminal(cur), W_NOW);
+        note(t, term > 0 ? `${Math.round(100 * pac / term)}% of terminal exports went through Pacific ports` : "No terminal exports yet");
+      }
+      if (u.key === "feed") note(t, "Reported separately from producer deliveries");
+    };
+
+    const tiles = [HERO, ...USES.filter((u) => u !== HERO)];
+    host.style.setProperty("--rest", tiles.length + 1);
+    tiles.forEach((u, i) => {
+      // a flow can lag the rest of the report (feed grains); use its latest reported week
+      const sr = series[u.key](cur);
+      let w = W_NOW;
+      while (w > 1 && at(sr, w) == null) w--;
+      const now = at(sr, w);
+      const t = tile(`${u.verb} so far${i === 0 ? " in " + short(cur) : ""}`, u.color);
+      valueEl(t, now, i === 0 ? "hero-value" : "tile-value");
+      deltas(t, now, series[u.key], w);
+      if (w < W_NOW) note(t, `Latest report: week ${w}`);
+      if (i === 0) {
+        const rate = rate4(u.key, cur, W_NOW), rec = recordRate(u.key);
+        note(t, `Last 4 weeks: ${Math.round(rate)} kt/week. The fastest 4 weeks on record averaged ${Math.round(rec.v)} kt/week (${short(rec.y)}, to week ${rec.w}).`);
+      }
+      noteFor(u, t);
+    });
+
+    const delNow = at(series.deliveries(cur), W_NOW);
+    const dl = tile("Delivered by farmers so far", "var(--deliveries)");
+    valueEl(dl, delNow, "tile-value");
+    deltas(dl, delNow, series.deliveries, W_NOW);
+    const moved = USES.filter((u) => u.key !== "feed");
+    const movedNow = moved.reduce((a, u) => a + (at(series[u.key](cur), W_NOW) || 0), 0);
+    note(dl, `${Math.round(100 * movedNow / delNow)}% of it has already been ${moved.map((u) => u.verb.toLowerCase().replace(/ at .*/, "")).join(" or ")}`);
+
+    const stNow = at(series.stocks(cur), W_NOW);
+    const st = tile(`Commercial stocks, week ${W_NOW}`);
+    valueEl(st, stNow, "tile-value");
+    deltas(st, stNow, series.stocks, W_NOW);
+    note(st, STOCKS.map((s) => `${s.label} ${fmtKt(at(stock(s.key, cur), W_NOW))}`).join(" · "));
+    note(st, `${short(lastYr)} ended with ${fmtKt(finalOf(series.stocks(lastYr)))} on Jul 31`);
+  }
+
+  // ---------- weekly flash ----------
+  const wkOf = (arr, w) => { const d = diff(arr); return w >= 1 ? d[w - 1] : null; };
+  const lastWeek = (arr, w) => { let x = w; while (x > 1 && at(arr, x) == null) x--; return at(arr, x) == null ? null : x; };
+  const n1 = (v) => v == null || !isFinite(v) ? "–" : (Math.abs(v) >= 100 ? Math.round(v).toLocaleString() : v.toFixed(1));
+  const chg = (v) => v == null || !isFinite(v) ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + n1(Math.abs(v));
+  const sumOf = (a) => a.reduce((s, x) => s + x, 0);
+  function fmtPct(p) {
+    if (p == null || !isFinite(p)) return "–";
+    const r = Math.round(p * 100);
+    return (r > 0 ? "+" : r < 0 ? "−" : "±") + Math.abs(r) + "%";
+  }
+  const pctTxt = (v) => v == null || !isFinite(v) ? "–" : Math.round(100 * v) + "%";
+  const PORT_ROWS = [
+    ["port_vancouver", "Vancouver"], ["port_prince_rupert", "Prince Rupert"], ["port_thunder_bay", "Thunder Bay"],
+    ["port_bay_lakes", "Bay & Lakes"], ["port_st_lawrence", "St. Lawrence"], ["port_churchill", "Churchill"],
+  ];
+  const RECEIPT_ROWS = [["receipts_pacific", "Pacific"], ["receipts_thunder_bay", "Thunder Bay"], ["receipts_st_lawrence", "St. Lawrence & Bay & Lakes"], ["receipts_churchill", "Churchill"]];
+
+  function flowRow(label, fn, cls) {
+    const c = fn(cur), w = lastWeek(c, W_NOW);
+    if (w == null) return null;
+    const weekly = diff(c);
+    const a4 = mean(weekly.slice(Math.max(0, w - 4), w));
+    const cy = at(c, w), ly = at(fn(lastYr), w), avg5 = mean(ref.map((r) => at(fn(r), w)));
+    if (!cy && !ly && !avg5) return null;
+    return {
+      label: label + (w < W_NOW ? ` (to wk ${w})` : ""), cls,
+      cells: [n1(wkOf(c, w)), n1(wkOf(c, w - 1)), chg(wkOf(c, w) - wkOf(c, w - 1)), n1(a4), n1(wkOf(fn(lastYr), w)),
+        n1(cy), n1(ly), fmtPct(pct(cy, ly)), n1(avg5), fmtPct(pct(cy, avg5))],
+    };
+  }
+  function stockRow(label, fn, cls) {
+    const c = fn(cur), w = lastWeek(c, W_NOW);
+    if (w == null) return null;
+    const now = at(c, w), ly = at(fn(lastYr), w), avg5 = mean(ref.map((r) => at(fn(r), w)));
+    return { label, cls, cells: [n1(now), n1(at(c, w - 1)), chg(now - at(c, w - 1)), "–", n1(ly), "–", "–", fmtPct(pct(now, ly)), n1(avg5), fmtPct(pct(now, avg5))] };
+  }
+  function buildTable(table, head, groups, seps) {
+    table.replaceChildren();
+    const hr = table.createTHead().insertRow();
+    head.forEach((h, i) => { const th = document.createElement("th"); th.scope = "col"; th.textContent = h; if (seps.includes(i)) th.className = "sep"; hr.appendChild(th); });
+    const body = table.createTBody();
+    for (const [title, rows] of groups) {
+      const live = rows.filter(Boolean);
+      if (!live.length) continue;
+      if (title) { const g = body.insertRow(); g.className = "grp"; const td = g.insertCell(); td.colSpan = head.length; td.textContent = title; }
+      for (const r of live) {
+        const tr = body.insertRow();
+        if (r.cls) tr.className = r.cls;
+        tr.insertCell().textContent = r.label;
+        r.cells.forEach((v, i) => { const td = tr.insertCell(); td.textContent = v; if (v.startsWith("−")) td.className = "neg"; if (seps.includes(i + 1)) td.classList.add("sep"); });
+      }
+    }
+  }
+  function renderFlash() {
+    const wEnd = new Date(META.week_ending + "T12:00").toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
+    $("flash-eyebrow").textContent = `${short(cur)} · week ${W_NOW} · ending ${wEnd} · kt`;
+    const head = ["Thousand tonnes", `Wk ${W_NOW}`, `Wk ${W_NOW - 1}`, "Chg", "4-wk avg", `LY wk ${W_NOW}`, "CYTD", "LY CYTD", "y/y", "5-yr CYTD", "vs 5-yr"];
+    const groups = [
+      ["Supply", [flowRow("Producer deliveries", series.deliveries), META.feed ? flowRow("Feed grains", series.feed) : null]],
+      ...(META.process ? [["Domestic use", [flowRow(META.process.label, series.process)]]] : []),
+      ["Exports", [
+        flowRow("Total exports", series.exports, "total"),
+        ...PORT_ROWS.map(([k, l]) => flowRow(l, (y) => flow(k, y), "sub")),
+        flowRow("Direct (rail, containers)", (y) => flow("exports_direct", y), "sub"),
+      ]],
+      ["Terminal receipts", RECEIPT_ROWS.map(([k, l]) => flowRow(l, (y) => flow(k, y), "sub"))],
+      ["Commercial stocks (levels)", [
+        ...STOCKS.map((st) => stockRow(st.label, (y) => stock(st.key, y), "sub")),
+        stockRow("Total", series.stocks, "total"),
+      ]],
+    ];
+    buildTable($("flash-table"), head, groups, [6, 8]);
+    $("flash-note").textContent = `Weekly values are week-over-week changes in CGC crop-year totals (revisions included). LY = ${short(lastYr)}; 5-yr = ${short(ref[0])} to ${short(lastYr)} average at the same week. Stock rows are week-end levels, so y/y and vs 5-yr compare levels. Receipts at Bay & Lakes include grain moved on from Thunder Bay. Vancouver and Prince Rupert are reported separately from 2018-19.`;
+  }
+
+  function renderPace() {
+    const rem = WEEKS - W_NOW;
+    $("pace-sub").textContent = `Weekly pace needed over the remaining ${rem} weeks to reach last year's and the 5-year-average crop-year totals, against the current 4-week average.`;
+    const head = ["Thousand tonnes", "CYTD", "LY total", "% of LY", "Need/wk (LY)", "5-yr avg total", "Need/wk (5-yr)", "4-wk avg", "4-wk vs need (LY)", "Record 4-wk avg"];
+    const rows = [...USES.filter((u) => u.key !== "feed"), { key: "deliveries", label: "Producer deliveries" }].map((u) => {
+      const c = series[u.key](cur), w = lastWeek(c, W_NOW);
+      const cy = at(c, w), lyT = finalOf(series[u.key](lastYr)), avgT = mean(ref.map((r) => finalOf(series[u.key](r))));
+      const needLy = (lyT - cy) / (WEEKS - w), need5 = (avgT - cy) / (WEEKS - w);
+      const a4 = mean(diff(c).slice(Math.max(0, w - 4), w)), rec = recordRate(u.key);
+      return { label: u.label, cells: [n1(cy), n1(lyT), pctTxt(cy / lyT), n1(needLy), n1(avgT), n1(need5), n1(a4), fmtPct(pct(a4, needLy)), `${n1(rec.v)} (${short(rec.y)})`] };
+    });
+    buildTable($("pace-table"), head, [[null, rows]], [4, 7]);
+    // weeks of cover: commercial stocks over the current weekly rate of processing + exports
+    const useKeys = USES.filter((u) => u.key !== "feed").map((u) => u.key);
+    const cover = (y, w) => {
+      const a4 = sumOf(useKeys.map((k) => mean(diff(series[k](y)).slice(Math.max(0, w - 4), w)) || 0));
+      return a4 > 0 ? at(series.stocks(y), w) / a4 : null;
+    };
+    const cNow = cover(cur, W_NOW), c5 = mean(ref.map((r) => cover(r, W_NOW)));
+    const useName = useKeys.map((k) => k === "process" ? META.process.label.toLowerCase() : k).join(" + ");
+    $("cover-note").textContent = `Commercial stocks of ${fmtKt(at(series.stocks(cur), W_NOW))} cover ${cNow ? cNow.toFixed(1) : "–"} weeks of current ${useName} (4-week average); the 5-yr average at this week is ${c5 ? c5.toFixed(1) : "–"} weeks.`;
+  }
+
+  // copy a table as tab-separated text (paste into a spreadsheet)
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-copy]");
+    if (!btn) return;
+    const table = $(btn.dataset.copy);
+    const tsv = [...table.rows].map((r) => [...r.cells].map((c) => c.textContent.replace(/−/g, "-")).join("\t")).join("\n");
+    const done = (ok) => { btn.textContent = ok ? "Copied" : "Selected: press Ctrl/Cmd+C"; setTimeout(() => { btn.textContent = "Copy table"; }, 2000); };
+    const fallback = () => { const r = document.createRange(); r.selectNode(table); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); done(false); };
+    try { navigator.clipboard.writeText(tsv).then(() => done(true), fallback); } catch (err) { fallback(); }
+  });
+
+  // ---------- this crop year ----------
+  function flowPanel(key, color, label) {
+    const cy = upTo(series[key](cur), W_NOW);
+    const refs = ref.map((r) => series[key](r));
+    const host = $("ch-" + key);
+    if (state.mode === "cum") {
+      const st = stat(refs);
+      legend($("leg-" + key), [{ label: short(cur), color }, { label: "5-yr average", color: "var(--avg)" }, { label: "5-yr range", kind: "band" }]);
+      weekChart(host, {
+        aria: `${label} cumulative, ${short(cur)} vs previous five crop years`,
+        band: { lo: st.lo, hi: st.hi, label: "5-yr range" },
+        series: [
+          { label: "5-yr average", color: "var(--avg)", values: st.avg, width: 1.5 },
+          { label: short(lastYr), values: series[key](lastYr), hidden: true },
+          { label: short(cur), color, values: cy, dot: true, em: true },
+        ],
+      });
+    } else {
+      const avgWeekly = stat(refs.map(diff)).avg;
+      legend($("leg-" + key), [{ label: short(cur), color, kind: "rect" }, { label: "5-yr average", color: "var(--avg)" }]);
+      weekChart(host, {
+        aria: `${label} per week, ${short(cur)} vs 5-year average`,
+        bars: { label: short(cur), color: css(color.slice(4, -1)), values: diff(cy) },
+        series: [
+          { label: "5-yr average", color: "var(--avg)", values: avgWeekly, width: 1.5 },
+          { label: short(lastYr), values: diff(series[key](lastYr)), hidden: true },
+        ],
+      });
+    }
+  }
+  const YEAR_PANELS = [...[HERO, ...USES.filter((u) => u !== HERO)], { key: "deliveries", label: "Producer deliveries", color: "var(--deliveries)", unit: "Thousand tonnes" }];
+  (function buildYearPanels() {
+    const host = $("year-panels");
+    const add = (key, title, unit, wide) => {
+      const p = document.createElement("div");
+      p.className = "panel" + (wide ? " wide" : "");
+      const head = document.createElement("div");
+      head.className = "panel-head";
+      const h = document.createElement("h3");
+      h.textContent = title;
+      const u = document.createElement("p");
+      if (unit) { u.className = "unit"; u.dataset.base = unit; } else u.textContent = "Thousand tonnes at week end, by location";
+      head.append(h, u);
+      const leg = document.createElement("div");
+      leg.className = "legend";
+      leg.id = "leg-" + key;
+      const ch = document.createElement("div");
+      ch.className = "chart";
+      ch.id = "ch-" + key;
+      ch.style.height = "230px";
+      p.append(head, leg, ch);
+      host.appendChild(p);
+    };
+    for (const u of YEAR_PANELS) add(u.key, u.label, u.unit);
+    add("stocks", "Commercial stocks", null, (YEAR_PANELS.length + 1) % 2 === 1);
+  })();
+  function renderYear() {
+    $("yr-eyebrow").textContent = `${short(cur)} · week ${W_NOW}`;
+    for (const u of document.querySelectorAll(".unit")) u.textContent = u.dataset.base + (state.mode === "cum" ? " since Aug 1" : " per week");
+    for (const u of YEAR_PANELS) flowPanel(u.key, u.color, u.label);
+
+    const sst = stat(ref.map((r) => series.stocks(r)));
+    legend($("leg-stocks"), [...STOCKS.map((s) => ({ label: s.label, color: s.color, kind: "rect" })), { label: "5-yr range, total", kind: "band" }]);
+    weekChart($("ch-stocks"), {
+      aria: `${NAME} commercial stocks by location, ${short(cur)}`,
+      band: { lo: sst.lo, hi: sst.hi, label: "5-yr range" },
+      stack: STOCKS.map((s) => ({ label: s.label, color: s.color, values: upTo(stock(s.key, cur), W_NOW) })),
+      series: [
+        { label: "5-yr average", values: sst.avg, hidden: true },
+        { label: short(lastYr) + " total", values: series.stocks(lastYr), hidden: true },
+      ],
+    });
+  }
+
+  // ---------- past crop years ----------
+  function renderHistory() {
+    const done = completed;
+    const exportShare = (yr) => { const tot = finalOf(series.use(yr)); return tot > 0 ? finalOf(series.exports(yr)) / tot : null; };
+    legend($("leg-use"), [...USES.map((u) => ({ label: u.label, color: u.color, kind: "rect" })), { label: "Producer deliveries", kind: "mark" }]);
+    yearStack($("ch-use"), {
+      years: done, maxBar: 40, aria: `${NAME} ${useWords} by crop year`,
+      keys: USES,
+      getVals: (yr) => Object.fromEntries(USES.map((u) => [u.key, finalOf(series[u.key](yr))])),
+      marker: { label: "Producer deliveries", get: (yr) => finalOf(series.deliveries(yr)) },
+      shareKey: HERO.key,
+      shareLabel: (yr) => Math.round(100 * finalOf(series[HERO.key](yr)) / finalOf(series.use(yr))) + "%",
+    });
+    const flip = META.process && done.find((yr) => finalOf(series.process(yr)) > finalOf(series.exports(yr)));
+    const avgExp = mean(done.map(exportShare));
+    $("use-h").textContent = flip && HERO.key === "process"
+      ? `${META.process.label} has overtaken exports since ${short(flip)}`
+      : USES.length > 1 ? `Exports take ${Math.round(100 * avgExp)}% of tracked use on average` : "Exports by crop year";
+    $("use-p").textContent = USES.length > 1
+      ? `Thousand tonnes in each completed crop year (${useWords}), with producer deliveries marked. The label is ${HERO.label.toLowerCase()}'s share of the total.`
+      : "Thousand tonnes exported in each completed crop year, with producer deliveries marked.";
+    $("use-words").textContent = useWords;
+
+    $("heroall-h").textContent = `Cumulative ${HERO.label.toLowerCase()}, every crop year`;
+    $("heroall-p").textContent = "Thousand tonnes. Each line is one crop year. Hover to compare all years at one week.";
+    legend($("leg-heroall"), [{ label: short(cur), color: HERO.color }, { label: short(lastYr), color: "var(--avg)" }, { label: "Earlier years", color: "var(--other)" }]);
+    weekChart($("ch-heroall"), {
+      aria: `Cumulative ${NAME} ${HERO.label.toLowerCase()} in every crop year`, sortTip: true,
+      series: [
+        ...years.filter((yr) => yr !== cur && yr !== lastYr).map((yr) => ({ label: short(yr), color: "var(--other)", tipColor: "var(--muted)", values: series[HERO.key](yr), width: 1.25 })),
+        { label: short(lastYr), color: "var(--avg)", values: series[HERO.key](lastYr), width: 1.5 },
+        { label: short(cur), color: HERO.color, values: upTo(series[HERO.key](cur), W_NOW), dot: true, em: true },
+      ],
+    });
+
+    const portKeys = [
+      { key: "pacific", label: "Pacific (Vancouver, Prince Rupert)", color: "var(--exports)" },
+      { key: "east", label: "Thunder Bay, St. Lawrence, Churchill", color: EAST_TONE },
+    ];
+    legend($("leg-ports"), portKeys.map((k) => ({ label: k.label, color: k.color, kind: "rect" })));
+    yearStack($("ch-ports"), {
+      years: done, aria: `${NAME} terminal exports by port group and crop year`,
+      keys: portKeys,
+      getVals: (yr) => ({
+        pacific: finalOf(flow("exports_pacific", yr)),
+        east: ["exports_thunder_bay", "exports_st_lawrence", "exports_churchill"].reduce((s, k) => s + (finalOf(flow(k, yr)) || 0), 0),
+      }),
+    });
+
+    legend($("leg-stkall"), [{ label: short(cur), color: "var(--process)" }, { label: short(lastYr), color: "var(--avg)" }, { label: "Earlier years", color: "var(--other)" }]);
+    weekChart($("ch-stkall"), {
+      aria: `${NAME} commercial stocks in every crop year`, sortTip: true,
+      series: [
+        ...years.filter((yr) => yr !== cur && yr !== lastYr).map((yr) => ({ label: short(yr), color: "var(--other)", tipColor: "var(--muted)", values: series.stocks(yr), width: 1.25 })),
+        { label: short(lastYr), color: "var(--avg)", values: series.stocks(lastYr), width: 1.5 },
+        { label: short(cur), color: "var(--process)", values: upTo(series.stocks(cur), W_NOW), dot: true, em: true },
+      ],
+    });
+    legend($("leg-end"), STOCKS.map((s) => ({ label: s.label, color: s.color, kind: "rect" })));
+    const use = (yr) => finalOf(series.use(yr));
+    yearStack($("ch-end"), {
+      years: done, aria: `${NAME} commercial stocks at the end of each crop year, by location`,
+      keys: STOCKS,
+      getVals: (yr) => Object.fromEntries(STOCKS.map((s) => [s.key, finalOf(stock(s.key, yr))])),
+      capLabel: (yr) => Math.round(100 * finalOf(series.stocks(yr)) / use(yr)) + "%",
+      tipExtra: (yr) => [{ value: (100 * finalOf(series.stocks(yr)) / use(yr)).toFixed(1) + "%", label: "of " + useWords }],
+    });
+
+    $("stk-h").textContent = `Commercial stocks at week ${W_NOW} in each crop year`;
+    $("stk-p").textContent = `Thousand tonnes held at week ${W_NOW} (~${weekDate(cur, W_NOW)}), by location. ${short(cur)} is shown at full strength.`;
+    legend($("leg-stkyr"), STOCKS.map((s) => ({ label: s.label, color: s.color, kind: "rect" })));
+    yearBars($("ch-stkyr"), {
+      years, aria: `${NAME} commercial stocks at week ${W_NOW} by crop year`,
+      keys: STOCKS,
+      getVals: (yr) => { const v = {}; let any = false; for (const s of STOCKS) { v[s.key] = at(stock(s.key, yr), W_NOW); if (v[s.key] != null) any = true; } return any ? v : null; },
+    });
+
+    // data table
+    const table = document.createElement("table");
+    const head = table.createTHead().insertRow();
+    const cols = ["Crop year", "Deliveries", ...USES.filter((u) => u.key !== "exports").map((u) => u.label), "Terminal exports", "Direct exports",
+      "Exports share of use", "Pacific share", `Stocks, wk ${W_NOW}`, "Ending stocks", "Ending stocks / use"];
+    for (const c of cols) { const th = document.createElement("th"); th.scope = "col"; th.textContent = c; head.appendChild(th); }
+    const body = table.createTBody();
+    for (const yr of years.slice().reverse()) {
+      const tr = body.insertRow();
+      if (yr === cur) tr.className = "current";
+      const t = finalOf(series.terminal(yr)), x = finalOf(flow("exports_direct", yr)) || 0, p = finalOf(flow("exports_pacific", yr)), u = finalOf(series.use(yr));
+      [short(yr) + (yr === cur ? ` (to wk ${W_NOW})` : ""), fmtKt(finalOf(series.deliveries(yr))),
+        ...USES.filter((q) => q.key !== "exports").map((q) => fmtKt(finalOf(series[q.key](yr)))), fmtKt(t), fmtKt(x),
+        u > 0 ? Math.round(100 * (t + x) / u) + "%" : "–", t > 0 ? Math.round(100 * p / t) + "%" : "–", fmtKt(at(series.stocks(yr), W_NOW)),
+        yr === cur ? "–" : fmtKt(finalOf(series.stocks(yr))), yr === cur ? "–" : (100 * finalOf(series.stocks(yr)) / u).toFixed(1) + "%"]
+        .forEach((v) => { const td = tr.insertCell(); td.textContent = v; });
+    }
+    $("hist-table").replaceChildren(table);
+  }
+
+  // ---------- forecast ----------
+  const FC = { crush: { label: META.process ? META.process.label : "Processing", color: "var(--process)", flow: "process" }, exports: { label: "Exports", color: "var(--exports)", flow: "exports" } };
+  const tone = (c) => `color-mix(in oklab, ${c} 40%, var(--surface))`;
+  const BASE_NAMES = { last_year: "last year's total", trend: "trend", pace: "pace", run_rate: "run rate", supply_share: "StatCan supply", supply_residual: "supply after crush" };
+  const fmtMt = (kt) => (kt / 1000).toFixed(kt >= 10000 ? 1 : 2) + " Mt";
+
+  // full-year range: 80% band, point forecast, last year's total as a tick
+  function rangeChart(host, f, color, lastLabel) {
+    host.replaceChildren();
+    const W = host.clientWidth, H = 64;
+    if (!W) return;
+    const m = { l: 8, r: 8, t: 20, b: 20 };
+    const lo = Math.min(f.low, f.last_year_actual), hi = Math.max(f.high, f.last_year_actual);
+    const step = niceStep(hi - lo, 4);
+    const min = Math.floor(lo * 0.97 / step) * step, max = Math.ceil(hi * 1.03 / step) * step;
+    const x = (v) => m.l + ((v - min) / (max - min)) * (W - m.l - m.r);
+    const svg = makeSvg(host, W, H, `Full-year forecast ${fmtMt(f.forecast)}, 80% range ${fmtMt(f.low)} to ${fmtMt(f.high)}`);
+    const yc = m.t + 10;
+    el("line", { x1: m.l, x2: W - m.r, y1: yc, y2: yc, stroke: css("--grid"), "stroke-width": 1 }, svg);
+    for (let v = min; v <= max + 1e-9; v += step) {
+      svgText(svg, { x: x(v), y: H - 4, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, (v / 1000).toFixed(step >= 1000 ? 0 : 1));
+    }
+    const band = el("rect", { x: x(f.low), y: yc - 8, width: Math.max(2, x(f.high) - x(f.low)), height: 16, rx: 4 }, svg);
+    band.style.fill = tone(color);
+    const lx = x(f.last_year_actual);
+    el("line", { x1: lx, x2: lx, y1: yc - 13, y2: yc + 13, stroke: css("--ink"), "stroke-width": 2, "stroke-linecap": "round" }, svg);
+    svgText(svg, { x: lx, y: yc - 17, "text-anchor": lx > W - 60 ? "end" : "middle", "font-size": 11, fill: css("--ink-2") }, lastLabel);
+    const dot = el("circle", { cx: x(f.forecast), cy: yc, r: 6, "stroke-width": 2 }, svg);
+    dot.style.fill = color;
+    dot.style.stroke = "var(--surface)";
+    const hit = el("rect", { x: 0, y: 0, width: W, height: H, fill: "transparent", tabindex: 0, "aria-label": "Full-year forecast details" }, svg);
+    const rows = [
+      { value: fmtMt(f.forecast), label: "forecast", color, kind: "rect", em: true },
+      { value: `${fmtMt(f.low)}–${fmtMt(f.high)}`, label: "80% range", color: tone(color), kind: "rect" },
+      { value: fmtMt(f.last_year_actual), label: lastLabel + " actual", kind: "mark" },
+      ...Object.entries(f.weights).filter(([, w]) => w > 0).map(([k, w]) => ({ value: fmtMt(f.baselines[k]), label: `${BASE_NAMES[k]} (weight ${Math.round(w * 100)}%)` })),
+    ];
+    hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, "Full crop year", rows));
+    hit.addEventListener("pointerleave", hideTip);
+    hit.addEventListener("focus", () => { const r = hit.getBoundingClientRect(); showTip(r.left + x(f.forecast), r.bottom, "Full crop year", rows); });
+    hit.addEventListener("blur", hideTip);
+  }
+
+  // weekly: actual weeks so far, then forecast weeks with 80% whiskers, against the 5-yr average
+  function forecastWeeks(host, key, fc, color) {
+    host.replaceChildren();
+    const W = host.clientWidth, H = host.clientHeight;
+    if (!W) return;
+    const actual = diff(upTo(series[FC[key].flow](cur), W_NOW));
+    const avgW = stat(ref.map((r) => diff(series[FC[key].flow](r)))).avg;
+    const last = fc[fc.length - 1].week, first = Math.max(1, last - 15);
+    const weeks = Array.from({ length: last - first + 1 }, (_, i) => first + i);
+    const m = { l: 44, r: 8, t: 10, b: 24 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    let max = Math.max(1, ...weeks.map((w) => actual[w - 1] || 0), ...fc.map((f) => f.high), ...weeks.map((w) => avgW[w - 1] || 0));
+    const step = niceStep(max, 4);
+    max = Math.ceil(max / step) * step;
+    const band = iw / weeks.length, bw = Math.max(4, Math.min(24, band - 6));
+    const x = (w) => m.l + band * (w - first + 0.5);
+    const y = (v) => m.t + ih - (Math.max(0, v) / max) * ih;
+    const svg = makeSvg(host, W, H, `${FC[key].label}: weekly actuals and ${fc.length}-week forecast`);
+    yAxis(svg, m, W, y, 0, max, step);
+    weeks.forEach((w, i) => {
+      if (i % (band < 30 ? 2 : 1) === 0 || w === W_NOW + 1) svgText(svg, { x: x(w), y: H - 6, "text-anchor": "middle", "font-size": 11, fill: w > W_NOW ? css("--ink") : css("--muted") }, "W" + w);
+    });
+    const divX = x(W_NOW) + band / 2;
+    el("line", { x1: divX, x2: divX, y1: m.t, y2: m.t + ih, stroke: css("--axis") }, svg);
+    svgText(svg, { x: divX + 4, y: m.t + 10, "font-size": 11, fill: css("--muted") }, "forecast →");
+    const pts = [];
+    weeks.forEach((w) => {
+      const f = fc.find((q) => q.week === w);
+      const v = f ? f.forecast : actual[w - 1];
+      if (v == null) return;
+      const p = el("path", { d: barPath(x(w) - bw / 2, bw, y(0), y(v), 4) }, svg);
+      p.style.fill = f ? tone(color) : color;
+      if (f) {
+        const g = { stroke: css("--ink-2"), "stroke-width": 1.5, "stroke-linecap": "round" };
+        el("line", { x1: x(w), x2: x(w), y1: y(f.low), y2: y(f.high), ...g }, svg);
+        el("line", { x1: x(w) - 4, x2: x(w) + 4, y1: y(f.low), y2: y(f.low), ...g }, svg);
+        el("line", { x1: x(w) - 4, x2: x(w) + 4, y1: y(f.high), y2: y(f.high), ...g }, svg);
+      }
+      if (avgW[w - 1] != null) pts.push([x(w), y(avgW[w - 1])]);
+      const rows = f
+        ? [{ value: fmtNum(f.forecast), label: "forecast", color: tone(color), kind: "rect", em: true }, { value: `${fmtNum(f.low)}–${fmtNum(f.high)}`, label: "80% range" }]
+        : [{ value: fmtNum(v), label: short(cur) + " actual", color, kind: "rect", em: true }];
+      rows.push({ value: fmtNum(avgW[w - 1]), label: "5-yr average", color: "var(--avg)" });
+      const hit = el("rect", { x: x(w) - band / 2, y: m.t, width: band, height: ih, fill: "transparent", tabindex: 0, "aria-label": `Week ${w}: ${fmtNum(v)} kt${f ? " forecast" : ""}` }, svg);
+      const head = `Week ${w} · ends ~${weekDate(cur, w)} · kt`;
+      hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, head, rows));
+      hit.addEventListener("pointerleave", hideTip);
+      hit.addEventListener("focus", () => { const r = hit.getBoundingClientRect(); showTip(r.right, r.top + 20, head, rows); });
+      hit.addEventListener("blur", hideTip);
+    });
+    if (pts.length) {
+      const line = el("path", { d: "M" + pts.map((p) => p.join(",")).join("L"), fill: "none", "stroke-width": 1.5, "stroke-linejoin": "round", "pointer-events": "none" }, svg);
+      line.style.stroke = "var(--avg)";
+    }
+  }
+
+  function renderForecast(F) {
+    if (F.current_year !== cur || F.origin_week !== W_NOW) {
+      $("fc-sub").textContent = `The forecast file is from ${short(F.current_year)} week ${F.origin_week}, but the data is at week ${W_NOW}. Run src/canola_forecast.py and republish.`;
+    } else {
+      const s = F.supply;
+      $("fc-sub").textContent = `Made from week ${W_NOW} data. Every method was tested on crop years ${short(F.test_years[0])} to ${short(F.test_years[F.test_years.length - 1])}, forecasting each year using only the years before it.`;
+      $("fc-eyebrow").textContent = `StatCan canola production: ${(s.production_t / 1e6).toFixed(2)} Mt (${s.source}${s.released ? ", released " + new Date(s.released + "T12:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" }) : ""}) · ${short(lastYr)}: ${(s.last_year_t / 1e6).toFixed(2)} Mt`;
+    }
+    const bucketOf = (t) => t <= 4 ? "1-4" : t <= 8 ? "5-8" : t <= 13 ? "9-13" : t <= 26 ? "14-26" : t <= 39 ? "27-39" : "40-51";
+    for (const key of ["crush", "exports"]) {
+      const host = $("fc-" + key), f = F.full_year[key], wk = F.weekly[key];
+      host.replaceChildren();
+      const head = document.createElement("div");
+      head.className = "panel-head";
+      const h = document.createElement("h3");
+      const d = document.createElement("span");
+      d.className = "dot";
+      d.style.cssText = `background:${FC[key].color};margin-right:6px`;
+      h.append(d, document.createTextNode(FC[key].label));
+      head.appendChild(h);
+      const top = document.createElement("div");
+      top.className = "fc-top";
+      const v = document.createElement("div");
+      v.className = "fc-value";
+      v.textContent = (f.forecast / 1000).toFixed(1);
+      const u = document.createElement("small");
+      u.textContent = `million t in ${short(cur)}`;
+      v.appendChild(u);
+      const sub = document.createElement("div");
+      sub.className = "fc-sub";
+      sub.append(chip(pct(f.forecast, f.last_year_actual)), document.createTextNode(` vs ${short(lastYr)} · 80% range ${fmtMt(f.low)} to ${fmtMt(f.high)}`));
+      top.append(v, sub);
+      const range = document.createElement("div");
+      range.className = "chart";
+      range.style.height = "64px";
+      const wl = document.createElement("div");
+      wl.className = "fc-label";
+      wl.textContent = `Weekly, kt: actual through week ${W_NOW}, forecast for weeks ${W_NOW + 1}–${wk.forecast[wk.forecast.length - 1].week}`;
+      const legendHost = document.createElement("div");
+      legendHost.className = "legend";
+      legend(legendHost, [{ label: "Actual", color: FC[key].color, kind: "rect" }, { label: "Forecast, 80% range", color: tone(FC[key].color), kind: "rect" }, { label: "5-yr average", color: "var(--avg)" }]);
+      const weekly = document.createElement("div");
+      weekly.className = "chart";
+      weekly.style.height = "210px";
+      const acc = document.createElement("div");
+      acc.className = "fc-note";
+      const fyErr = f.mape_by_origin[bucketOf(W_NOW)].combo;
+      const wkErr = wk.mae_by_horizon["1"][wk.best];
+      acc.textContent = `Typical error at this point in the year: ±${fyErr.toFixed(0)}% on the full-year total, ±${Math.round(wkErr)} kt on next week.`;
+      host.append(head, top, range, wl, legendHost, weekly, acc);
+      rangeChart(range, f, FC[key].color, short(lastYr));
+      forecastWeeks(weekly, key, wk.forecast, FC[key].color);
+    }
+
+    // accuracy table: full-year mean absolute % error by origin week
+    $("acc-p").textContent = `Average full-year forecast error (%) in the backtest, by how far into the crop year the forecast was made. Lower is better. The shaded row is where ${short(cur)} is now.`;
+    const cols = [
+      ["crush", "combo", "Crush: forecast"], ["crush", "pace", "Crush: pace only"], ["crush", "last_year", "Crush: last year"],
+      ["exports", "combo", "Exports: forecast"], ["exports", "supply_share", "Exports: StatCan supply only"], ["exports", "pace", "Exports: pace only"], ["exports", "last_year", "Exports: last year"],
+    ];
+    const table = document.createElement("table");
+    const hr = table.createTHead().insertRow();
+    for (const c of ["Forecast made in", ...cols.map((c) => c[2])]) { const th = document.createElement("th"); th.scope = "col"; th.textContent = c; hr.appendChild(th); }
+    const body = table.createTBody();
+    for (const b of ["1-4", "5-8", "9-13", "14-26", "27-39", "40-51"]) {
+      const tr = body.insertRow();
+      if (b === bucketOf(W_NOW)) tr.className = "now";
+      const td0 = tr.insertCell();
+      td0.textContent = "Weeks " + b.replace("-", "–");
+      for (const key of ["crush", "exports"]) {
+        const vals = cols.filter((c) => c[0] === key).map((c) => F.full_year[key].mape_by_origin[b][c[1]]);
+        const best = Math.min(...vals);
+        vals.forEach((v) => { const td = tr.insertCell(); td.textContent = v.toFixed(1) + "%"; if (v === best) td.className = "best"; });
+      }
+    }
+    $("acc-table").replaceChildren(table);
+    $("fc-section").hidden = false;
+    if (!$("fc-note")) {
+      const li = document.createElement("li");
+      li.id = "fc-note";
+      li.textContent = "Forecasts come from src/canola_forecast.py. The weekly model is a ridge regression on recent pace, seasonality, stocks and deliveries; the export model also uses StatCan's latest production estimate. The full-year forecast is a weighted mix of simple estimates, with weights learned from earlier crop years for each week of the year. The 80% ranges come from backtest errors. Soybean-complex price inputs were tested and did not improve accuracy, so they are not used.";
+      $("notes-list").insertBefore(li, $("gen"));
+    }
+  }
+
+  let FORECAST = null;
+  fetch("forecast.json").then((r) => r.ok ? r.json() : null).then((F) => { if (F) { FORECAST = F; renderForecast(F); } }).catch(() => {});
+
+  // ---------- controls + boot ----------
+  function setMode(m) {
+    state.mode = m;
+    $("mode-cum").setAttribute("aria-pressed", m === "cum");
+    $("mode-week").setAttribute("aria-pressed", m === "week");
+    try { localStorage.setItem(META.slug + "-mode", m); } catch (e) {}
+    renderYear();
+  }
+  $("mode-cum").addEventListener("click", () => setMode("cum"));
+  $("mode-week").addEventListener("click", () => setMode("week"));
+  $("toggle-table").addEventListener("click", () => {
+    state.table = !state.table;
+    $("hist-table").hidden = !state.table;
+    $("toggle-table").setAttribute("aria-expanded", state.table);
+    $("toggle-table").textContent = state.table ? "Hide data table" : "Show data table";
+  });
+
+  $("asof").textContent = `Crop year ${short(cur)} · week ${W_NOW} of 52, ending ${new Date(D.meta.week_ending + "T12:00").toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })} · compared with ${short(ref[0])} to ${short(lastYr)}`;
+  (function buildNotes() {
+    const ul = $("notes-list");
+    const li = (...parts) => { const l = document.createElement("li"); l.append(...parts); ul.appendChild(l); return l; };
+    const link = (text, href) => { const a = document.createElement("a"); a.href = href; a.target = "_blank"; a.rel = "noopener"; a.textContent = text; return a; };
+    const src = li("Source: Canadian Grain Commission, ", link("Grain Statistics Weekly", "https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/"), ", crop years 2013-14 onward.");
+    const others = Object.entries(META.links || {});
+    if (others.length) {
+      src.append(" Related pages: ");
+      others.forEach(([t, u], i) => src.append(link(t, u), i < others.length - 1 ? ", " : "."));
+    }
+    for (const n of META.notes || []) li(n);
+    li("Exports are shipments from licensed port terminals, plus shipments from country elevators that go straight to export or to container loaders. Before 2018-19 CGC reports Vancouver and Prince Rupert together as Pacific.");
+    if (META.feed) li("Feed grains are CGC's Feed Grains table: deliveries reported by licensed feed-grain facilities. They are not part of producer deliveries.");
+    li(`Commercial stocks cover licensed country elevators, ${(META.process ? META.process.site : "processors").toLowerCase()} and port terminals, matching CGC's published commercial stocks total. Grain stored on farms is not included. Ending stocks are the Jul 31 figure.`);
+    li("Producer deliveries cover licensed elevators, direct deliveries to processors and producer cars. Grain fed on farms or sold directly to feedlots is not tracked by CGC.");
+    li("Weekly values are week-over-week changes in CGC's crop-year totals, so revisions are included. Weeks 21–22 are one combined holiday report.");
+    const gen = document.createElement("li");
+    gen.id = "gen";
+    ul.appendChild(gen);
+  })();
+  $("gen").textContent = `Data through crop year ${short(cur)}, week ${W_NOW} (week ending ${D.meta.week_ending}). Built ${D.meta.generated}.`;
+  renderSummary();
+  renderFlash();
+  renderPace();
+  setMode(state.mode);
+  renderHistory();
+
+  const rerender = () => { renderYear(); renderHistory(); if (FORECAST) renderForecast(FORECAST); };
+  let rt;
+  new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(rerender, 120); }).observe(document.querySelector(".wrap"));
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerender);
+  new MutationObserver(rerender).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+})();
+</script>

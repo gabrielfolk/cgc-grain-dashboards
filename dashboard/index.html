@@ -1,0 +1,1587 @@
+<title>Prairie Delivery Pace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --page: #f2f4f1;
+    --surface: #fcfcfb;
+    --ink: #101311;
+    --ink-2: #4c524d;
+    --muted: #767d77;
+    --grid: #e4e7e2;
+    --axis: #c3c8c1;
+    --border: rgba(16, 19, 17, 0.10);
+    --chip: #e9ece7;
+    --hover: rgba(16, 19, 17, 0.04);
+    --s1: #2a78d6;
+    --s2: #eb6834;
+    --s3: #1baf7a;
+    --s4: #eda100;
+    --s5: #e87ba4;
+    --s6: #008300;
+    --avg: #4c524d;
+    --band: rgba(76, 82, 77, 0.13);
+    --other: rgba(76, 82, 77, 0.28);
+    --div-pos: #1c5cab;
+    --div-neg: #c0392f;
+    --div-mid: #eceee9;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0e100f;
+      --surface: #181a19;
+      --ink: #f3f5f2;
+      --ink-2: #c1c7c0;
+      --muted: #8b928b;
+      --grid: #282b29;
+      --axis: #3b3f3c;
+      --border: rgba(255, 255, 255, 0.10);
+      --chip: #252826;
+      --hover: rgba(255, 255, 255, 0.05);
+      --s1: #3987e5;
+      --s2: #d95926;
+      --s3: #199e70;
+      --s4: #c98500;
+      --s5: #d55181;
+      --s6: #008300;
+      --avg: #c1c7c0;
+      --band: rgba(193, 199, 192, 0.12);
+      --other: rgba(193, 199, 192, 0.26);
+      --div-pos: #3987e5;
+      --div-neg: #e66767;
+      --div-mid: #262927;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0e100f;
+    --surface: #181a19;
+    --ink: #f3f5f2;
+    --ink-2: #c1c7c0;
+    --muted: #8b928b;
+    --grid: #282b29;
+    --axis: #3b3f3c;
+    --border: rgba(255, 255, 255, 0.10);
+    --chip: #252826;
+    --hover: rgba(255, 255, 255, 0.05);
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+    --s4: #c98500;
+    --s5: #d55181;
+    --s6: #008300;
+    --avg: #c1c7c0;
+    --band: rgba(193, 199, 192, 0.12);
+    --other: rgba(193, 199, 192, 0.26);
+    --div-pos: #3987e5;
+    --div-neg: #e66767;
+    --div-mid: #262927;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font: 14px/1.5 var(--sans);
+    padding-inline: 16px;
+    padding-block: 28px 56px;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 40px; }
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.15; }
+  h2 { font-size: 18px; font-weight: 600; }
+  h3 { font-size: 14px; font-weight: 600; }
+  p { margin: 0; }
+  .eyebrow {
+    font: 500 11px/1.4 var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .sub { color: var(--ink-2); max-width: 68ch; }
+  .muted { color: var(--muted); }
+  .num { font-variant-numeric: tabular-nums; }
+  :focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+  a { color: var(--s1); }
+
+  /* header + commodity picker */
+  header { display: grid; gap: 14px; }
+  .picker { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pick {
+    font: 500 13px var(--sans); color: var(--ink-2);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+    padding: 5px 12px; cursor: pointer;
+  }
+  .pick:hover { color: var(--ink); border-color: var(--axis); }
+  .pick[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .asof { font-size: 13px; color: var(--muted); }
+
+  .btn, .seg {
+    font: 500 13px var(--sans); color: var(--ink);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+  }
+  .btn { padding: 6px 12px; cursor: pointer; }
+  .btn:hover { background: var(--hover); }
+  .seg { display: inline-flex; overflow: hidden; }
+  .seg button { font: inherit; color: var(--ink-2); background: none; border: 0; padding: 6px 12px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--chip); color: var(--ink); }
+
+  /* summary */
+  .summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .tile { background: var(--surface); padding: 18px 20px; display: grid; gap: 6px; align-content: start; }
+  .tile .label { font-size: 12px; color: var(--muted); }
+  .hero-value { font-size: 48px; font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; }
+  .hero-value small { font-size: 20px; font-weight: 500; color: var(--ink-2); margin-left: 4px; letter-spacing: 0; }
+  .tile-value { font-size: 26px; font-weight: 600; line-height: 1.15; }
+  .deltas { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--ink-2); font-size: 13px; }
+  .note { font-size: 13px; color: var(--muted); }
+  @media (max-width: 900px) { .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .summary .tile:first-child { grid-column: 1 / -1; } }
+  @media (max-width: 480px) { .summary { grid-template-columns: minmax(0, 1fr); } .hero-value { font-size: 40px; } }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    font: 500 12px/1 var(--mono); font-variant-numeric: tabular-nums;
+    background: var(--chip); color: var(--ink); border-radius: 4px; padding: 4px 6px; white-space: nowrap;
+  }
+  .chip .arr { font-size: 9px; color: var(--ink-2); }
+
+  /* sections */
+  section { display: grid; gap: 16px; }
+  .section-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px 24px; }
+  .section-head > div:first-child { display: grid; gap: 4px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--ink-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .key-line { width: 16px; height: 2px; border-radius: 1px; display: inline-block; }
+  .key-band { width: 16px; height: 10px; border-radius: 2px; display: inline-block; background: var(--band); }
+  .key-rect { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+  .panel-head { display: grid; gap: 2px; }
+  .panel-head p { font-size: 12px; color: var(--muted); }
+  .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .two .wide { grid-column: 1 / -1; }
+  @media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } }
+  .chart { position: relative; }
+
+  /* flash table */
+  .flash-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+  .flash { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .flash th, .flash td { padding: 6px 9px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--grid); }
+  .flash thead th { font: 500 11px var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); background: var(--surface); }
+  .flash thead tr.grp th { color: var(--ink-2); text-align: center; border-bottom: 1px solid var(--axis); }
+  .flash thead th[data-col] { cursor: pointer; user-select: none; }
+  .flash thead th[data-col]:hover { color: var(--ink); }
+  .flash thead th[aria-sort="descending"]::after { content: " ▼"; font-size: 8px; }
+  .flash thead th[aria-sort="ascending"]::after { content: " ▲"; font-size: 8px; }
+  .flash th:first-child, .flash td:first-child { text-align: left; position: sticky; left: 0; background: var(--surface); }
+  .flash td { font-variant-numeric: tabular-nums; }
+  .flash tbody tr { cursor: pointer; }
+  .flash tbody tr:hover td { background: var(--hover); }
+  .flash tbody tr.total td { font-weight: 600; }
+  .flash td.neg { color: var(--ink-2); }
+  .flash .sep { border-left: 1px solid var(--grid); }
+  .flash-note { font-size: 12px; color: var(--muted); max-width: 120ch; }
+
+  /* insight cards */
+  .insights { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+  .insight { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: grid; gap: 6px; align-content: start; }
+  .insight .kicker { font: 500 11px/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .insight h3 { font-size: 16px; line-height: 1.3; }
+  .insight .big { font-size: 28px; font-weight: 600; line-height: 1.1; }
+  .insight .big small { font-size: 14px; font-weight: 500; color: var(--ink-2); margin-left: 4px; }
+  .insight p { font-size: 13px; color: var(--ink-2); }
+  .insight .rows { display: grid; gap: 4px; font-size: 13px; }
+  .insight .rows span { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+  .crop-picker { display: grid; gap: 12px; }
+
+  /* pace grid */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(212px, 1fr)); gap: 12px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 12px 8px; display: grid; gap: 4px; cursor: pointer; text-align: left;
+    font: inherit; color: inherit;
+  }
+  .card:hover { border-color: var(--axis); }
+  .card[aria-current="true"] { border-color: var(--s1); box-shadow: inset 0 0 0 1px var(--s1); }
+  .card-top { display: flex; justify-content: space-between; align-items: start; gap: 8px; }
+  .card-name { font-weight: 600; }
+  .card-val { font-size: 13px; color: var(--ink-2); }
+  .mini { height: 84px; position: relative; }
+
+  /* tables */
+  .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 8px 12px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--grid); }
+  th { font: 500 11px var(--mono); letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  th:first-child, td:first-child { text-align: left; }
+  td { font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr.clickable { cursor: pointer; }
+  tbody tr.clickable:hover { background: var(--hover); }
+  tr.current td { font-weight: 600; }
+
+  /* heatmap */
+  .heat { border-collapse: separate; border-spacing: 2px; font-size: 12px; }
+  .heat th, .heat td { border: 0; padding: 0; }
+  .heat th { padding: 4px 6px; font-size: 10px; }
+  .heat th[scope="row"] { font: 500 13px var(--sans); letter-spacing: 0; text-transform: none; color: var(--ink); padding-right: 12px; text-align: left; cursor: pointer; }
+  .heat tr.current th[scope="row"] { font-weight: 600; text-decoration: underline; text-decoration-color: var(--s1); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+  .heat td { width: 62px; height: 30px; text-align: center; font: 500 11px var(--mono); border-radius: 3px; cursor: pointer; }
+  .heat td:hover, .heat td:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+  .scale { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+  .scale-bar { width: 180px; height: 10px; border-radius: 2px; background: linear-gradient(90deg, var(--div-neg), var(--div-mid), var(--div-pos)); }
+
+  /* tooltip */
+  #tip {
+    position: fixed; z-index: 10; pointer-events: none;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+    padding: 8px 10px; font-size: 12px; min-width: 150px; max-width: 280px;
+  }
+  #tip .tip-head { color: var(--muted); margin-bottom: 4px; }
+  #tip .tip-row { display: grid; grid-template-columns: 14px auto 1fr; align-items: center; gap: 6px; }
+  #tip .tip-row b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  #tip .tip-row span:last-child { color: var(--ink-2); }
+  #tip .tip-row.em span:last-child { color: var(--ink); font-weight: 500; }
+
+  svg text { font-family: var(--sans); }
+  .notes { display: grid; gap: 8px; font-size: 13px; color: var(--ink-2); max-width: 80ch; }
+  .notes ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  @media (prefers-reduced-motion: no-preference) { .card, .btn, .pick { transition: border-color 0.12s, background 0.12s, color 0.12s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">CGC Grain Statistics Weekly · Producer deliveries</div>
+    <h1>Prairie Delivery Pace</h1>
+    <p class="sub" id="lede">Producer deliveries, exports, licensed processing and commercial stocks for 15 Western Canadian crops, with selling pace measured against StatCan crop estimates.</p>
+    <p class="asof" id="asof"></p>
+  </header>
+
+  <section aria-labelledby="mflash-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="mflash-eyebrow"></div>
+        <h2 id="mflash-h">Weekly flash: all crops</h2>
+      </div>
+      <button type="button" class="btn" data-copy="mflash-table">Copy table</button>
+    </div>
+    <div class="flash-wrap"><table class="flash" id="mflash-table"></table></div>
+    <p class="flash-note" id="mflash-note"></p>
+  </section>
+
+  <section aria-labelledby="ins-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="ins-eyebrow">All crops</div>
+        <h2 id="ins-h">What farmers are doing</h2>
+        <p class="sub">Delivery pace sized to StatCan's western production estimates, plus the structural picture.</p>
+      </div>
+    </div>
+    <div class="insights" id="insights"></div>
+    <div class="two">
+      <div class="panel wide">
+        <div class="panel-head"><h3>Selling pace, sized to the crop</h3><p id="sized-p"></p></div>
+        <div class="legend" id="leg-sized"></div>
+        <div class="chart" id="ch-sized"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>How much of each crop enters the licensed system</h3><p id="market-p"></p></div>
+        <div class="chart" id="ch-market"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>What farmers deliver: the crop mix</h3><p>Percent of each completed crop year's producer deliveries, by crop group</p></div>
+        <div class="legend" id="leg-mix"></div>
+        <div class="chart" id="ch-mix" style="height:300px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="pace-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">All commodities</div>
+        <h2 id="pace-h">Pace across crops</h2>
+        <p class="sub">Each crop's deliveries this crop year against its own 5-year pattern. Pick one to open it in crop detail below.</p>
+      </div>
+      <div class="seg" role="group" aria-label="Pace view">
+        <button type="button" id="view-cards" aria-pressed="true">Charts</button>
+        <button type="button" id="view-table" aria-pressed="false">Table</button>
+      </div>
+    </div>
+    <div class="legend" id="pace-legend"></div>
+    <div class="grid" id="cards"></div>
+    <div class="table-wrap" id="pace-table" hidden></div>
+  </section>
+
+  <section aria-labelledby="heat-h">
+    <div class="section-head">
+      <div>
+        <h2 id="heat-h">Thirteen crop years at a glance</h2>
+        <p class="sub" id="heat-sub"></p>
+      </div>
+      <div class="controls" style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center">
+        <div class="seg" role="group" aria-label="Heatmap measure">
+          <button type="button" id="heat-del" aria-pressed="true">Deliveries</button>
+          <button type="button" id="heat-stk" aria-pressed="false">Ending stocks</button>
+        </div>
+        <div class="scale"><span>−50%</span><span class="scale-bar"></span><span>+50%</span></div>
+      </div>
+    </div>
+    <div class="table-wrap" style="padding:10px" id="heat"></div>
+  </section>
+
+  <section aria-labelledby="crop-h" id="crop" class="crop-picker">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">One crop at a time</div>
+        <h2 id="crop-h">Crop detail</h2>
+        <p class="sub">Pick a crop to see its delivery pace, stocks and history. All grains is the total of the 15 crops.</p>
+      </div>
+    </div>
+    <div class="picker" id="picker" role="group" aria-label="Commodity"></div>
+  </section>
+
+  <div class="summary" id="summary" aria-live="polite"></div>
+
+  <section aria-labelledby="year-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="year-eyebrow"></div>
+        <h2 id="year-h">This crop year</h2>
+      </div>
+    </div>
+    <div class="two">
+      <div class="panel wide">
+        <div class="panel-head"><h3>Cumulative deliveries</h3><p>Thousand tonnes delivered since Aug 1, against the previous five crop years</p></div>
+        <div class="legend" id="leg-cum"></div>
+        <div class="chart" id="ch-cum" style="height:300px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Weekly deliveries</h3><p>Thousand tonnes per week. Weeks 21–22 are one combined holiday report.</p></div>
+        <div class="legend" id="leg-week"></div>
+        <div class="chart" id="ch-week" style="height:220px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Commercial stocks</h3><p>Thousand tonnes at week end in country elevators, processors and port terminals</p></div>
+        <div class="legend" id="leg-stock"></div>
+        <div class="chart" id="ch-stock" style="height:220px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="hist-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Since 2013-14</div>
+        <h2 id="hist-h">Past crop years</h2>
+      </div>
+      <button type="button" class="btn" id="toggle-table" aria-expanded="false">Show data table</button>
+    </div>
+    <div class="two">
+      <div class="panel">
+        <div class="panel-head"><h3>Every crop year, week by week</h3><p>Cumulative thousand tonnes. Hover to compare all years at one week.</p></div>
+        <div class="legend" id="leg-all"></div>
+        <div class="chart" id="ch-all" style="height:330px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3 id="rank-h">Delivered by this week</h3><p id="rank-p"></p></div>
+        <div class="chart" id="ch-rank"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Commercial stocks, every crop year</h3><p>Thousand tonnes at week end, all locations. Hover to compare all years at one week.</p></div>
+        <div class="legend" id="leg-stkall"></div>
+        <div class="chart" id="ch-stkall" style="height:260px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Crop-year ending stocks</h3><p>Thousand tonnes in commercial storage on Jul 31, the last week of each completed crop year</p></div>
+        <div class="legend" id="leg-end"></div>
+        <div class="chart" id="ch-end" style="height:260px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Share delivered directly to processors</h3><p>Percent of crop-year deliveries going straight to crushers, mills and other processors</p></div>
+        <div class="chart" id="ch-proc" style="height:220px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Elevator deliveries by province</h3><p>Percent of deliveries to elevators and producer cars. CGC rarely reports a province for direct-to-processor deliveries.</p></div>
+        <div class="legend" id="leg-prov"></div>
+        <div class="chart" id="ch-prov" style="height:220px"></div>
+      </div>
+      <div class="table-wrap wide" id="hist-table" hidden></div>
+    </div>
+  </section>
+
+  <footer class="notes">
+    <h3 style="color:var(--ink)">About the data</h3>
+    <ul>
+      <li>Source: Canadian Grain Commission, <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">Grain Statistics Weekly</a>, crop years 2013-14 onward. Crop deep dives (uses, exports by port, stocks): <a href="https://claude.ai/artifact/L9q7H7aYtaMgHopbBbEtjk" target="_blank" rel="noopener">Canola</a>, <a href="https://claude.ai/artifact/7ihCwx3TgUNdg2yfSKKyG4" target="_blank" rel="noopener">Wheat</a>, <a href="https://claude.ai/artifact/GUgDjqNEfP8vHb1HrKi2uH" target="_blank" rel="noopener">Durum</a>, <a href="https://claude.ai/artifact/U6tuj2LiEW7VGqnQLQYwVa" target="_blank" rel="noopener">Barley</a>.</li>
+      <li>Producer deliveries are the sum of deliveries into licensed primary elevators, direct deliveries to processors, and producer-car shipments.</li>
+      <li>Weekly values are the week-over-week change in CGC's crop-year-to-date totals. CGC applies revisions only to those totals, so its own weekly rows add up 1–4% short. A revision can make a week negative.</li>
+      <li>Commercial stocks are week-end stocks in licensed country elevators, processors and port terminals, matching CGC's published commercial stocks total. Grain stored on farms is not included. Ending stocks are the Jul 31 figure (2013-14's last report is Jul 31 as well).</li>
+      <li>The 5-year average and range use the five crop years before this one, compared week for week.</li>
+      <li>Crop sizes are StatCan's production estimates for Manitoba, Saskatchewan, Alberta and British Columbia (table 32-10-0359), the region CGC's weekly data covers. The current year uses StatCan's latest in-season estimate, which will be revised. Wheat excludes durum.</li>
+      <li>The full-year projection scales deliveries so far by the share of the year's deliveries that usually arrive by this week (5-year average). It is a simple pace estimate, not a forecast.</li>
+      <li id="gen"></li>
+    </ul>
+  </footer>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+(async function () {
+  const ALL = "All grains";
+  const WEEKS = 52;
+  const MONTH_TICKS = [["Sep", 31], ["Nov", 92], ["Jan", 153], ["Mar", 212], ["May", 273], ["Jul", 334]];
+  const PROV = [["SK", "Saskatchewan", "--s1"], ["AB", "Alberta", "--s2"], ["MB", "Manitoba", "--s3"], ["BC", "British Columbia", "--s4"]];
+  const LOCS = [
+    { key: "country", label: "Country elevators", color: "--s3" },
+    { key: "process", label: "Processors", color: "--s1" },
+    { key: "terminal", label: "Port terminals", color: "--s2" },
+  ];
+  const NS = "http://www.w3.org/2000/svg";
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  const $ = (id) => document.getElementById(id);
+  let D;
+  try {
+    D = await (await fetch("data.json")).json();
+  } catch (e) {
+    $("lede").textContent = "The data file (data.json) could not be loaded. Run src/dashboard_data.py and republish.";
+    return;
+  }
+
+  const years = D.years;
+  const cur = D.meta.current_year;
+  const W_NOW = D.meta.latest_week;
+  const ref = years.slice(-6, -1);          // five crop years before the current one
+  const lastYr = ref[ref.length - 1];
+  const completed = years.filter((y) => y !== cur || W_NOW >= WEEKS);
+  const slug = (g) => g.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const state = { grain: ALL, view: "cards", table: false, heat: "deliveries" };
+  try {
+    const saved = JSON.parse(localStorage.getItem("pdp-state") || "{}");
+    if (D.grains.includes(saved.grain)) state.grain = saved.grain;
+    if (saved.view === "table") state.view = "table";
+  } catch (e) {}
+  const fromHash = D.grains.find((g) => slug(g) === location.hash.slice(1));
+  if (fromHash) state.grain = fromHash;
+  const save = () => { try { localStorage.setItem("pdp-state", JSON.stringify({ grain: state.grain, view: state.view })); } catch (e) {} };
+
+  // ---------- helpers ----------
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const short = (y) => y.slice(0, 5) + y.slice(7);  // 2026-2027 -> 2026-27
+  function fmtKt(v) {
+    if (v == null || !isFinite(v)) return "–";
+    const a = Math.abs(v);
+    if (a >= 1000) return (v / 1000).toFixed(a >= 10000 ? 1 : 2) + " Mt";
+    if (a >= 10) return Math.round(v).toLocaleString() + " kt";
+    return v.toFixed(1) + " kt";
+  }
+  const fmtNum = (v) => v == null ? "–" : Math.abs(v) >= 100 ? Math.round(v).toLocaleString() : v.toFixed(1);
+  const pct = (a, b) => (a == null || b == null || b < 1) ? null : a / b - 1;
+  function fmtPct(p) {
+    if (p == null) return "–";
+    const r = Math.round(p * 100);
+    return (r > 0 ? "+" : r < 0 ? "−" : "±") + Math.abs(r) + "%";
+  }
+  const ordinal = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
+  function chip(p, suffix) {
+    const el = document.createElement("span");
+    el.className = "chip";
+    if (p == null) { el.textContent = "n/a"; return el; }
+    const r = Math.round(p * 100);
+    const arr = document.createElement("span");
+    arr.className = "arr";
+    arr.textContent = r > 0 ? "▲" : r < 0 ? "▼" : "●";
+    el.append(arr, document.createTextNode(Math.abs(r) + "%" + (suffix || "")));
+    el.setAttribute("aria-label", (r >= 0 ? "up " : "down ") + Math.abs(r) + " percent" + (suffix || ""));
+    return el;
+  }
+  function weekDate(y, w) {
+    const start = +y.slice(0, 4);
+    const d = new Date(Date.UTC(start, 7, 1 + 7 * w + 1));
+    const end = new Date(Date.UTC(start + 1, 6, 31));
+    const x = d > end ? end : d;
+    return MONTHS[x.getUTCMonth()] + " " + x.getUTCDate();
+  }
+  const cum = (g, y) => D.deliveries[g]?.[y] || new Array(WEEKS).fill(null);
+  const stockLoc = (g, loc, y) => D.stocks[g]?.[loc]?.[y] || new Array(WEEKS).fill(null);
+  // total commercial stocks (all locations); null only where no location reported
+  const stocks = (g, y) => {
+    const parts = LOCS.map((l) => stockLoc(g, l.key, y));
+    return parts[0].map((_, i) => parts.every((p) => p[i] == null) ? null : parts.reduce((s, p) => s + (p[i] || 0), 0));
+  };
+  const endStocks = (g, y) => finalOf(stocks(g, y));
+  const at = (arr, w) => arr[w - 1];
+  const upTo = (arr, w) => arr.map((v, i) => i < w ? v : null);
+  const mean = (a) => { const v = a.filter((x) => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+  function stat(seriesList) {
+    const avg = [], lo = [], hi = [];
+    for (let i = 0; i < WEEKS; i++) {
+      const v = seriesList.map((s) => s[i]).filter((x) => x != null);
+      avg.push(v.length ? v.reduce((a, b) => a + b, 0) / v.length : null);
+      lo.push(v.length ? Math.min(...v) : null);
+      hi.push(v.length ? Math.max(...v) : null);
+    }
+    return { avg, lo, hi };
+  }
+  const diff = (c) => c.map((v, i) => v == null ? null : i === 0 ? v : c[i - 1] == null ? null : v - c[i - 1]);
+  const finalOf = (arr) => { for (let i = arr.length - 1; i >= 0; i--) if (arr[i] != null) return arr[i]; return null; };
+  function el(tag, attrs, parent) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function svgText(parent, attrs, text) { const t = el("text", attrs, parent); t.textContent = text; return t; }
+  function niceStep(max, n) {
+    const raw = max / n;
+    const e = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+    const f = raw / e;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e;
+  }
+  function luminance(hex) {
+    const m = hex.replace("#", "");
+    const c = [0, 2, 4].map((i) => parseInt(m.slice(i, i + 2), 16) / 255).map((v) => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  }
+
+  // ---------- tooltip ----------
+  const tip = $("tip");
+  function showTip(x, y, head, rows) {
+    tip.replaceChildren();
+    const h = document.createElement("div");
+    h.className = "tip-head";
+    h.textContent = head;
+    tip.appendChild(h);
+    for (const r of rows) {
+      const row = document.createElement("div");
+      row.className = "tip-row" + (r.em ? " em" : "");
+      const key = document.createElement("span");
+      if (r.color) {
+        key.style.cssText = r.kind === "band"
+          ? "width:14px;height:8px;border-radius:2px;background:var(--band)"
+          : r.kind === "rect"
+            ? `width:10px;height:10px;border-radius:2px;background:${r.color}`
+            : `width:14px;height:2px;border-radius:1px;background:${r.color}`;
+      }
+      const b = document.createElement("b");
+      b.textContent = r.value;
+      const l = document.createElement("span");
+      l.textContent = r.label;
+      row.append(key, b, l);
+      tip.appendChild(row);
+    }
+    tip.hidden = false;
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let left = x + 14, top = y + 14;
+    if (left + tw > innerWidth - 8) left = x - tw - 14;
+    if (top + th > innerHeight - 8) top = y - th - 14;
+    tip.style.left = Math.max(8, left) + "px";
+    tip.style.top = Math.max(8, top) + "px";
+  }
+  const hideTip = () => { tip.hidden = true; };
+  addEventListener("scroll", hideTip, { passive: true });
+
+  // ---------- week chart (lines, band, bars) ----------
+  // opts: { series:[{label,color,values,dot,width,em}], band:{lo,hi,label}, bars:{label,color,values}, compact, sortTip }
+  function weekChart(host, opts) {
+    host.replaceChildren();
+    const W = host.clientWidth, H = host.clientHeight;
+    if (!W) return;
+    const m = opts.compact ? { l: 2, r: 8, t: 6, b: 4 } : { l: 48, r: 14, t: 10, b: 24 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const vals = [];
+    for (const s of opts.series) vals.push(...s.values);
+    if (opts.band) vals.push(...opts.band.hi, ...opts.band.lo);
+    if (opts.bars) vals.push(...opts.bars.values);
+    const stackTot = opts.stack ? opts.stack[0].values.map((_, i) => opts.stack.every((s) => s.values[i] == null) ? null : opts.stack.reduce((a, s) => a + (s.values[i] || 0), 0)) : null;
+    if (stackTot) vals.push(...stackTot);
+    const clean = vals.filter((v) => v != null);
+    let max = Math.max(1, ...clean), min = Math.min(0, ...clean);
+    const step = niceStep(max - min, opts.compact ? 2 : 4);
+    max = Math.ceil(max / step) * step;
+    min = Math.floor(min / step) * step;
+    const x = (w) => m.l + ((w - 0.5) / WEEKS) * iw;
+    const y = (v) => m.t + ih - ((v - min) / (max - min)) * ih;
+
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.aria || "Weekly chart" });
+    if (!opts.compact) svg.setAttribute("tabindex", 0);
+    svg.style.display = "block";
+    svg.style.overflow = "visible";
+    host.appendChild(svg);
+
+    if (!opts.compact) {
+      for (let v = min; v <= max + 1e-9; v += step) {
+        el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: v === 0 ? css("--axis") : css("--grid"), "stroke-width": 1 }, svg);
+        svgText(svg, { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, Math.round(v).toLocaleString());
+      }
+      for (const [name, days] of MONTH_TICKS) {
+        svgText(svg, { x: x((days - 1) / 7), y: H - 6, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, name);
+      }
+    } else {
+      el("line", { x1: m.l, x2: W - m.r, y1: y(0), y2: y(0), stroke: css("--axis"), "stroke-width": 1 }, svg);
+    }
+
+    if (opts.band) {
+      const pts = [];
+      for (let i = 0; i < WEEKS; i++) if (opts.band.hi[i] != null) pts.push([i + 1, opts.band.hi[i], opts.band.lo[i]]);
+      if (pts.length) {
+        const d = "M" + pts.map((p) => `${x(p[0])},${y(p[1])}`).join("L") + "L" + pts.slice().reverse().map((p) => `${x(p[0])},${y(p[2])}`).join("L") + "Z";
+        el("path", { d, fill: css("--band"), stroke: "none" }, svg);
+      }
+    }
+
+    if (opts.bars) {
+      const bw = Math.max(1, Math.min(24, iw / WEEKS - 2));
+      const r = Math.min(4, bw / 2);
+      opts.bars.values.forEach((v, i) => {
+        if (v == null || v === 0) return;
+        const cx = x(i + 1), x0 = cx - bw / 2, y0 = y(0), y1 = y(v);
+        const rr = Math.min(r, Math.abs(y0 - y1));
+        const d = v > 0
+          ? `M${x0},${y0}V${y1 + rr}Q${x0},${y1} ${x0 + rr},${y1}H${x0 + bw - rr}Q${x0 + bw},${y1} ${x0 + bw},${y1 + rr}V${y0}Z`
+          : `M${x0},${y0}V${y1 - rr}Q${x0},${y1} ${x0 + rr},${y1}H${x0 + bw - rr}Q${x0 + bw},${y1} ${x0 + bw},${y1 - rr}V${y0}Z`;
+        el("path", { d, fill: opts.bars.color }, svg);
+      });
+    }
+
+    if (opts.stack) {
+      const bw = Math.max(1, Math.min(24, iw / WEEKS - 2));
+      for (let i = 0; i < WEEKS; i++) {
+        let acc = 0;
+        const segs = opts.stack.filter((s) => s.values[i] > 0);
+        segs.forEach((s, j) => {
+          const top = j === segs.length - 1;
+          const yb = y(acc) - (j === 0 ? 0 : 1), yt = y(acc + s.values[i]) + (top ? 0 : 1);
+          acc += s.values[i];
+          if (yb - yt <= 0) return;
+          const x0 = x(i + 1) - bw / 2;
+          el("path", { d: top ? barPath(x0, bw, yb, yt, 4) : `M${x0},${yb}V${yt}h${bw}V${yb}Z`, fill: s.color }, svg);
+        });
+      }
+    }
+
+    for (const s of opts.series) {
+      if (s.hidden) continue;
+      const pts = [];
+      s.values.forEach((v, i) => { if (v != null) pts.push([x(i + 1), y(v)]); });
+      if (!pts.length) continue;
+      el("path", { d: "M" + pts.map((p) => p.join(",")).join("L"), fill: "none", stroke: s.color, "stroke-width": s.width || 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+      if (s.dot) {
+        const p = pts[pts.length - 1];
+        el("circle", { cx: p[0], cy: p[1], r: 4, fill: s.color, stroke: css("--surface"), "stroke-width": 2 }, svg);
+      }
+    }
+
+    // hover layer
+    const cross = el("line", { y1: m.t, y2: m.t + ih, stroke: css("--axis"), "stroke-width": 1, visibility: "hidden" }, svg);
+    const hit = el("rect", { x: m.l, y: 0, width: iw, height: H, fill: "transparent" }, svg);
+    let focusW = null;
+    function show(w, cx, cy) {
+      w = Math.max(1, Math.min(WEEKS, w));
+      cross.setAttribute("x1", x(w)); cross.setAttribute("x2", x(w));
+      cross.setAttribute("visibility", "visible");
+      let rows = [];
+      if (opts.stack) {
+        rows.push({ value: fmtNum(stackTot[w - 1]), label: `Total ${short(cur)}`, em: true });
+        for (const s of opts.stack.slice().reverse()) rows.push({ value: fmtNum(s.values[w - 1]), label: s.label, color: s.color, kind: "rect" });
+      }
+      if (opts.bars) rows.push({ value: fmtNum(opts.bars.values[w - 1]), label: opts.bars.label, color: opts.bars.color, kind: "rect" });
+      for (const s of opts.series) {
+        const v = s.values[w - 1];
+        if (opts.sortTip && v == null) continue;
+        rows.push({ value: fmtNum(v), raw: v, label: s.label, color: s.hidden ? null : (s.tipColor || s.color), em: s.em });
+      }
+      if (opts.sortTip) rows.sort((a, b) => (b.raw ?? -Infinity) - (a.raw ?? -Infinity));
+      if (opts.band) rows.push({ value: `${fmtNum(opts.band.lo[w - 1])}–${fmtNum(opts.band.hi[w - 1])}`, label: opts.band.label, color: "band", kind: "band" });
+      showTip(cx, cy, `Week ${w} · ends ~${weekDate(cur, w)} · kt`, rows);
+    }
+    const hide = () => { cross.setAttribute("visibility", "hidden"); hideTip(); };
+    hit.addEventListener("pointermove", (e) => {
+      const r = svg.getBoundingClientRect();
+      show(Math.round(((e.clientX - r.left - m.l) / iw) * WEEKS + 0.5), e.clientX, e.clientY);
+    });
+    hit.addEventListener("pointerleave", hide);
+    svg.addEventListener("blur", hide);
+    svg.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      focusW = Math.max(1, Math.min(WEEKS, (focusW || W_NOW) + (e.key === "ArrowRight" ? 1 : -1)));
+      const r = svg.getBoundingClientRect();
+      show(focusW, r.left + x(focusW), r.top + m.t + 10);
+    });
+  }
+
+  // rounded-top bar path growing up from yb to yt
+  function barPath(x0, bw, yb, yt, r) {
+    const rr = Math.max(0, Math.min(r, yb - yt, bw / 2));
+    return `M${x0},${yb}V${yt + rr}Q${x0},${yt} ${x0 + rr},${yt}H${x0 + bw - rr}Q${x0 + bw},${yt} ${x0 + bw},${yt + rr}V${yb}Z`;
+  }
+
+  // ---------- stacked kt columns by crop year ----------
+  // opts: years, keys [{key,label,color}], getVals(yr) -> {key: kt}
+  function yearStack(host, opts) {
+    host.replaceChildren();
+    const W = host.clientWidth, H = host.clientHeight;
+    if (!W) return;
+    const ys = opts.years;
+    const m = { l: 48, r: 8, t: 12, b: 24 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const valsBy = ys.map((yr) => opts.getVals(yr));
+    const totals = valsBy.map((v) => opts.keys.reduce((s, k) => s + (v[k.key] || 0), 0));
+    let max = Math.max(1, ...totals);
+    const step = niceStep(max, 4);
+    max = Math.ceil(max / step) * step;
+    const y = (v) => m.t + ih - (v / max) * ih;
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.aria });
+    svg.style.display = "block";
+    host.appendChild(svg);
+    for (let v = 0; v <= max + 1e-9; v += step) {
+      el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: v === 0 ? css("--axis") : css("--grid") }, svg);
+      svgText(svg, { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, Math.round(v).toLocaleString());
+    }
+    const band = iw / ys.length, bw = Math.max(6, Math.min(24, band - 4));
+    const labelEvery = band < 34 ? 2 : 1;
+    const maxI = totals.indexOf(Math.max(...totals));
+    ys.forEach((yr, i) => {
+      const cx = m.l + band * (i + 0.5), x0 = cx - bw / 2, vals = valsBy[i];
+      if ((ys.length - 1 - i) % labelEvery === 0) svgText(svg, { x: cx, y: H - 6, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, "'" + yr.slice(2, 4));
+      const segs = opts.keys.filter((k) => vals[k.key] > 0);
+      let acc = 0;
+      segs.forEach((k, j) => {
+        const v = vals[k.key], top = j === segs.length - 1;
+        const yb = y(acc) - (j === 0 ? 0 : 1), yt = y(acc + v) + (top ? 0 : 1);
+        acc += v;
+        if (yb - yt <= 0) return;
+        el("path", { d: top ? barPath(x0, bw, yb, yt, 4) : `M${x0},${yb}V${yt}h${bw}V${yb}Z`, fill: css(k.color) }, svg);
+      });
+      // label the latest year and the highest year
+      if (i === ys.length - 1 || i === maxI) svgText(svg, { x: cx, y: y(totals[i]) - 5, "text-anchor": "middle", "font-size": 10, "font-weight": 600, fill: css("--ink") }, fmtKt(totals[i]).replace(" ", " "));
+      const hit = el("rect", { x: cx - band / 2, y: m.t, width: band, height: ih, fill: "transparent", tabindex: 0, "aria-label": `${short(yr)}: ${fmtKt(totals[i])}` }, svg);
+      const rows = [
+        { value: fmtKt(totals[i]), label: "Total", em: true },
+        ...opts.keys.slice().reverse().map((k) => ({ value: fmtKt(vals[k.key]), label: k.label, color: css(k.color), kind: "rect" })),
+      ];
+      hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, short(yr), rows));
+      hit.addEventListener("pointerleave", hideTip);
+      hit.addEventListener("focus", () => { const r = hit.getBoundingClientRect(); showTip(r.right, r.top + 20, short(yr), rows); });
+      hit.addEventListener("blur", hideTip);
+    });
+  }
+
+  // ---------- percent columns by crop year ----------
+  function yearColumns(host, opts) {
+    host.replaceChildren();
+    const W = host.clientWidth, H = host.clientHeight;
+    if (!W) return;
+    const m = { l: 36, r: 6, t: 16, b: 24 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const ys = opts.years || years;
+    const band = iw / ys.length;
+    const bw = Math.max(6, Math.min(24, band - 4));
+    const y = (v) => m.t + ih - (v / 100) * ih;
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.aria });
+    svg.style.display = "block";
+    host.appendChild(svg);
+    for (let v = 0; v <= 100; v += 25) {
+      el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: v === 0 ? css("--axis") : css("--grid") }, svg);
+      svgText(svg, { x: m.l - 6, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, v + "%");
+    }
+    const labelEvery = band < 34 ? 2 : 1;
+    ys.forEach((yr, i) => {
+      const cx = m.l + band * (i + 0.5), x0 = cx - bw / 2;
+      if ((ys.length - 1 - i) % labelEvery === 0) {
+        svgText(svg, { x: cx, y: H - 6, "text-anchor": "middle", "font-size": 11, fill: yr === cur ? css("--ink") : css("--muted"), "font-weight": yr === cur ? 600 : 400 }, "'" + yr.slice(2, 4));
+      }
+      const vals = opts.getVals(yr);
+      if (!vals) return;
+      let acc = 0;
+      const segs = opts.keys.filter((k) => vals[k.key] > 0.05);
+      segs.forEach((k, j) => {
+        const v = vals[k.key];
+        const top = j === segs.length - 1;
+        const yb = y(acc) - (j === 0 ? 0 : 1);
+        const hgt = Math.max(0, y(acc) - y(acc + v) - (j === 0 ? 0 : 1) - (top ? 0 : 1));
+        acc += v;
+        if (hgt <= 0) return;
+        const rr = top ? Math.min(4, hgt, bw / 2) : 0;
+        const yt = yb - hgt;
+        const d = `M${x0},${yb}V${yt + rr}Q${x0},${yt} ${x0 + rr},${yt}H${x0 + bw - rr}Q${x0 + bw},${yt} ${x0 + bw},${yt + rr}V${yb}Z`;
+        const color = css(k.color);
+        const p = el("path", { d, fill: color, tabindex: 0, "aria-label": `${short(yr)} ${k.label} ${v.toFixed(1)}%` }, svg);
+        const rows = () => opts.keys.filter((kk) => vals[kk.key] != null).map((kk) => ({ value: vals[kk.key].toFixed(1) + "%", label: kk.label + (opts.kt ? ` · ${fmtKt(opts.kt(yr, kk.key))}` : ""), color: css(kk.color), kind: "rect" }));
+        const head = short(yr) + (yr === cur && W_NOW < WEEKS ? ` (to week ${W_NOW})` : "");
+        p.addEventListener("pointermove", (e) => { p.setAttribute("opacity", 0.8); showTip(e.clientX, e.clientY, head, rows()); });
+        p.addEventListener("pointerleave", () => { p.setAttribute("opacity", 1); hideTip(); });
+        p.addEventListener("focus", () => { const r = p.getBoundingClientRect(); showTip(r.right, r.top, head, rows()); });
+        p.addEventListener("blur", hideTip);
+        if (opts.inlineLabels && hgt >= 16 && bw >= 22) {
+          svgText(svg, { x: cx, y: yt + hgt / 2 + 4, "text-anchor": "middle", "font-size": 10, "font-weight": 500, fill: luminance(color) > 0.35 ? "#101311" : "#ffffff", "pointer-events": "none" }, Math.round(v));
+        }
+        if (opts.capLabel && top && yr === cur) {
+          svgText(svg, { x: cx, y: yt - 5, "text-anchor": "middle", "font-size": 11, "font-weight": 600, fill: css("--ink") }, Math.round(v) + "%");
+        }
+      });
+    });
+  }
+
+  // ---------- same-week ranking (horizontal bars, newest first) ----------
+  function rankBars(host, g) {
+    host.replaceChildren();
+    const W = host.clientWidth;
+    if (!W) return;
+    const rows = years.slice().reverse().map((yr) => {
+      const c = cum(g, yr);
+      const v = at(c, W_NOW), full = yr === cur ? null : finalOf(c);
+      return { yr, v, full, share: full ? v / full : null };
+    }).filter((r) => r.v != null);
+    const rowH = 22, m = { l: 58, r: 64, t: 4, b: 4 };
+    const H = m.t + m.b + rows.length * rowH;
+    host.style.height = H + "px";
+    const iw = W - m.l - m.r;
+    const max = Math.max(1, ...rows.map((r) => r.v));
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${g}: deliveries by week ${W_NOW} in each crop year` });
+    svg.style.display = "block";
+    host.appendChild(svg);
+    const ranked = rows.slice().sort((a, b) => b.v - a.v);
+    el("line", { x1: m.l, x2: m.l, y1: m.t, y2: H - m.b, stroke: css("--axis") }, svg);
+    rows.forEach((r, i) => {
+      const yc = m.t + i * rowH + rowH / 2;
+      const isCur = r.yr === cur;
+      svgText(svg, { x: m.l - 8, y: yc + 4, "text-anchor": "end", "font-size": 12, fill: isCur ? css("--ink") : css("--ink-2"), "font-weight": isCur ? 600 : 400 }, short(r.yr));
+      const len = Math.max(0, (r.v / max) * iw);
+      const bh = 14, rr = Math.min(4, len / 2);
+      const x0 = m.l, x1 = m.l + len, y0 = yc - bh / 2;
+      const color = isCur ? css("--s1") : r.yr === lastYr ? css("--s2") : css("--other");
+      if (len > 0) {
+        const d = `M${x0},${y0}H${x1 - rr}Q${x1},${y0} ${x1},${y0 + rr}V${y0 + bh - rr}Q${x1},${y0 + bh} ${x1 - rr},${y0 + bh}H${x0}Z`;
+        el("path", { d, fill: color }, svg);
+      }
+      svgText(svg, { x: x1 + 6, y: yc + 4, "font-size": 11, fill: isCur ? css("--ink") : css("--muted"), "font-weight": isCur ? 600 : 400 }, fmtKt(r.v));
+      const hit = el("rect", { x: 0, y: yc - rowH / 2, width: W, height: rowH, fill: "transparent", tabindex: 0, "aria-label": `${short(r.yr)}: ${fmtKt(r.v)} by week ${W_NOW}` }, svg);
+      const rank = ranked.indexOf(r) + 1;
+      const tipRows = [
+        { value: fmtKt(r.v), label: `by week ${W_NOW} (${ordinal(rank)} of ${rows.length})`, color, kind: "rect" },
+        ...(r.full ? [{ value: fmtKt(r.full), label: "full crop year" }, { value: Math.round(r.share * 100) + "%", label: `of the year delivered by week ${W_NOW}` }] : []),
+      ];
+      hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, short(r.yr), tipRows));
+      hit.addEventListener("pointerleave", hideTip);
+      hit.addEventListener("focus", () => { const b = hit.getBoundingClientRect(); showTip(b.left + m.l + len, b.bottom, short(r.yr), tipRows); });
+      hit.addEventListener("blur", hideTip);
+    });
+    return ranked.findIndex((r) => r.yr === cur) + 1;
+  }
+
+  // ---------- commodity picker ----------
+  const picker = $("picker");
+  for (const g of D.grains) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "pick";
+    b.dataset.grain = g;
+    b.textContent = g;
+    b.addEventListener("click", () => pickGrain(g, false));
+    picker.appendChild(b);
+  }
+  function pickGrain(g, scroll) {
+    state.grain = g;
+    save();
+    try { history.replaceState(null, "", "#" + slug(g)); } catch (e) {}
+    renderGrain();
+    if (scroll) $("crop").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }
+  function setView(v) {
+    state.view = v;
+    $("view-cards").setAttribute("aria-pressed", v === "cards");
+    $("view-table").setAttribute("aria-pressed", v === "table");
+    $("cards").hidden = v !== "cards";
+    $("pace-legend").hidden = v !== "cards";
+    $("pace-table").hidden = v !== "table";
+    save();
+  }
+  $("view-cards").addEventListener("click", () => { setView("cards"); renderCards(); });
+  $("view-table").addEventListener("click", () => setView("table"));
+  $("toggle-table").addEventListener("click", () => {
+    state.table = !state.table;
+    $("hist-table").hidden = !state.table;
+    $("toggle-table").setAttribute("aria-expanded", state.table);
+    $("toggle-table").textContent = state.table ? "Hide data table" : "Show data table";
+  });
+
+  function legend(host, items) {
+    host.replaceChildren();
+    for (const it of items) {
+      const s = document.createElement("span");
+      const k = document.createElement("span");
+      k.className = it.kind === "band" ? "key-band" : it.kind === "rect" ? "key-rect" : "key-line";
+      if (it.kind !== "band") k.style.background = `var(${it.color})`;
+      s.append(k, document.createTextNode(it.label));
+      host.appendChild(s);
+    }
+  }
+
+  // ---------- calculations ----------
+  function pace(g) {
+    const now = at(cum(g, cur), W_NOW);
+    const avg = mean(ref.map((r) => at(cum(g, r), W_NOW)));
+    const last = at(cum(g, lastYr), W_NOW);
+    const st = at(stocks(g, cur), W_NOW);
+    const stAvg = mean(ref.map((r) => at(stocks(g, r), W_NOW)));
+    const shares = ref.map((r) => { const f = finalOf(cum(g, r)); const v = at(cum(g, r), W_NOW); return f > 0 && v != null ? v / f : null; });
+    const share = mean(shares);
+    const projected = share > 0.02 && now != null ? now / share : null;
+    const lastFull = finalOf(cum(g, lastYr));
+    const avgFull = mean(ref.map((r) => finalOf(cum(g, r))));
+    return { g, now, avg, last, vsAvg: pct(now, avg), vsLast: pct(now, last), st, stAvg, stVsAvg: pct(st, stAvg), share, projected, lastFull, avgFull };
+  }
+  function channelShare(g, y) {
+    const c = D.channel[g]?.[y];
+    if (!c) return null;
+    const tot = (c.primary || 0) + (c.process || 0) + (c.producer_cars || 0);
+    return tot > 0 ? 100 * (c.process || 0) / tot : null;
+  }
+  function provShare(g, y) {
+    const p = D.province[g]?.[y];
+    if (!p) return null;
+    const tot = PROV.reduce((a, [k]) => a + (p[k] || 0), 0) + (p.Other || 0);
+    if (tot <= 0) return null;
+    const out = {};
+    for (const [k] of PROV) out[k] = 100 * (p[k] || 0) / tot;
+    return out;
+  }
+
+  // ---------- render: header + summary ----------
+  function renderSummary(g, rank) {
+    const p = pace(g);
+    const host = $("summary");
+    host.replaceChildren();
+    const tile = (label) => {
+      const t = document.createElement("div");
+      t.className = "tile";
+      const l = document.createElement("div");
+      l.className = "label";
+      l.textContent = label;
+      t.appendChild(l);
+      host.appendChild(t);
+      return t;
+    };
+    const line = (parent, ...parts) => {
+      const d = document.createElement("div");
+      d.className = "deltas";
+      for (const [c, text] of parts) { const s = document.createElement("span"); s.append(c, document.createTextNode(text)); d.appendChild(s); }
+      parent.appendChild(d);
+    };
+    const note = (parent, text) => { const n = document.createElement("div"); n.className = "note"; n.textContent = text; parent.appendChild(n); };
+    const big = (parent, text, cls) => { const v = document.createElement("div"); v.className = cls || "tile-value"; v.textContent = text; parent.appendChild(v); return v; };
+
+    const hero = tile(`${g === ALL ? "All crops" : g} delivered so far in ${short(cur)}`);
+    const hv = document.createElement("div");
+    hv.className = "hero-value";
+    if (p.now >= 1000) {
+      hv.textContent = (p.now / 1000).toFixed(2);
+      const u = document.createElement("small"); u.textContent = "million t"; hv.appendChild(u);
+    } else {
+      hv.textContent = p.now >= 10 ? Math.round(p.now).toLocaleString() : p.now.toFixed(1);
+      const u = document.createElement("small"); u.textContent = "thousand t"; hv.appendChild(u);
+    }
+    hero.appendChild(hv);
+    line(hero, [chip(p.vsAvg), " vs 5-yr average"], [chip(p.vsLast), ` vs ${short(lastYr)}`]);
+
+    const rk = tile(`Pace rank at week ${W_NOW}`);
+    big(rk, `${ordinal(rank)} of ${years.length}`);
+    note(rk, rank === 1 ? `Fastest start of any crop year since ${short(years[0])}` : rank === years.length ? `Slowest start of any crop year since ${short(years[0])}` : `Crop years since ${short(years[0])}, ranked by deliveries at this week`);
+
+    const pj = tile("Full-year pace projection");
+    big(pj, fmtKt(p.projected));
+    line(pj, [chip(pct(p.projected, p.lastFull)), ` vs ${short(lastYr)} (${fmtKt(p.lastFull)})`]);
+    note(pj, p.share != null ? `About ${Math.round(p.share * 100)}% of the year's deliveries usually arrive by week ${W_NOW}` : "Not enough history");
+
+    const st = tile(`Commercial stocks, week ${W_NOW}`);
+    big(st, fmtKt(p.st));
+    line(st, [chip(p.stVsAvg), " vs 5-yr average"]);
+    note(st, LOCS.map((l) => `${l.label} ${fmtKt(at(stockLoc(g, l.key, cur), W_NOW))}`).join(" · "));
+    note(st, `${short(lastYr)} ended with ${fmtKt(endStocks(g, lastYr))} on Jul 31`);
+  }
+
+  // ---------- render: selected commodity ----------
+  function renderGrain() {
+    const g = state.grain;
+    for (const b of picker.children) b.setAttribute("aria-pressed", b.dataset.grain === g);
+    for (const c of document.querySelectorAll(".card")) c.setAttribute("aria-current", c.dataset.grain === g);
+    for (const tr of document.querySelectorAll(".heat tbody tr")) tr.classList.toggle("current", tr.dataset.grain === g);
+    $("year-eyebrow").textContent = `${g} · ${short(cur)}`;
+    $("hist-h").textContent = `${g}: past crop years`;
+    $("year-h").textContent = `${g}: this crop year`;
+
+    const cy = upTo(cum(g, cur), W_NOW);
+    const st = stat(ref.map((r) => cum(g, r)));
+    const cur5 = { label: short(cur), color: "--s1" }, last5 = { label: short(lastYr), color: "--s2" };
+
+    legend($("leg-cum"), [cur5, last5, { label: "5-yr average", color: "--avg" }, { label: "5-yr range", kind: "band" }]);
+    weekChart($("ch-cum"), {
+      aria: `${g} cumulative deliveries this crop year vs previous five`,
+      band: { lo: st.lo, hi: st.hi, label: "5-yr range" },
+      series: [
+        { label: "5-yr average", color: css("--avg"), values: st.avg, width: 1.5 },
+        { label: short(lastYr), color: css("--s2"), values: cum(g, lastYr) },
+        { label: short(cur), color: css("--s1"), values: cy, dot: true },
+      ],
+    });
+
+    legend($("leg-week"), [{ ...cur5, kind: "rect" }, { label: "5-yr average", color: "--avg" }]);
+    weekChart($("ch-week"), {
+      aria: `${g} weekly deliveries`,
+      bars: { label: short(cur), color: css("--s1"), values: diff(cy) },
+      series: [{ label: "5-yr average", color: css("--avg"), values: diff(st.avg), width: 1.5 }],
+    });
+
+    const sst = stat(ref.map((r) => stocks(g, r)));
+    legend($("leg-stock"), [...LOCS.map((l) => ({ label: l.label, color: l.color, kind: "rect" })), { label: "5-yr range, total", kind: "band" }]);
+    weekChart($("ch-stock"), {
+      aria: `${g} commercial stocks by location this crop year`,
+      band: { lo: sst.lo, hi: sst.hi, label: "5-yr range" },
+      stack: LOCS.map((l) => ({ label: l.label, color: css(l.color), values: upTo(stockLoc(g, l.key, cur), W_NOW) })),
+      series: [
+        { label: "5-yr average", values: sst.avg, hidden: true },
+        { label: `${short(lastYr)} total`, values: stocks(g, lastYr), hidden: true },
+      ],
+    });
+
+    // past crop years
+    legend($("leg-all"), [cur5, last5, { label: "Earlier years", color: "--other" }]);
+    const others = years.filter((yr) => yr !== cur && yr !== lastYr);
+    weekChart($("ch-all"), {
+      aria: `${g} cumulative deliveries in every crop year since ${short(years[0])}`,
+      sortTip: true,
+      series: [
+        ...others.map((yr) => ({ label: short(yr), color: css("--other"), tipColor: css("--muted"), values: cum(g, yr), width: 1.25 })),
+        { label: short(lastYr), color: css("--s2"), values: cum(g, lastYr) },
+        { label: short(cur), color: css("--s1"), values: cy, dot: true, em: true },
+      ],
+    });
+
+    legend($("leg-stkall"), [cur5, last5, { label: "Earlier years", color: "--other" }]);
+    weekChart($("ch-stkall"), {
+      aria: `${g} commercial stocks in every crop year since ${short(years[0])}`,
+      sortTip: true,
+      series: [
+        ...others.map((yr) => ({ label: short(yr), color: css("--other"), tipColor: css("--muted"), values: stocks(g, yr), width: 1.25 })),
+        { label: short(lastYr), color: css("--s2"), values: stocks(g, lastYr) },
+        { label: short(cur), color: css("--s1"), values: upTo(stocks(g, cur), W_NOW), dot: true, em: true },
+      ],
+    });
+    legend($("leg-end"), LOCS.map((l) => ({ label: l.label, color: l.color, kind: "rect" })));
+    yearStack($("ch-end"), {
+      years: completed, aria: `${g} commercial stocks at the end of each crop year`,
+      keys: LOCS,
+      getVals: (yr) => Object.fromEntries(LOCS.map((l) => [l.key, finalOf(stockLoc(g, l.key, yr))])),
+    });
+
+    $("rank-h").textContent = `Delivered by week ${W_NOW} in each crop year`;
+    $("rank-p").textContent = `The same point in the year, ~${weekDate(cur, W_NOW)}. Hover for the full-year total.`;
+    const rank = rankBars($("ch-rank"), g);
+
+    yearColumns($("ch-proc"), {
+      aria: `${g} share delivered directly to processors by crop year`,
+      keys: [{ key: "process", label: "Direct to processors", color: "--s1" }],
+      getVals: (yr) => { const c = channelShare(g, yr); return c == null ? null : { process: c }; },
+      kt: (yr) => D.channel[g]?.[yr]?.process,
+      capLabel: true,
+    });
+    legend($("leg-prov"), PROV.map(([, label, color]) => ({ label, color, kind: "rect" })));
+    yearColumns($("ch-prov"), {
+      aria: `${g} elevator deliveries by province and crop year`,
+      keys: PROV.map(([key, label, color]) => ({ key, label, color })),
+      getVals: (yr) => provShare(g, yr),
+      kt: (yr, k) => D.province[g]?.[yr]?.[k],
+      inlineLabels: true,
+    });
+
+    // history data table
+    const table = document.createElement("table");
+    const head = table.createTHead().insertRow();
+    for (const c of ["Crop year", `By week ${W_NOW}`, "Full year", `Share by week ${W_NOW}`, "Direct to processors", ...PROV.map((p) => p[0] + " share"), `Stocks, wk ${W_NOW}`, "Ending stocks"]) {
+      const th = document.createElement("th"); th.textContent = c; th.scope = "col"; head.appendChild(th);
+    }
+    const body = table.createTBody();
+    for (const yr of years.slice().reverse()) {
+      const tr = body.insertRow();
+      if (yr === cur) tr.className = "current";
+      const c = cum(g, yr), v = at(c, W_NOW), full = yr === cur ? null : finalOf(c);
+      const ch = channelShare(g, yr), pv = provShare(g, yr);
+      const cells = [
+        short(yr) + (yr === cur ? " (to date)" : ""),
+        fmtKt(v), fmtKt(full), full ? Math.round(100 * v / full) + "%" : "–",
+        ch != null ? ch.toFixed(1) + "%" : "–",
+        ...PROV.map(([k]) => pv ? pv[k].toFixed(1) + "%" : "–"),
+        fmtKt(at(stocks(g, yr), W_NOW)),
+        completed.includes(yr) ? fmtKt(endStocks(g, yr)) : "–",
+      ];
+      cells.forEach((t) => { const td = tr.insertCell(); td.textContent = t; });
+    }
+    $("hist-table").replaceChildren(table);
+
+    renderSummary(g, rank);
+  }
+
+  // ---------- render: all commodities ----------
+  function renderCards() {
+    legend($("pace-legend"), [
+      { label: short(cur), color: "--s1" }, { label: short(lastYr), color: "--s2" },
+      { label: "5-yr average", color: "--avg" }, { label: "5-yr range", kind: "band" },
+    ]);
+    const host = $("cards");
+    host.replaceChildren();
+    for (const g of D.grains.filter((x) => x !== ALL)) {
+      const p = pace(g);
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "card";
+      card.dataset.grain = g;
+      card.setAttribute("aria-current", g === state.grain);
+      const top = document.createElement("div");
+      top.className = "card-top";
+      const left = document.createElement("div");
+      const name = document.createElement("div");
+      name.className = "card-name";
+      name.textContent = g;
+      const val = document.createElement("div");
+      val.className = "card-val num";
+      val.textContent = fmtKt(p.now) + " to date";
+      left.append(name, val);
+      top.append(left, chip(p.vsAvg, " vs avg"));
+      const mini = document.createElement("div");
+      mini.className = "mini";
+      card.append(top, mini);
+      card.addEventListener("click", () => pickGrain(g, true));
+      host.appendChild(card);
+      const st = stat(ref.map((r) => cum(g, r)));
+      weekChart(mini, {
+        compact: true, aria: `${g} cumulative deliveries`,
+        band: { lo: st.lo, hi: st.hi, label: "5-yr range" },
+        series: [
+          { label: "5-yr average", color: css("--avg"), values: st.avg, width: 1.5 },
+          { label: short(lastYr), color: css("--s2"), values: cum(g, lastYr), width: 1.5 },
+          { label: short(cur), color: css("--s1"), values: upTo(cum(g, cur), W_NOW), dot: true },
+        ],
+      });
+    }
+  }
+  function renderPaceTable() {
+    const table = document.createElement("table");
+    const head = table.createTHead().insertRow();
+    for (const c of ["Crop", `To week ${W_NOW}`, short(lastYr), "5-yr avg", "vs avg", `vs ${short(lastYr)}`, "Full-year pace", "Commercial stocks", "Stocks vs avg", `${short(lastYr)} ending stocks`]) {
+      const th = document.createElement("th"); th.textContent = c; th.scope = "col"; head.appendChild(th);
+    }
+    const body = table.createTBody();
+    for (const g of D.grains) {
+      const p = pace(g);
+      const tr = body.insertRow();
+      tr.className = "clickable";
+      tr.tabIndex = 0;
+      tr.addEventListener("click", () => pickGrain(g, true));
+      tr.addEventListener("keydown", (e) => { if (e.key === "Enter") pickGrain(g, true); });
+      [g, fmtKt(p.now), fmtKt(p.last), fmtKt(p.avg), fmtPct(p.vsAvg), fmtPct(p.vsLast), fmtKt(p.projected), fmtKt(p.st), fmtPct(p.stVsAvg), fmtKt(endStocks(g, lastYr))]
+        .forEach((c, i) => { const td = tr.insertCell(); td.textContent = c; if (i === 0 && g === ALL) td.style.fontWeight = 600; });
+    }
+    $("pace-table").replaceChildren(table);
+  }
+  function renderHeat() {
+    const table = document.createElement("table");
+    table.className = "heat";
+    const head = table.createTHead().insertRow();
+    const corner = document.createElement("th");
+    corner.scope = "col"; corner.textContent = "Crop"; corner.style.textAlign = "left";
+    head.appendChild(corner);
+    for (const yr of completed) { const th = document.createElement("th"); th.scope = "col"; th.textContent = short(yr); head.appendChild(th); }
+    const avgTh = document.createElement("th"); avgTh.scope = "col"; avgTh.textContent = "Average"; head.appendChild(avgTh);
+    const body = table.createTBody();
+    const isStk = state.heat === "stocks";
+    $("heat-del").setAttribute("aria-pressed", !isStk);
+    $("heat-stk").setAttribute("aria-pressed", isStk);
+    $("heat-sub").textContent = isStk
+      ? "Commercial stocks on Jul 31 at the end of each crop year, compared with that crop's average ending stocks. Pick a row to switch to that crop."
+      : "Full crop-year deliveries of each crop, compared with that crop's average over completed years. Pick a row to switch to that crop.";
+    const measure = isStk ? "ending stocks" : "delivered";
+    for (const g of D.grains) {
+      const vals = completed.map((yr) => isStk ? endStocks(g, yr) : finalOf(cum(g, yr)));
+      const avg = mean(vals);
+      const tr = body.insertRow();
+      tr.dataset.grain = g;
+      const th = document.createElement("th");
+      th.scope = "row"; th.textContent = g; th.tabIndex = 0;
+      th.addEventListener("click", () => pickGrain(g, true));
+      th.addEventListener("keydown", (e) => { if (e.key === "Enter") pickGrain(g, true); });
+      tr.appendChild(th);
+      completed.forEach((yr, i) => {
+        const v = vals[i], p = pct(v, avg);
+        const td = tr.insertCell();
+        if (p == null) { td.textContent = "–"; return; }
+        const t = Math.min(1, Math.abs(p) / 0.5);
+        td.style.background = `color-mix(in oklab, var(${p >= 0 ? "--div-pos" : "--div-neg"}) ${Math.round(t * 100)}%, var(--div-mid))`;
+        td.style.color = t > 0.55 ? "#ffffff" : "var(--ink)";
+        td.textContent = fmtPct(p);
+        td.tabIndex = 0;
+        const rows = [{ value: fmtKt(v), label: measure }, { value: fmtPct(p), label: `vs average of ${fmtKt(avg)}` }];
+        const head = `${g} · ${short(yr)}`;
+        td.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, head, rows));
+        td.addEventListener("pointerleave", hideTip);
+        td.addEventListener("focus", () => { const r = td.getBoundingClientRect(); showTip(r.right, r.bottom, head, rows); });
+        td.addEventListener("blur", hideTip);
+        td.addEventListener("click", () => pickGrain(g, true));
+      });
+      const avgTd = tr.insertCell();
+      avgTd.textContent = fmtKt(avg);
+      avgTd.style.cssText = "width:auto;padding:0 8px;text-align:right;color:var(--ink-2);background:none;cursor:default";
+    }
+    $("heat").replaceChildren(table);
+    for (const tr of table.tBodies[0].rows) tr.classList.toggle("current", tr.dataset.grain === state.grain);
+  }
+  $("heat-del").addEventListener("click", () => { state.heat = "deliveries"; renderHeat(); });
+  $("heat-stk").addEventListener("click", () => { state.heat = "stocks"; renderHeat(); });
+
+  // ---------- all-crop insights ----------
+  const CROPS = D.grains.filter((g) => g !== ALL);
+  const prodOf = (g, y) => D.production?.[g]?.[y.slice(0, 4)] ?? null;   // kt, harvest year = crop year start
+  const harvest = cur.slice(0, 4);
+  const sumOf = (a) => a.reduce((s, x) => s + x, 0);
+
+  // share of each crop delivered by this week, against the same share in the previous five crop years
+  function sizedRows() {
+    const rows = [];
+    for (const g of CROPS) {
+      const p = prodOf(g, cur), now = at(cum(g, cur), W_NOW);
+      const prior = ref.filter((r) => prodOf(g, r) > 0 && at(cum(g, r), W_NOW) != null);
+      if (!(p > 0) || now == null || prior.length < 3) continue;
+      const shares = prior.map((r) => at(cum(g, r), W_NOW) / prodOf(g, r));
+      const share = now / p, normal = mean(shares);
+      rows.push({
+        g, share, normal, lo: Math.min(...shares), hi: Math.max(...shares), sized: share / normal - 1,
+        raw: pct(now, mean(prior.map((r) => at(cum(g, r), W_NOW)))), size: pct(p, mean(prior.map((r) => prodOf(g, r)))),
+        now, prod: p,
+      });
+    }
+    return rows.sort((a, b) => b.sized - a.sized);
+  }
+  function totals(yrs) {
+    const gs = CROPS.filter((g) => yrs.every((y) => prodOf(g, y) > 0));
+    return (y, w) => ({ del: sumOf(gs.map((g) => at(cum(g, y), w) || 0)), prod: sumOf(gs.map((g) => prodOf(g, y))) });
+  }
+  // full-year deliveries as a share of production, average of the five completed years
+  function marketRows() {
+    return CROPS.map((g) => {
+      const yrs = ref.filter((r) => prodOf(g, r) > 0);
+      return { g, rate: mean(yrs.map((r) => finalOf(cum(g, r)) / prodOf(g, r))), prod: mean(yrs.map((r) => prodOf(g, r))) };
+    }).filter((r) => r.rate != null).sort((a, b) => b.rate - a.rate);
+  }
+  const pctTxt = (v, d = 0) => (100 * v).toFixed(d) + "%";
+  const listJoin = (a) => a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
+
+  function renderInsights() {
+    const rows = sizedRows(), mkt = marketRows();
+    const T = totals([cur, ...ref]);
+    const nowT = T(cur, W_NOW), normShare = mean(ref.map((r) => { const t = T(r, W_NOW); return t.del / t.prod; }));
+    const allShare = nowT.del / nowT.prod, allSized = allShare / normShare - 1;
+    const allRaw = pct(nowT.del, mean(ref.map((r) => T(r, W_NOW).del))), allSize = pct(nowT.prod, mean(ref.map((r) => T(r, W_NOW).prod)));
+    $("ins-eyebrow").textContent = `All crops · ${short(cur)} · week ${W_NOW}`;
+
+    const host = $("insights");
+    host.replaceChildren();
+    const card = (kicker, title) => {
+      const c = document.createElement("div");
+      c.className = "insight";
+      const k = document.createElement("div"); k.className = "kicker"; k.textContent = kicker;
+      const h = document.createElement("h3"); h.textContent = title;
+      c.append(k, h);
+      host.appendChild(c);
+      return c;
+    };
+    const para = (c, text) => { const p = document.createElement("p"); p.textContent = text; c.appendChild(p); };
+    const big = (c, value, unit) => { const b = document.createElement("div"); b.className = "big"; b.textContent = value; if (unit) { const u = document.createElement("small"); u.textContent = unit; b.appendChild(u); } c.appendChild(b); };
+    const list = (c, items) => {
+      const r = document.createElement("div"); r.className = "rows";
+      for (const it of items) { const sp = document.createElement("span"); const n = document.createElement("span"); n.textContent = it.label; sp.append(n, chip(it.value, it.suffix)); r.appendChild(sp); }
+      c.appendChild(r);
+    };
+
+    // 1. overall pace against crop size
+    const verdict = allSized < -0.03 ? "Farmers are holding back" : allSized > 0.03 ? "Farmers are selling faster than usual" : "Farmers are selling at a normal pace";
+    const c1 = card("Overall, sized to the crop", verdict);
+    big(c1, pctTxt(allShare, 1), `of the ${harvest} crops delivered`);
+    para(c1, `Normally ${pctTxt(normShare, 1)} is delivered by week ${W_NOW}. Deliveries are ${fmtPct(allRaw)} against the 5-year average, but western crops are ${fmtPct(allSize)} ${allSize >= 0 ? "bigger" : "smaller"}.`);
+
+    // 2. fastest and 3. slowest, relative to crop size, among crops over 1 Mt
+    const major = rows.filter((r) => r.prod >= 1000);
+    const ahead = major.filter((r) => r.sized > 0.03);
+    const c2 = card("Selling fastest for the crop size, crops over 1 Mt",
+      ahead.length ? `${listJoin(ahead.slice(0, 2).map((r) => r.g))} ${ahead.length > 1 ? "are" : "is"} ahead of the usual pace` : "No major crop is ahead of its usual pace");
+    list(c2, major.slice(0, 3).map((r) => ({ label: `${r.g}: ${pctTxt(r.share, 1)} delivered (normally ${pctTxt(r.normal, 1)})`, value: r.sized })));
+    const slow = major.slice(-3).reverse();
+    const c3 = card("Holding back most, crops over 1 Mt", `${listJoin(slow.slice(0, 2).map((r) => r.g))} are furthest behind`);
+    list(c3, slow.map((r) => ({ label: `${r.g}: ${pctTxt(r.share, 1)} delivered (normally ${pctTxt(r.normal, 1)})`, value: r.sized })));
+    const late = slow.filter((r) => ["Soybeans", "Corn"].includes(r.g)).map((r) => r.g.toLowerCase());
+    if (late.length && W_NOW < 13) para(c3, `${listJoin(late).replace(/^./, (x) => x.toUpperCase())} ${late.length > 1 ? "are" : "is"} harvested later, so early gaps can close quickly.`);
+
+    // 4. deliveries that are up only because the crop is bigger (or down because it is smaller)
+    const sizeDriven = rows.filter((r) => Math.abs(r.raw) >= 0.1 && Math.abs(r.sized) < 0.06 && r.prod >= 500).sort((a, b) => b.prod - a.prod);
+    const held = rows.filter((r) => r.raw != null && r.sized < -0.2 && r.size > 0.05 && r.prod >= 500).sort((a, b) => b.prod - a.prod);
+    if (sizeDriven.length) {
+      const c4 = card("Bigger crop, not faster selling", `${listJoin(sizeDriven.slice(0, 2).map((r) => r.g))} deliveries are ${sizeDriven[0].raw > 0 ? "up" : "down"} because of crop size`);
+      list(c4, sizeDriven.slice(0, 3).map((r) => ({ label: `${r.g}: deliveries ${fmtPct(r.raw)}, crop ${fmtPct(r.size)}`, value: r.sized, suffix: " sized" })));
+      para(c4, "Measured against the crop, these are selling at close to their usual pace.");
+    }
+    if (held.length) {
+      const r = held[0];
+      const c5 = card("Big crop, slow selling", `${r.g}: crop ${fmtPct(r.size)}, deliveries ${fmtPct(r.raw)}`);
+      big(c5, pctTxt(r.share, 1), `delivered vs ${pctTxt(r.normal, 1)} normally`);
+      para(c5, `Farmers have a larger ${r.g.toLowerCase()} crop than usual but are delivering less of it so far${held.length > 1 ? `. ${listJoin(held.slice(1, 3).map((x) => x.g))} show the same pattern.` : "."}`);
+    }
+
+    // 6. how much of each crop reaches the licensed system
+    const bigCrops = mkt.filter((r) => r.prod >= 1000);
+    const hiM = bigCrops.slice(0, 2), loM = bigCrops.slice(-2).reverse();
+    const c6 = card("Licensed system vs farm use", `${hiM[0].rate >= 0.95 ? "Almost all" : pctTxt(hiM[0].rate) + " of"} ${hiM[0].g.toLowerCase()} is delivered, but only ${pctTxt(loM[0].rate)} of ${loM[0].g.toLowerCase()}`);
+    list(c6, [...hiM, ...loM].map((r) => ({ label: `${r.g}: ${pctTxt(r.rate)} of the crop delivered`, value: null })));
+    for (const ch of c6.querySelectorAll(".chip")) ch.remove();
+    para(c6, "Five-year average of full-year deliveries against production. The rest is fed on farms, used as seed, sold outside licensed channels or carried over.");
+
+    // 7. commercial stocks now and last year-end
+    const stNow = at(stocks(ALL, cur), W_NOW), stAvg = mean(ref.map((r) => at(stocks(ALL, r), W_NOW)));
+    const ends = completed.map((y) => ({ y, v: endStocks(ALL, y) })).sort((a, b) => b.v - a.v);
+    const lastRank = ends.findIndex((e) => e.y === lastYr) + 1;
+    const stP = pct(stNow, stAvg);
+    const c7 = card("Grain in the system", Math.abs(stP) < 0.02 ? "Commercial stocks are close to average" : `Commercial stocks are ${Math.round(Math.abs(stP) * 100)}% ${stP > 0 ? "above" : "below"} average`);
+    big(c7, fmtKt(stNow), `at week ${W_NOW}`);
+    para(c7, `${short(lastYr)} ended with ${fmtKt(endStocks(ALL, lastYr))} in commercial storage on Jul 31, ${lastRank === 1 ? `the most since ${short(years[0])}` : `${ordinal(lastRank)} highest of ${ends.length} years`}.`);
+
+    renderSized(rows);
+    renderMarket(mkt);
+    renderMix();
+  }
+
+  function renderSized(rows) {
+    $("sized-p").textContent = `Percent of each ${harvest} crop delivered by week ${W_NOW}, against the same week in ${short(ref[0])} to ${short(lastYr)}. The number on the right compares this year with the usual share. Production is StatCan's latest estimate for Western Canada.`;
+    legend($("leg-sized"), [{ label: short(cur), color: "--s1" }, { label: "5-yr average", color: "--avg" }, { label: "5-yr range", kind: "band" }]);
+    const host = $("ch-sized");
+    host.replaceChildren();
+    const W = host.clientWidth;
+    if (!W) return;
+    const rowH = 26, m = { l: 108, r: 56, t: 4, b: 22 };
+    const H = m.t + m.b + rows.length * rowH;
+    host.style.height = H + "px";
+    const max = Math.max(...rows.map((r) => Math.max(r.hi, r.share))) * 1.05;
+    const step = niceStep(max * 100, 5) / 100;
+    const top = Math.ceil(max / step) * step;
+    const x = (v) => m.l + (v / top) * (W - m.l - m.r);
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Share of each crop delivered so far against the 5-year range" });
+    svg.style.display = "block";
+    host.appendChild(svg);
+    for (let v = 0; v <= top + 1e-9; v += step) {
+      el("line", { x1: x(v), x2: x(v), y1: m.t, y2: H - m.b, stroke: v === 0 ? css("--axis") : css("--grid") }, svg);
+      svgText(svg, { x: x(v), y: H - 6, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, Math.round(v * 100) + "%");
+    }
+    rows.forEach((r, i) => {
+      const yc = m.t + i * rowH + rowH / 2;
+      const t = svgText(svg, { x: m.l - 10, y: yc + 4, "text-anchor": "end", "font-size": 12, fill: css("--ink"), cursor: "pointer" }, r.g);
+      t.addEventListener("click", () => pickGrain(r.g, true));
+      el("rect", { x: x(r.lo), y: yc - 7, width: Math.max(2, x(r.hi) - x(r.lo)), height: 14, rx: 3, fill: css("--band") }, svg);
+      el("line", { x1: x(r.normal), x2: x(r.normal), y1: yc - 8, y2: yc + 8, stroke: css("--avg"), "stroke-width": 2, "stroke-linecap": "round" }, svg);
+      el("circle", { cx: x(r.share), cy: yc, r: 5, fill: css("--s1"), stroke: css("--surface"), "stroke-width": 2 }, svg);
+      svgText(svg, { x: W - m.r + 8, y: yc + 4, "font-size": 12, "font-weight": 600, fill: css("--ink"), "font-family": "var(--mono)" }, fmtPct(r.sized));
+      const hit = el("rect", { x: 0, y: yc - rowH / 2, width: W, height: rowH, fill: "transparent", tabindex: 0, cursor: "pointer", "aria-label": `${r.g}: ${pctTxt(r.share, 1)} delivered, normally ${pctTxt(r.normal, 1)}` }, svg);
+      const tipRows = [
+        { value: pctTxt(r.share, 1), label: `of the ${harvest} crop delivered`, color: css("--s1"), kind: "rect", em: true },
+        { value: pctTxt(r.normal, 1), label: "5-yr average at this week", color: css("--avg") },
+        { value: `${pctTxt(r.lo, 1)}–${pctTxt(r.hi, 1)}`, label: "5-yr range", kind: "band", color: "band" },
+        { value: fmtPct(r.raw), label: "deliveries vs 5-yr average" },
+        { value: fmtPct(r.size), label: `crop size vs 5-yr average (${fmtKt(r.prod)})` },
+      ];
+      hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, r.g, tipRows));
+      hit.addEventListener("pointerleave", hideTip);
+      hit.addEventListener("focus", () => { const b = hit.getBoundingClientRect(); showTip(b.left + x(r.share), b.bottom, r.g, tipRows); });
+      hit.addEventListener("blur", hideTip);
+      hit.addEventListener("click", () => pickGrain(r.g, true));
+      hit.addEventListener("keydown", (e) => { if (e.key === "Enter") pickGrain(r.g, true); });
+    });
+  }
+
+  function renderMarket(rows) {
+    $("market-p").textContent = `Full-year deliveries as a percent of production, averaged over ${short(ref[0])} to ${short(lastYr)}. Crops under 100% are partly fed on farms, used as seed or sold outside licensed channels.`;
+    const host = $("ch-market");
+    host.replaceChildren();
+    const W = host.clientWidth;
+    if (!W) return;
+    const rowH = 22, m = { l: 100, r: 44, t: 4, b: 22 };
+    const H = m.t + m.b + rows.length * rowH;
+    host.style.height = H + "px";
+    const top = Math.max(1, Math.ceil(Math.max(...rows.map((r) => r.rate)) * 4) / 4);
+    const x = (v) => m.l + (v / top) * (W - m.l - m.r);
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Share of each crop delivered into the licensed system" });
+    svg.style.display = "block";
+    host.appendChild(svg);
+    for (let v = 0; v <= top + 1e-9; v += 0.25) {
+      el("line", { x1: x(v), x2: x(v), y1: m.t, y2: H - m.b, stroke: v === 0 ? css("--axis") : css("--grid") }, svg);
+      svgText(svg, { x: x(v), y: H - 6, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, Math.round(v * 100) + "%");
+    }
+    rows.forEach((r, i) => {
+      const yc = m.t + i * rowH + rowH / 2, bh = 12, x1 = x(r.rate), rr = Math.min(4, x1 - m.l);
+      svgText(svg, { x: m.l - 8, y: yc + 4, "text-anchor": "end", "font-size": 12, fill: css("--ink") }, r.g);
+      el("path", { d: `M${m.l},${yc - bh / 2}H${x1 - rr}Q${x1},${yc - bh / 2} ${x1},${yc - bh / 2 + rr}V${yc + bh / 2 - rr}Q${x1},${yc + bh / 2} ${x1 - rr},${yc + bh / 2}H${m.l}Z`, fill: css("--s1") }, svg);
+      svgText(svg, { x: x1 + 6, y: yc + 4, "font-size": 11, fill: css("--ink-2") }, pctTxt(r.rate));
+      const hit = el("rect", { x: 0, y: yc - rowH / 2, width: W, height: rowH, fill: "transparent", tabindex: 0, "aria-label": `${r.g}: ${pctTxt(r.rate)} delivered` }, svg);
+      const tr = [{ value: pctTxt(r.rate), label: "of production delivered (5-yr avg)", color: css("--s1"), kind: "rect", em: true }, { value: fmtKt(r.prod), label: "average western production" }];
+      hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, r.g, tr));
+      hit.addEventListener("pointerleave", hideTip);
+      hit.addEventListener("focus", () => { const b = hit.getBoundingClientRect(); showTip(b.left + x1, b.bottom, r.g, tr); });
+      hit.addEventListener("blur", hideTip);
+    });
+  }
+
+  function renderMix() {
+    const groups = Object.entries(D.groups);
+    const keys = groups.map(([name], i) => ({ key: name, label: name, color: `--s${i + 1}` }));
+    legend($("leg-mix"), keys.map((k) => ({ label: k.label, color: k.color, kind: "rect" })));
+    yearColumns($("ch-mix"), {
+      years: completed, aria: "Producer deliveries by crop group and crop year",
+      keys,
+      getVals: (yr) => {
+        const tot = sumOf(CROPS.map((g) => finalOf(cum(g, yr)) || 0));
+        return Object.fromEntries(groups.map(([name, gs]) => [name, 100 * sumOf(gs.map((g) => finalOf(cum(g, yr)) || 0)) / tot]));
+      },
+      kt: (yr, k) => sumOf(D.groups[k].map((g) => finalOf(cum(g, yr)) || 0)),
+      inlineLabels: true,
+    });
+  }
+
+  // ---------- weekly flash: all crops ----------
+  const useArr = (kind, g, y) => D[kind]?.[g]?.[y] || new Array(WEEKS).fill(null);
+  const n1 = (v) => v == null || !isFinite(v) ? "–" : (Math.abs(v) >= 100 ? Math.round(v).toLocaleString() : v.toFixed(1));
+  const chgTxt = (v) => v == null || !isFinite(v) ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + n1(Math.abs(v));
+  const flashState = { col: null, dir: -1 };
+  const FLASH_COLS = [
+    // [group, header, value getter key, formatter]
+    ["Producer deliveries", `Wk`, "dWk", n1], ["Producer deliveries", "Chg", "dChg", chgTxt], ["Producer deliveries", "CYTD", "dCy", n1],
+    ["Producer deliveries", "y/y", "dYy", fmtPct], ["Producer deliveries", "vs 5-yr", "d5", fmtPct],
+    ["Exports", "Wk", "eWk", n1], ["Exports", "CYTD", "eCy", n1], ["Exports", "y/y", "eYy", fmtPct], ["Exports", "vs 5-yr", "e5", fmtPct],
+    ["Licensed processing", "CYTD", "pCy", n1], ["Licensed processing", "y/y", "pYy", fmtPct],
+    ["Commercial stocks", "Level", "sLv", n1], ["Commercial stocks", "Chg", "sChg", chgTxt], ["Commercial stocks", "vs 5-yr", "s5", fmtPct],
+    ["Sized to crop", "% delivered", "share", (v) => v == null ? "–" : (100 * v).toFixed(1) + "%"], ["Sized to crop", "vs normal", "sized", fmtPct],
+  ];
+  function flashRows() {
+    const sized = Object.fromEntries(sizedRows().map((r) => [r.g, r]));
+    const T = totals([cur, ...ref]);
+    const tNow = T(cur, W_NOW), tNorm = mean(ref.map((r) => { const t = T(r, W_NOW); return t.del / t.prod; }));
+    const wk = (arr, w) => (arr[w - 1] != null && (w === 1 || arr[w - 2] != null)) ? arr[w - 1] - (w === 1 ? 0 : arr[w - 2]) : null;
+    const avg5 = (f) => mean(ref.map(f));
+    return D.grains.map((g) => {
+      const d = cum(g, cur), e = useArr("exports", g, cur), p = useArr("process", g, cur), st = stocks(g, cur);
+      const r = {
+        g,
+        dWk: wk(d, W_NOW), dChg: wk(d, W_NOW) - wk(d, W_NOW - 1), dCy: at(d, W_NOW),
+        dYy: pct(at(d, W_NOW), at(cum(g, lastYr), W_NOW)), d5: pct(at(d, W_NOW), avg5((y) => at(cum(g, y), W_NOW))),
+        eWk: wk(e, W_NOW), eCy: at(e, W_NOW),
+        eYy: pct(at(e, W_NOW), at(useArr("exports", g, lastYr), W_NOW)), e5: pct(at(e, W_NOW), avg5((y) => at(useArr("exports", g, y), W_NOW))),
+        pCy: at(p, W_NOW) || null, pYy: at(p, W_NOW) ? pct(at(p, W_NOW), at(useArr("process", g, lastYr), W_NOW)) : null,
+        sLv: at(st, W_NOW), sChg: at(st, W_NOW) - at(st, W_NOW - 1), s5: pct(at(st, W_NOW), avg5((y) => at(stocks(g, y), W_NOW))),
+        share: g === ALL ? tNow.del / tNow.prod : sized[g]?.share ?? null,
+        sized: g === ALL ? (tNow.del / tNow.prod) / tNorm - 1 : sized[g]?.sized ?? null,
+      };
+      return r;
+    });
+  }
+  function renderMainFlash() {
+    const wEnd = new Date(D.meta.week_ending + "T12:00").toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
+    $("mflash-eyebrow").textContent = `${short(cur)} · week ${W_NOW} · ending ${wEnd} · kt`;
+    let rows = flashRows();
+    const all = rows.find((r) => r.g === ALL);
+    rows = rows.filter((r) => r.g !== ALL);
+    if (flashState.col) rows.sort((a, b) => ((a[flashState.col] ?? -Infinity) - (b[flashState.col] ?? -Infinity)) * flashState.dir);
+    rows = [all, ...rows];
+    const t = $("mflash-table");
+    t.replaceChildren();
+    const thead = t.createTHead();
+    const gr = thead.insertRow();
+    gr.className = "grp";
+    const blank = document.createElement("th"); gr.appendChild(blank);
+    const groups = [];
+    for (const c of FLASH_COLS) { if (!groups.length || groups[groups.length - 1][0] !== c[0]) groups.push([c[0], 0]); groups[groups.length - 1][1]++; }
+    for (const [name, span] of groups) { const th = document.createElement("th"); th.colSpan = span; th.textContent = name; th.className = "sep"; gr.appendChild(th); }
+    const hr = thead.insertRow();
+    const h0 = document.createElement("th"); h0.textContent = "Crop"; h0.scope = "col"; hr.appendChild(h0);
+    FLASH_COLS.forEach(([grp, label, key], i) => {
+      const th = document.createElement("th");
+      th.scope = "col";
+      th.textContent = label === "Wk" ? `Wk ${W_NOW}` : label;
+      th.dataset.col = key;
+      th.tabIndex = 0;
+      th.title = `Sort by ${grp.toLowerCase()} ${label}`;
+      if (i === 0 || FLASH_COLS[i - 1][0] !== grp) th.className = "sep";
+      if (flashState.col === key) th.setAttribute("aria-sort", flashState.dir < 0 ? "descending" : "ascending");
+      const sort = () => { flashState.dir = flashState.col === key ? -flashState.dir : -1; flashState.col = key; renderMainFlash(); };
+      th.addEventListener("click", sort);
+      th.addEventListener("keydown", (e) => { if (e.key === "Enter") sort(); });
+      hr.appendChild(th);
+    });
+    const body = t.createTBody();
+    for (const r of rows) {
+      const tr = body.insertRow();
+      if (r.g === ALL) tr.className = "total";
+      tr.tabIndex = 0;
+      tr.addEventListener("click", () => pickGrain(r.g, true));
+      tr.addEventListener("keydown", (e) => { if (e.key === "Enter") pickGrain(r.g, true); });
+      tr.insertCell().textContent = r.g;
+      FLASH_COLS.forEach(([grp, , key, fmt], i) => {
+        const td = tr.insertCell();
+        const v = fmt(r[key]);
+        td.textContent = v;
+        if (v.startsWith("−")) td.className = "neg";
+        if (i === 0 || FLASH_COLS[i - 1][0] !== grp) td.classList.add("sep");
+      });
+    }
+    $("mflash-note").textContent = `Wk = week ${W_NOW} (week-over-week change in CGC crop-year totals); Chg = change from week ${W_NOW - 1}. y/y vs ${short(lastYr)} and vs 5-yr (${short(ref[0])} to ${short(lastYr)}) compare crop year to date at the same week; stock comparisons are levels. Exports = port terminals plus direct shipments. Licensed processing covers CGC-licensed process elevators only. Sized to crop = share of StatCan's ${harvest} western production estimate delivered, against the usual share by this week. Click a column to sort, or a crop to open it below.`;
+  }
+
+  // copy a table as tab-separated text (paste into a spreadsheet)
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-copy]");
+    if (!btn) return;
+    const table = $(btn.dataset.copy);
+    const tsv = [...table.rows].map((r) => [...r.cells].flatMap((c) => [c.textContent.replace(/[▲▼]/g, "").trim().replace(/−/g, "-"), ...Array(Math.max(0, (c.colSpan || 1) - 1)).fill("")]).join("\t")).join("\n");
+    const done = (ok) => { btn.textContent = ok ? "Copied" : "Selected: press Ctrl/Cmd+C"; setTimeout(() => { btn.textContent = "Copy table"; }, 2000); };
+    const fallback = () => { const r = document.createRange(); r.selectNode(table); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); done(false); };
+    try { navigator.clipboard.writeText(tsv).then(() => done(true), fallback); } catch (err) { fallback(); }
+  });
+
+  // ---------- boot ----------
+  $("asof").textContent = `Crop year ${short(cur)} · week ${W_NOW} of 52, ending ${new Date(D.meta.week_ending + "T12:00").toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })} · compared with ${short(ref[0])} to ${short(lastYr)}`;
+  $("gen").textContent = `Data through crop year ${short(cur)}, week ${W_NOW} (week ending ${D.meta.week_ending}). Built ${D.meta.generated}.`;
+  setView(state.view);
+  renderMainFlash();
+  renderInsights();
+  renderCards();
+  renderPaceTable();
+  renderHeat();
+  renderGrain();
+
+  // re-render charts on resize and theme change (they read colors from tokens)
+  const rerender = () => { renderInsights(); if (state.view === "cards") renderCards(); renderGrain(); };
+  let rt;
+  new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(rerender, 120); }).observe(document.querySelector(".wrap"));
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerender);
+  new MutationObserver(rerender).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+})();
+</script>

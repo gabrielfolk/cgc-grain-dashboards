@@ -1,0 +1,21 @@
+harvest_year,released,production_mt,release,source
+2013,2013-08-21,14.7,July survey,https://www150.statcan.gc.ca/n1/daily-quotidien/130821/dq130821a-eng.htm
+2014,2014-10-03,14.1,September survey,https://www150.statcan.gc.ca/n1/daily-quotidien/141003/dq141003b-eng.htm
+2015,2015-08-21,13.3,July survey,https://www150.statcan.gc.ca/n1/daily-quotidien/150821/dq150821c-eng.htm
+2016,2016-08-23,17.0,July survey,https://www150.statcan.gc.ca/n1/daily-quotidien/160823/dq160823a-eng.htm
+2017,2017-08-31,18.2,July survey,https://www150.statcan.gc.ca/n1/daily-quotidien/170831/dq170831c-eng.htm
+2018,2018-08-31,19.2,July survey,https://www150.statcan.gc.ca/n1/daily-quotidien/180831/dq180831b-eng.htm
+2019,2019-08-28,18.5,July survey,https://www150.statcan.gc.ca/n1/daily-quotidien/190828/dq190828a-eng.htm
+2020,2020-08-31,19.4,July survey,https://www150.statcan.gc.ca/n1/daily-quotidien/200831/dq200831a-eng.htm
+2020,2020-09-14,19.4,August model-based,https://www150.statcan.gc.ca/n1/daily-quotidien/200914/dq200914b-eng.htm
+2021,2021-08-30,14.7,July survey,https://www150.statcan.gc.ca/n1/daily-quotidien/210830/dq210830b-eng.htm
+2021,2021-09-14,12.8,August model-based,https://www150.statcan.gc.ca/n1/daily-quotidien/210914/dq210914b-eng.htm
+2022,2022-08-29,19.5,July model-based,https://www150.statcan.gc.ca/n1/daily-quotidien/220829/dq220829a-eng.htm
+2022,2022-09-14,19.1,August model-based,https://www150.statcan.gc.ca/n1/daily-quotidien/220914/dq220914b-eng.htm
+2023,2023-08-29,17.6,July model-based,https://www150.statcan.gc.ca/n1/daily-quotidien/230829/dq230829a-eng.htm
+2023,2023-09-14,17.4,August model-based,https://www150.statcan.gc.ca/n1/daily-quotidien/230914/dq230914b-eng.htm
+2024,2024-08-28,19.5,July model-based,https://www150.statcan.gc.ca/n1/daily-quotidien/240828/dq240828b-eng.htm
+2024,2024-09-16,19.0,August model-based,https://www150.statcan.gc.ca/n1/daily-quotidien/240916/dq240916b-eng.htm
+2025,2025-08-28,19.9,July model-based,https://www150.statcan.gc.ca/n1/daily-quotidien/250828/dq250828c-eng.htm
+2025,2025-09-17,20.0,August model-based,https://www150.statcan.gc.ca/n1/daily-quotidien/250917/dq250917b-eng.htm
+2026,2026-09-16,22.05,August model-based,https://www150.statcan.gc.ca/n1/daily-quotidien/260916/dq260916b-eng.htm
