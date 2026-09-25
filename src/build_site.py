@@ -29,17 +29,27 @@ PAGES = {
 }
 DATA_FILES = ["data.json", "forecast.json"]
 
-# Bar-chart favicon, embedded so every page has it without a separate file.
-# (claude.ai adds its own icon; on GitHub Pages the page must declare one.)
-FAVICON_SVG = (
-    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>"
-    "<rect width='32' height='32' rx='7' fill='#101311'/>"
-    "<rect x='7' y='17' width='4' height='8' rx='1.5' fill='#1baf7a'/>"
-    "<rect x='14' y='11' width='4' height='14' rx='1.5' fill='#eb6834'/>"
-    "<rect x='21' y='6' width='4' height='19' rx='1.5' fill='#3987e5'/>"
-    "</svg>"
-)
-FAVICON = "data:image/svg+xml," + quote(FAVICON_SVG)
+# Bar-chart favicons, embedded so every page has one without a separate file
+# (claude.ai adds its own icon; on GitHub Pages the page must declare one).
+# The all-crops page uses multicoloured bars on dark; each crop page gets its own colour.
+CROP_COLORS = {"canola": "#f2c200", "wheat": "#c89b3c", "durum": "#e0662a", "barley": "#4e9a3a"}
+
+
+def favicon(page: str) -> str:
+    if page in CROP_COLORS:
+        bg, bars = CROP_COLORS[page], ["#101311"] * 3
+    else:
+        bg, bars = "#101311", ["#1baf7a", "#eb6834", "#3987e5"]
+    svg = (
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>"
+        f"<rect width='32' height='32' rx='7' fill='{bg}'/>"
+        f"<rect x='7' y='17' width='4' height='8' rx='1.5' fill='{bars[0]}'/>"
+        f"<rect x='14' y='11' width='4' height='14' rx='1.5' fill='{bars[1]}'/>"
+        f"<rect x='21' y='6' width='4' height='19' rx='1.5' fill='{bars[2]}'/>"
+        "</svg>"
+    )
+    return "data:image/svg+xml," + quote(svg)
+
 
 HEAD = """<!doctype html>
 <html lang="en">
@@ -54,7 +64,6 @@ HEAD = """<!doctype html>
   [hidden] { display: none !important; }
 </style>
 """
-HEAD = HEAD.replace("__FAVICON__", FAVICON)
 
 
 def relink(text: str, page: str) -> str:
@@ -72,7 +81,7 @@ def main() -> None:
         src_dir, out_dir = SRC / page, OUT / page
         out_dir.mkdir(parents=True, exist_ok=True)
         body = relink((src_dir / "index.html").read_text(), page)
-        (out_dir / "index.html").write_text(HEAD + body + "\n</html>\n")
+        (out_dir / "index.html").write_text(HEAD.replace("__FAVICON__", favicon(page)) + body + "\n</html>\n")
         for name in DATA_FILES:
             if (src_dir / name).exists():
                 (out_dir / name).write_text(relink((src_dir / name).read_text(), page))
