@@ -1,0 +1,1133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%277%27%20fill%3D%27%237c5cc4%27/%3E%3Crect%20x%3D%277%27%20y%3D%2717%27%20width%3D%274%27%20height%3D%278%27%20rx%3D%271.5%27%20fill%3D%27%23101311%27/%3E%3Crect%20x%3D%2714%27%20y%3D%2711%27%20width%3D%274%27%20height%3D%2714%27%20rx%3D%271.5%27%20fill%3D%27%23101311%27/%3E%3Crect%20x%3D%2721%27%20y%3D%276%27%20width%3D%274%27%20height%3D%2719%27%20rx%3D%271.5%27%20fill%3D%27%23101311%27/%3E%3C/svg%3E">
+<style>
+  :root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: #f9f9f7; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+<title>Western Feed Grains</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --page: #f2f4f1;
+    --surface: #fcfcfb;
+    --ink: #101311;
+    --ink-2: #4c524d;
+    --muted: #767d77;
+    --grid: #e4e7e2;
+    --axis: #c3c8c1;
+    --border: rgba(16, 19, 17, 0.10);
+    --chip: #e9ece7;
+    --hover: rgba(16, 19, 17, 0.04);
+    --process: #2a78d6;
+    --exports: #eb6834;
+    --deliveries: #1baf7a;
+    --feed: #eda100;
+    --avg: #4c524d;
+    --band: rgba(76, 82, 77, 0.13);
+    --other: rgba(76, 82, 77, 0.28);
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0e100f;
+      --surface: #181a19;
+      --ink: #f3f5f2;
+      --ink-2: #c1c7c0;
+      --muted: #8b928b;
+      --grid: #282b29;
+      --axis: #3b3f3c;
+      --border: rgba(255, 255, 255, 0.10);
+      --chip: #252826;
+      --hover: rgba(255, 255, 255, 0.05);
+      --process: #3987e5;
+      --exports: #d95926;
+      --deliveries: #199e70;
+      --feed: #c98500;
+      --avg: #c1c7c0;
+      --band: rgba(193, 199, 192, 0.12);
+      --other: rgba(193, 199, 192, 0.26);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0e100f;
+    --surface: #181a19;
+    --ink: #f3f5f2;
+    --ink-2: #c1c7c0;
+    --muted: #8b928b;
+    --grid: #282b29;
+    --axis: #3b3f3c;
+    --border: rgba(255, 255, 255, 0.10);
+    --chip: #252826;
+    --hover: rgba(255, 255, 255, 0.05);
+    --process: #3987e5;
+    --exports: #d95926;
+    --deliveries: #199e70;
+    --feed: #c98500;
+    --avg: #c1c7c0;
+    --band: rgba(193, 199, 192, 0.12);
+    --other: rgba(193, 199, 192, 0.26);
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font: 14px/1.5 var(--sans);
+    padding-inline: 16px;
+    padding-block: 28px 56px;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 40px; }
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.15; }
+  h2 { font-size: 18px; font-weight: 600; }
+  h3 { font-size: 14px; font-weight: 600; }
+  p { margin: 0; }
+  .eyebrow { font: 500 11px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .sub { color: var(--ink-2); max-width: 70ch; }
+  :focus-visible { outline: 2px solid var(--process); outline-offset: 2px; }
+  a { color: var(--process); }
+  header { display: grid; gap: 12px; }
+  .asof { font-size: 13px; color: var(--muted); }
+
+  .btn, .seg { font: 500 13px var(--sans); color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
+  .btn { padding: 6px 12px; cursor: pointer; }
+  .btn:hover { background: var(--hover); }
+  .seg { display: inline-flex; overflow: hidden; }
+  .seg button { font: inherit; color: var(--ink-2); background: none; border: 0; padding: 6px 12px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--chip); color: var(--ink); }
+
+  /* summary */
+  .summary {
+    display: grid; grid-template-columns: minmax(0, 1.3fr) repeat(var(--rest, 3), minmax(0, 1fr));
+    gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  }
+  .tile { background: var(--surface); padding: 18px 20px; display: grid; gap: 6px; align-content: start; }
+  .tile .label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .hero-value { font-size: 48px; font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; }
+  .hero-value small, .tile-value small { font-size: 0.42em; font-weight: 500; color: var(--ink-2); margin-left: 4px; letter-spacing: 0; }
+  .tile-value { font-size: 28px; font-weight: 600; line-height: 1.15; }
+  .deltas { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--ink-2); font-size: 13px; }
+  .note { font-size: 13px; color: var(--muted); }
+  @media (max-width: 900px) { .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .summary .tile:first-child { grid-column: 1 / -1; } }
+  @media (max-width: 480px) { .summary { grid-template-columns: minmax(0, 1fr); } .hero-value { font-size: 40px; } }
+  .chip { display: inline-flex; align-items: center; gap: 3px; font: 500 12px/1 var(--mono); font-variant-numeric: tabular-nums; background: var(--chip); color: var(--ink); border-radius: 4px; padding: 4px 6px; white-space: nowrap; }
+  .chip .arr { font-size: 9px; color: var(--ink-2); }
+  .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex: none; }
+
+  section { display: grid; gap: 16px; }
+  .section-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px 24px; }
+  .section-head > div:first-child { display: grid; gap: 4px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--ink-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .key-line { width: 16px; height: 2px; border-radius: 1px; display: inline-block; }
+  .key-band { width: 16px; height: 10px; border-radius: 2px; display: inline-block; background: var(--band); }
+  .key-rect { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .key-mark { width: 12px; height: 2px; display: inline-block; background: var(--ink); }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+  .panel-head { display: grid; gap: 2px; }
+  .panel-head p { font-size: 12px; color: var(--muted); }
+  .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .two .wide { grid-column: 1 / -1; }
+  @media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } }
+  .chart { position: relative; }
+
+  .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 8px 12px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--grid); }
+  th { font: 500 11px var(--mono); letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  th:first-child, td:first-child { text-align: left; }
+  td { font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tr.current td { font-weight: 600; }
+
+  /* flash tables */
+  .flash-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+  .flash { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .flash th, .flash td { padding: 6px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--grid); }
+  .flash thead th { font: 500 11px var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); background: var(--surface); }
+  .flash th:first-child, .flash td:first-child { text-align: left; position: sticky; left: 0; background: var(--surface); }
+  .flash td { font-variant-numeric: tabular-nums; }
+  .flash tr.grp td { font: 500 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding-top: 12px; border-bottom: 1px solid var(--axis); }
+  .flash tr.sub td:first-child { padding-left: 22px; color: var(--ink-2); }
+  .flash tr.total td { font-weight: 600; }
+  .flash td.neg { color: var(--ink-2); }
+  .flash tr.memo td { color: var(--muted); font-style: italic; }
+  .flash td.sep, .flash th.sep { border-left: 1px solid var(--grid); }
+  .flash-note { font-size: 12px; color: var(--muted); max-width: 110ch; }
+  #tip { position: fixed; z-index: 10; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14); padding: 8px 10px; font-size: 12px; min-width: 150px; max-width: 280px; }
+  #tip .tip-head { color: var(--muted); margin-bottom: 4px; }
+  #tip .tip-row { display: grid; grid-template-columns: 14px auto 1fr; align-items: center; gap: 6px; }
+  #tip .tip-row b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  #tip .tip-row span:last-child { color: var(--ink-2); }
+  #tip .tip-row.em span:last-child { color: var(--ink); font-weight: 500; }
+  svg text { font-family: var(--sans); }
+  .fc-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+  .fc-value { font-size: 32px; font-weight: 600; line-height: 1.1; letter-spacing: -0.01em; }
+  .fc-value small { font-size: 14px; font-weight: 500; color: var(--ink-2); margin-left: 4px; }
+  .fc-sub { font-size: 13px; color: var(--ink-2); }
+  .fc-note { font-size: 12px; color: var(--muted); }
+  .fc-label { font-size: 12px; font-weight: 600; color: var(--ink-2); margin-top: 6px; }
+  #acc-table td.best { font-weight: 600; }
+  #acc-table tr.now td { background: var(--hover); }
+  .notes { display: grid; gap: 8px; font-size: 13px; color: var(--ink-2); max-width: 80ch; }
+  .notes ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  @media (prefers-reduced-motion: no-preference) { .btn { transition: background 0.12s; } }
+  /* feed page: grain colours (categorical slots 1-5) and calculator */
+  :root { --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #eda100; --c5: #e87ba4; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; }
+  }
+  :root[data-theme="dark"] { --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; }
+  .calc { display: grid; gap: 12px; align-content: start; }
+  .calc-field { display: grid; grid-template-columns: minmax(0, 1fr) 120px; gap: 2px 12px; align-items: center; font-size: 13px; color: var(--ink); }
+  .calc-field em { grid-column: 2; font-style: normal; font-size: 11px; color: var(--muted); }
+  .calc-field input { font: 500 14px var(--mono); font-variant-numeric: tabular-nums; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--ink); width: 100%; }
+  .calc .btn { justify-self: start; }
+  .calc-field input:focus-visible { outline: 2px solid var(--c1); outline-offset: 1px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">CGC · StatCan · CBOT · Feed grains</div>
+    <h1>Western Feed Grains</h1>
+    <p class="sub" id="lede">Feed use of barley, wheat, durum, oats and imported corn in Canada, with the supply, quality, livestock and price drivers behind it. Feed use is concentrated in Western Canada's feedlot, hog and poultry sectors.</p>
+    <p class="asof" id="asof"></p>
+  </header>
+
+  <div class="summary" id="summary"></div>
+
+  <section aria-labelledby="flash-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="flash-eyebrow"></div>
+        <h2 id="flash-h">Weekly flash: feed grain movement</h2>
+      </div>
+      <button type="button" class="btn" data-copy="flash-table">Copy table</button>
+    </div>
+    <div class="flash-wrap"><table class="flash" id="flash-table"></table></div>
+    <p class="flash-note" id="flash-note"></p>
+  </section>
+
+  <section aria-labelledby="est-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="est-eyebrow"></div>
+        <h2 id="est-h">Feed use estimate</h2>
+        <p class="sub" id="est-sub"></p>
+      </div>
+      <button type="button" class="btn" data-copy="est-table">Copy table</button>
+    </div>
+    <div class="flash-wrap"><table class="flash" id="est-table"></table></div>
+    <div class="two">
+      <div class="panel">
+        <div class="panel-head"><h3>How accurate has the estimate been?</h3><p id="acc-p"></p></div>
+        <div class="flash-wrap" style="border:0"><table class="flash" id="acc-table"></table></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Estimate vs last crop year</h3><p>Thousand tonnes fed, by grain</p></div>
+        <div class="legend" id="leg-estbar"></div>
+        <div class="chart" id="ch-estbar"></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="econ-h">
+    <div class="section-head">
+      <div>
+        <h2 id="econ-h">Feed economics</h2>
+        <p class="sub">Price per tonne of barley-equivalent feeding value: each grain's price divided by its energy relative to barley. Adjust the assumptions to see which grain a feedlot should be buying.</p>
+      </div>
+    </div>
+    <div class="two">
+      <div class="panel">
+        <div class="panel-head"><h3>Assumptions</h3><p>Energy relative to barley (cattle ration basis) and the cost of getting US corn to southern Alberta</p></div>
+        <div class="calc" id="calc"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3 id="rank-h">Cheapest feed energy</h3><p id="rank-p"></p></div>
+        <div class="flash-wrap" style="border:0"><table class="flash" id="rank-table"></table></div>
+        <p class="flash-note" id="corn-note"></p>
+      </div>
+      <div class="panel wide">
+        <div class="panel-head"><h3>Energy-adjusted feed prices</h3><p>C$ per tonne of barley-equivalent, monthly. Alberta farm prices (StatCan); US corn = CBOT + basis and freight, converted at the monthly USD/CAD.</p></div>
+        <div class="legend" id="leg-eprice"></div>
+        <div class="chart" id="ch-eprice" style="height:300px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>US corn premium over barley</h3><p>Crop-year average, C$/t barley-equivalent. Below zero, delivered US corn was cheaper than feed barley.</p></div>
+        <div class="chart" id="ch-spread" style="height:240px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Corn imports into Western Canada</h3><p>Thousand tonnes per crop year: StatCan imports into provinces other than Ontario and Quebec, and US corn received at CGC-licensed elevators and processors</p></div>
+        <div class="legend" id="leg-corn"></div>
+        <div class="chart" id="ch-corn" style="height:240px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="hist-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">StatCan supply and disposition</div>
+        <h2 id="hist-h">Feed use and quality history</h2>
+      </div>
+      <button type="button" class="btn" id="toggle-table" aria-expanded="false">Show data table</button>
+    </div>
+    <div class="two">
+      <div class="panel wide">
+        <div class="panel-head"><h3>Feed use by grain</h3><p>Thousand tonnes of animal feed, waste and dockage per crop year (Canada), plus corn imported into Western Canada</p></div>
+        <div class="legend" id="leg-feed"></div>
+        <div class="chart" id="ch-feed" style="height:300px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Share of production fed</h3><p>Feed use as a percent of production each crop year. High shares follow poor-quality or drought crops.</p></div>
+        <div class="legend" id="leg-fedshare"></div>
+        <div class="chart" id="ch-fedshare" style="height:240px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Feed-grade share of elevator deliveries</h3><p>CGC domestic feed grain deliveries as a percent of all primary elevator deliveries, by crop year</p></div>
+        <div class="legend" id="leg-quality"></div>
+        <div class="chart" id="ch-quality" style="height:240px"></div>
+      </div>
+      <div class="table-wrap wide" id="hist-table" hidden></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="liv-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">StatCan livestock surveys</div>
+        <h2 id="liv-h">Livestock: the demand side</h2>
+      </div>
+    </div>
+    <div class="two">
+      <div class="panel">
+        <div class="panel-head"><h3>Cattle in Western Canada</h3><p>Thousand head at Jan 1 and Jul 1. Feedlot = steers and slaughter heifers on feeding operations.</p></div>
+        <div class="legend" id="leg-cattle"></div>
+        <div class="chart" id="ch-cattle" style="height:240px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Hogs in Western Canada</h3><p>Thousand head at Jan 1 and Jul 1</p></div>
+        <div class="chart" id="ch-hogs" style="height:240px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Meat production, Canada</h3><p>Thousand tonnes per calendar year</p></div>
+        <div class="legend" id="leg-meat"></div>
+        <div class="chart" id="ch-meat" style="height:240px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Slaughter, Canada</h3><p>Thousand head per calendar year</p></div>
+        <div class="flash-wrap" style="border:0"><table class="flash" id="slaughter-table"></table></div>
+      </div>
+      <div class="panel wide">
+        <div class="panel-head"><h3>Grain demand index, Western Canada</h3><p id="dem-p"></p></div>
+        <div class="legend" id="leg-dem"></div>
+        <div class="chart" id="ch-dem" style="height:260px"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="notes">
+    <h3 style="color:var(--ink)">About the data and method</h3>
+    <ul id="notes-list"></ul>
+  </footer>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+(async function () {
+  const WEEKS = 52;
+  const MONTH_TICKS = [["Sep", 31], ["Nov", 92], ["Jan", 153], ["Mar", 212], ["May", 273], ["Jul", 334]];
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const NS = "http://www.w3.org/2000/svg";
+  const $ = (id) => document.getElementById(id);
+  let D;
+  try {
+    D = await (await fetch("data.json")).json();
+  } catch (e) {
+    $("lede").textContent = "The data file (data.json) could not be loaded. Run src/feed_data.py and republish.";
+    return;
+  }
+  const years = D.years, cur = D.meta.current_year, W_NOW = D.meta.latest_week;
+  const ref = years.slice(-6, -1), lastYr = ref[ref.length - 1];
+  // ---------- helpers ----------
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const short = (y) => y.slice(0, 5) + y.slice(7);
+  function fmtKt(v) {
+    if (v == null || !isFinite(v)) return "–";
+    const a = Math.abs(v);
+    if (a >= 1000) return (v / 1000).toFixed(a >= 10000 ? 1 : 2) + " Mt";
+    if (a >= 10) return Math.round(v).toLocaleString() + " kt";
+    return v.toFixed(1) + " kt";
+  }
+  const fmtNum = (v) => v == null ? "–" : Math.abs(v) >= 100 ? Math.round(v).toLocaleString() : v.toFixed(1);
+  const pct = (a, b) => (a == null || b == null || b < 1) ? null : a / b - 1;
+  const ordinal = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
+  function chip(p) {
+    const el = document.createElement("span");
+    el.className = "chip";
+    if (p == null) { el.textContent = "n/a"; return el; }
+    const r = Math.round(p * 100);
+    const arr = document.createElement("span");
+    arr.className = "arr";
+    arr.textContent = r > 0 ? "▲" : r < 0 ? "▼" : "●";
+    el.append(arr, document.createTextNode(Math.abs(r) + "%"));
+    el.setAttribute("aria-label", (r >= 0 ? "up " : "down ") + Math.abs(r) + " percent");
+    return el;
+  }
+  function weekDate(y, w) {
+    const start = +y.slice(0, 4);
+    const d = new Date(Date.UTC(start, 7, 1 + 7 * w + 1));
+    const end = new Date(Date.UTC(start + 1, 6, 31));
+    const x = d > end ? end : d;
+    return MONTHS[x.getUTCMonth()] + " " + x.getUTCDate();
+  }
+  const empty = () => new Array(WEEKS).fill(null);
+  const flow = (k, y) => D.flows[k]?.[y] || empty();
+  const stock = (k, y) => D.stocks[k]?.[y] || empty();
+  const sumArr = (arrs) => arrs[0].map((_, i) => { const v = arrs.map((a) => a[i]); return v.every((x) => x == null) ? null : v.reduce((s, x) => s + (x || 0), 0); });
+  const series = {
+    process: (y) => flow("process", y),
+    feed: (y) => flow("feed", y),
+    exports: (y) => sumArr([...TERMINAL_PORTS, "exports_direct"].map((k) => flow(k, y))),
+    deliveries: (y) => flow("deliveries", y),
+    terminal: (y) => sumArr(TERMINAL_PORTS.map((k) => flow(k, y))),
+    stocks: (y) => sumArr(STOCKS.map((s) => stock(s.key, y))),
+    use: (y) => sumArr(USES.map((u) => series[u.key](y))),
+  };
+  const at = (arr, w) => arr[w - 1];
+  const upTo = (arr, w) => arr.map((v, i) => i < w ? v : null);
+  const mean = (a) => { const v = a.filter((x) => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+  const finalOf = (arr) => { for (let i = arr.length - 1; i >= 0; i--) if (arr[i] != null) return arr[i]; return null; };
+  const diff = (c) => c.map((v, i) => v == null ? null : i === 0 ? v : c[i - 1] == null ? null : v - c[i - 1]);
+  function stat(list) {
+    const avg = [], lo = [], hi = [];
+    for (let i = 0; i < WEEKS; i++) {
+      const v = list.map((s) => s[i]).filter((x) => x != null);
+      avg.push(v.length ? v.reduce((a, b) => a + b, 0) / v.length : null);
+      lo.push(v.length ? Math.min(...v) : null);
+      hi.push(v.length ? Math.max(...v) : null);
+    }
+    return { avg, lo, hi };
+  }
+  function el(tag, attrs, parent) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function svgText(parent, attrs, text) { const t = el("text", attrs, parent); t.textContent = text; return t; }
+  function niceStep(max, n) {
+    const raw = max / n;
+    const e = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+    const f = raw / e;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e;
+  }
+  // rounded-top bar path (grows up from yb to yt)
+  function barPath(x0, bw, yb, yt, r) {
+    const rr = Math.max(0, Math.min(r, (yb - yt), bw / 2));
+    return `M${x0},${yb}V${yt + rr}Q${x0},${yt} ${x0 + rr},${yt}H${x0 + bw - rr}Q${x0 + bw},${yt} ${x0 + bw},${yt + rr}V${yb}Z`;
+  }
+  function makeSvg(host, W, H, aria, focusable) {
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": aria });
+    if (focusable) svg.setAttribute("tabindex", 0);
+    svg.style.display = "block";
+    svg.style.overflow = "visible";
+    host.appendChild(svg);
+    return svg;
+  }
+  function yAxis(svg, m, W, y, min, max, step) {
+    for (let v = min; v <= max + 1e-9; v += step) {
+      el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: v === 0 ? css("--axis") : css("--grid") }, svg);
+      svgText(svg, { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, Math.round(v).toLocaleString());
+    }
+  }
+
+  // ---------- tooltip ----------
+  const tip = $("tip");
+  function showTip(x, y, head, rows) {
+    tip.replaceChildren();
+    const h = document.createElement("div");
+    h.className = "tip-head";
+    h.textContent = head;
+    tip.appendChild(h);
+    for (const r of rows) {
+      const row = document.createElement("div");
+      row.className = "tip-row" + (r.em ? " em" : "");
+      const key = document.createElement("span");
+      if (r.kind === "band") key.style.cssText = "width:14px;height:8px;border-radius:2px;background:var(--band)";
+      else if (r.kind === "rect") key.style.cssText = `width:10px;height:10px;border-radius:2px;background:${r.color}`;
+      else if (r.kind === "mark") key.style.cssText = "width:12px;height:2px;background:var(--ink)";
+      else if (r.color) key.style.cssText = `width:14px;height:2px;border-radius:1px;background:${r.color}`;
+      const b = document.createElement("b");
+      b.textContent = r.value;
+      const l = document.createElement("span");
+      l.textContent = r.label;
+      row.append(key, b, l);
+      tip.appendChild(row);
+    }
+    tip.hidden = false;
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let left = x + 14, top = y + 14;
+    if (left + tw > innerWidth - 8) left = x - tw - 14;
+    if (top + th > innerHeight - 8) top = y - th - 14;
+    tip.style.left = Math.max(8, left) + "px";
+    tip.style.top = Math.max(8, top) + "px";
+  }
+  const hideTip = () => { tip.hidden = true; };
+  addEventListener("scroll", hideTip, { passive: true });
+
+  function legend(host, items) {
+    host.replaceChildren();
+    for (const it of items) {
+      const s = document.createElement("span");
+      const k = document.createElement("span");
+      k.className = { band: "key-band", rect: "key-rect", mark: "key-mark" }[it.kind] || "key-line";
+      if (it.color) k.style.background = it.color;
+      s.append(k, document.createTextNode(it.label));
+      host.appendChild(s);
+    }
+  }
+
+  // ---------- week chart ----------
+  // opts: series [{label,color,values,width,dot,em,hidden}], band {lo,hi,label}, bars {label,color,values},
+  //       stack [{label,color,values}], sortTip, aria
+  function weekChart(host, opts) {
+    host.replaceChildren();
+    const W = host.clientWidth, H = host.clientHeight;
+    if (!W) return;
+    const m = { l: 48, r: 14, t: 10, b: 24 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const vals = [];
+    for (const s of opts.series || []) vals.push(...s.values);
+    if (opts.band) vals.push(...opts.band.hi, ...opts.band.lo);
+    if (opts.bars) vals.push(...opts.bars.values);
+    const stackTot = opts.stack ? sumArr(opts.stack.map((s) => s.values)) : null;
+    if (stackTot) vals.push(...stackTot);
+    const clean = vals.filter((v) => v != null);
+    let max = Math.max(1, ...clean), min = Math.min(0, ...clean);
+    const step = niceStep(max - min, 4);
+    max = Math.ceil(max / step) * step;
+    min = Math.floor(min / step) * step;
+    const x = (w) => m.l + ((w - 0.5) / WEEKS) * iw;
+    const y = (v) => m.t + ih - ((v - min) / (max - min)) * ih;
+    const svg = makeSvg(host, W, H, opts.aria, true);
+    yAxis(svg, m, W, y, min, max, step);
+    for (const [name, days] of MONTH_TICKS) svgText(svg, { x: x((days - 1) / 7), y: H - 6, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, name);
+
+    if (opts.band) {
+      const pts = [];
+      for (let i = 0; i < WEEKS; i++) if (opts.band.hi[i] != null) pts.push([i + 1, opts.band.hi[i], opts.band.lo[i]]);
+      if (pts.length) el("path", { d: "M" + pts.map((p) => `${x(p[0])},${y(p[1])}`).join("L") + "L" + pts.slice().reverse().map((p) => `${x(p[0])},${y(p[2])}`).join("L") + "Z", fill: css("--band") }, svg);
+    }
+    const bw = Math.max(1, Math.min(24, iw / WEEKS - 2));
+    if (opts.bars) {
+      opts.bars.values.forEach((v, i) => {
+        if (v == null || v === 0) return;
+        const x0 = x(i + 1) - bw / 2;
+        if (v > 0) el("path", { d: barPath(x0, bw, y(0), y(v), 4), fill: opts.bars.color }, svg);
+        else el("rect", { x: x0, y: y(0), width: bw, height: y(v) - y(0), fill: opts.bars.color }, svg);
+      });
+    }
+    if (opts.stack) {
+      for (let i = 0; i < WEEKS; i++) {
+        let acc = 0;
+        const segs = opts.stack.filter((s) => s.values[i] > 0);
+        segs.forEach((s, j) => {
+          const v = s.values[i];
+          const top = j === segs.length - 1;
+          const yb = y(acc) - (j === 0 ? 0 : 1);
+          const yt = y(acc + v) + (top ? 0 : 1);
+          acc += v;
+          if (yb - yt <= 0) return;
+          const p = el("path", { d: top ? barPath(x(i + 1) - bw / 2, bw, yb, yt, 4) : `M${x(i + 1) - bw / 2},${yb}V${yt}h${bw}V${yb}Z` }, svg);
+          p.style.fill = s.color;
+        });
+      }
+    }
+    for (const s of opts.series || []) {
+      if (s.hidden) continue;
+      const pts = [];
+      s.values.forEach((v, i) => { if (v != null) pts.push([x(i + 1), y(v)]); });
+      if (!pts.length) continue;
+      const path = el("path", { d: "M" + pts.map((p) => p.join(",")).join("L"), fill: "none", "stroke-width": s.width || 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+      path.style.stroke = s.color;
+      if (s.dot) {
+        const p = pts[pts.length - 1];
+        const c = el("circle", { cx: p[0], cy: p[1], r: 4, "stroke-width": 2 }, svg);
+        c.style.fill = s.color;
+        c.style.stroke = "var(--surface)";
+      }
+    }
+
+    const cross = el("line", { y1: m.t, y2: m.t + ih, stroke: css("--axis"), visibility: "hidden" }, svg);
+    const hit = el("rect", { x: m.l, y: 0, width: iw, height: H, fill: "transparent" }, svg);
+    let focusW = null;
+    function show(w, cx, cy) {
+      w = Math.max(1, Math.min(WEEKS, w));
+      cross.setAttribute("x1", x(w)); cross.setAttribute("x2", x(w)); cross.setAttribute("visibility", "visible");
+      let rows = [];
+      if (opts.stack) {
+        rows.push({ value: fmtNum(stackTot[w - 1]), label: "Total " + short(cur), em: true });
+        for (const s of opts.stack.slice().reverse()) rows.push({ value: fmtNum(s.values[w - 1]), label: s.label, color: s.color, kind: "rect" });
+      }
+      if (opts.bars) rows.push({ value: fmtNum(opts.bars.values[w - 1]), label: opts.bars.label, color: opts.bars.color, kind: "rect", em: true });
+      for (const s of opts.series || []) {
+        const v = s.values[w - 1];
+        if (opts.sortTip && v == null) continue;
+        rows.push({ value: fmtNum(v), raw: v, label: s.label, color: s.hidden ? null : (s.tipColor || s.color), em: s.em });
+      }
+      if (opts.sortTip) rows.sort((a, b) => (b.raw ?? -Infinity) - (a.raw ?? -Infinity));
+      if (opts.band) rows.push({ value: `${fmtNum(opts.band.lo[w - 1])}–${fmtNum(opts.band.hi[w - 1])}`, label: opts.band.label, kind: "band" });
+      showTip(cx, cy, `Week ${w} · ends ~${weekDate(cur, w)} · kt`, rows);
+    }
+    const hide = () => { cross.setAttribute("visibility", "hidden"); hideTip(); };
+    hit.addEventListener("pointermove", (e) => { const r = svg.getBoundingClientRect(); show(Math.round(((e.clientX - r.left - m.l) / iw) * WEEKS + 0.5), e.clientX, e.clientY); });
+    hit.addEventListener("pointerleave", hide);
+    svg.addEventListener("blur", hide);
+    svg.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      focusW = Math.max(1, Math.min(WEEKS, (focusW || W_NOW) + (e.key === "ArrowRight" ? 1 : -1)));
+      const r = svg.getBoundingClientRect();
+      show(focusW, r.left + x(focusW), r.top + m.t + 10);
+    });
+  }
+
+  // ---------- stacked kt columns by crop year ----------
+  // opts: keys [{key,label,color}], getVals(yr) -> {key: kt}, marker {label, get(yr)}, shareLabel(yr) -> text for bottom segment
+  function yearStack(host, opts) {
+    host.replaceChildren();
+    const W = host.clientWidth, H = host.clientHeight;
+    if (!W) return;
+    const ys = opts.years;
+    const m = { l: 52, r: 8, t: 18, b: 24 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const totals = ys.map((yr) => { const v = opts.getVals(yr); return opts.keys.reduce((s, k) => s + (v[k.key] || 0), 0); });
+    const marks = opts.marker ? ys.map((yr) => opts.marker.get(yr)) : [];
+    let max = Math.max(1, ...totals, ...marks.filter((v) => v != null));
+    const step = niceStep(max, 4);
+    max = Math.ceil(max / step) * step;
+    const y = (v) => m.t + ih - (v / max) * ih;
+    const svg = makeSvg(host, W, H, opts.aria);
+    yAxis(svg, m, W, y, 0, max, step);
+    const band = iw / ys.length, bw = Math.max(6, Math.min(opts.maxBar || 24, band - 6));
+    const labelEvery = band < 34 ? 2 : 1;
+    ys.forEach((yr, i) => {
+      const cx = m.l + band * (i + 0.5), x0 = cx - bw / 2;
+      if ((ys.length - 1 - i) % labelEvery === 0) svgText(svg, { x: cx, y: H - 6, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, band >= 44 ? short(yr) : "'" + yr.slice(2, 4));
+      const vals = opts.getVals(yr);
+      const segs = opts.keys.filter((k) => vals[k.key] > 0);
+      let acc = 0;
+      segs.forEach((k, j) => {
+        const v = vals[k.key], top = j === segs.length - 1;
+        const yb = y(acc) - (j === 0 ? 0 : 1), yt = y(acc + v) + (top ? 0 : 1);
+        acc += v;
+        if (yb - yt <= 0) return;
+        const p = el("path", { d: top ? barPath(x0, bw, yb, yt, 4) : `M${x0},${yb}V${yt}h${bw}V${yb}Z` }, svg);
+        p.style.fill = k.color;
+        if (k.key === opts.shareKey && opts.shareLabel && yb - yt >= 18 && bw >= 26) {
+          svgText(svg, { x: cx, y: yb - 7, "text-anchor": "middle", "font-size": 10, "font-weight": 500, fill: "#ffffff", "pointer-events": "none" }, opts.shareLabel(yr));
+        }
+      });
+      if (opts.capLabel) svgText(svg, { x: cx, y: y(totals[i]) - 5, "text-anchor": "middle", "font-size": 10, "font-weight": 500, fill: css("--ink-2") }, opts.capLabel(yr));
+      if (opts.marker && marks[i] != null) {
+        const my = y(marks[i]);
+        el("line", { x1: x0 - 5, x2: x0 + bw + 5, y1: my, y2: my, stroke: css("--ink"), "stroke-width": 2, "stroke-linecap": "round" }, svg);
+      }
+      const hit = el("rect", { x: cx - band / 2, y: m.t, width: band, height: ih, fill: "transparent", tabindex: 0, "aria-label": `${short(yr)}: ` + opts.keys.map((k) => `${k.label} ${fmtKt(vals[k.key])}`).join(", ") }, svg);
+      const rows = () => [
+        ...opts.keys.slice().reverse().map((k) => ({ value: fmtKt(vals[k.key]), label: k.label, color: k.color, kind: "rect" })),
+        { value: fmtKt(totals[i]), label: "Total", em: true },
+        ...(opts.marker && marks[i] != null ? [{ value: fmtKt(marks[i]), label: opts.marker.label, kind: "mark" }] : []),
+        ...(opts.tipExtra ? opts.tipExtra(yr) : []),
+      ];
+      hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, short(yr), rows()));
+      hit.addEventListener("pointerleave", hideTip);
+      hit.addEventListener("focus", () => { const r = hit.getBoundingClientRect(); showTip(r.right, r.top + 20, short(yr), rows()); });
+      hit.addEventListener("blur", hideTip);
+    });
+  }
+
+  // ---------- horizontal stacked bars, newest crop year first ----------
+  function yearBars(host, opts) {
+    host.replaceChildren();
+    const W = host.clientWidth;
+    if (!W) return;
+    const rows = opts.years.slice().reverse().map((yr) => ({ yr, vals: opts.getVals(yr) })).filter((r) => r.vals);
+    rows.forEach((r) => { r.total = opts.keys.reduce((s, k) => s + (r.vals[k.key] || 0), 0); });
+    const rowH = 22, m = { l: 58, r: 64, t: 4, b: 4 };
+    const H = m.t + m.b + rows.length * rowH;
+    host.style.height = H + "px";
+    const iw = W - m.l - m.r;
+    const max = Math.max(1, ...rows.map((r) => r.total));
+    const svg = makeSvg(host, W, H, opts.aria);
+    el("line", { x1: m.l, x2: m.l, y1: m.t, y2: H - m.b, stroke: css("--axis") }, svg);
+    const ranked = rows.slice().sort((a, b) => b.total - a.total);
+    rows.forEach((r, i) => {
+      const yc = m.t + i * rowH + rowH / 2, isCur = r.yr === cur, bh = 14;
+      svgText(svg, { x: m.l - 8, y: yc + 4, "text-anchor": "end", "font-size": 12, fill: isCur ? css("--ink") : css("--ink-2"), "font-weight": isCur ? 600 : 400 }, short(r.yr));
+      let acc = 0;
+      const segs = opts.keys.filter((k) => r.vals[k.key] > 0);
+      segs.forEach((k, j) => {
+        const v = r.vals[k.key], last = j === segs.length - 1;
+        const xa = m.l + (acc / max) * iw + (j === 0 ? 0 : 1), xb = m.l + ((acc + v) / max) * iw - (last ? 0 : 1);
+        acc += v;
+        if (xb - xa <= 0) return;
+        const rr = last ? Math.min(4, xb - xa) : 0;
+        const p = el("path", { d: `M${xa},${yc - bh / 2}H${xb - rr}Q${xb},${yc - bh / 2} ${xb},${yc - bh / 2 + rr}V${yc + bh / 2 - rr}Q${xb},${yc + bh / 2} ${xb - rr},${yc + bh / 2}H${xa}Z` }, svg);
+        p.style.fill = k.color;
+        if (!isCur) p.style.opacity = 0.55;
+      });
+      svgText(svg, { x: m.l + (r.total / max) * iw + 6, y: yc + 4, "font-size": 11, fill: isCur ? css("--ink") : css("--muted"), "font-weight": isCur ? 600 : 400 }, fmtKt(r.total));
+      const hit = el("rect", { x: 0, y: yc - rowH / 2, width: W, height: rowH, fill: "transparent", tabindex: 0, "aria-label": `${short(r.yr)}: ${fmtKt(r.total)}` }, svg);
+      const rank = ranked.indexOf(r) + 1;
+      const tipRows = [
+        { value: fmtKt(r.total), label: `Total (${ordinal(rank)} highest of ${rows.length})`, em: true },
+        ...opts.keys.slice().reverse().map((k) => ({ value: fmtKt(r.vals[k.key]), label: k.label, color: k.color, kind: "rect" })),
+      ];
+      hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, short(r.yr), tipRows));
+      hit.addEventListener("pointerleave", hideTip);
+      hit.addEventListener("focus", () => { const b = hit.getBoundingClientRect(); showTip(b.left + m.l + (r.total / max) * iw, b.bottom, short(r.yr), tipRows); });
+      hit.addEventListener("blur", hideTip);
+    });
+  }
+
+  // ---------- feed page ----------
+  const GR = [
+    { key: "barley", label: "Barley", color: "var(--c1)" },
+    { key: "wheat", label: "Wheat (ex-durum)", color: "var(--c2)" },
+    { key: "durum", label: "Durum", color: "var(--c3)" },
+    { key: "oats", label: "Oats", color: "var(--c4)" },
+    { key: "corn", label: "Imported corn (West)", color: "var(--c5)" },
+  ];
+  const GLAB = Object.fromEntries(GR.map((g) => [g.key, g.label]));
+  const A = D.meta.assumptions;
+  const EST = D.estimate, MODEL = D.model;
+  const PANEL = Object.fromEntries(D.panel.map((r) => [r.cy, r]));
+  const PR = D.prices;
+  const WK = D.weekly;
+  const LIV = D.livestock;
+  const calc = { basis: A.corn_basis_usd_bu, energy: { ...A.energy_vs_barley } };
+  try { const s = JSON.parse(localStorage.getItem("feed-calc") || "null"); if (s && s.energy) Object.assign(calc, s); } catch (e) {}
+  const saveCalc = () => { try { localStorage.setItem("feed-calc", JSON.stringify(calc)); } catch (e) {} };
+  const sumOf = (a) => a.reduce((s, x) => s + (x || 0), 0);
+  const n1 = (v) => v == null || !isFinite(v) ? "–" : (Math.abs(v) >= 100 ? Math.round(v).toLocaleString() : v.toFixed(1));
+  const chg = (v) => v == null || !isFinite(v) ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + n1(Math.abs(v));
+  function fmtPct(p) { if (p == null || !isFinite(p)) return "–"; const r = Math.round(p * 100); return (r > 0 ? "+" : r < 0 ? "−" : "±") + Math.abs(r) + "%"; }
+  const pp = (v) => v == null || !isFinite(v) ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v * 100).toFixed(1) + " pp";
+  const pctTxt = (v, d = 1) => v == null || !isFinite(v) ? "–" : (100 * v).toFixed(d) + "%";
+  const money = (v) => v == null || !isFinite(v) ? "–" : "$" + Math.round(v).toLocaleString();
+  const monthName = (m) => { const [y, mo] = m.split("-"); return MONTHS[+mo - 1] + " " + y; };
+  const wk = (k, y) => WK[k]?.[y] || empty();
+  const lastWeek = (arr, w) => { let x = w; while (x > 1 && at(arr, x) == null) x--; return at(arr, x) == null ? null : x; };
+  const cropYears = Object.keys(PANEL).sort();
+  const doneYears = cropYears.filter((y) => y !== cur && GR.every((g) => PANEL[y][`feed_${g.key}`] != null));
+  const cornDelivered = (zc, fx) => (zc / 100 + calc.basis) * A.bu_corn_per_t * fx;
+  const eAdj = (g, p) => p / calc.energy[g];
+  function monthlyPrice(g, m) {
+    if (g === "corn") { const zc = PR.cbot_corn.values[m], fx = PR.usdcad.values[m]; return zc && fx ? cornDelivered(zc, fx) : null; }
+    return PR[g].values[m] ?? null;
+  }
+  function latestPrices() {
+    const out = {};
+    for (const g of ["barley", "wheat", "durum", "oats"]) { const e = Object.entries(PR[g].values); const [m, v] = e[e.length - 1]; out[g] = { price: v, when: monthName(m) }; }
+    const lm = PR.latest_market;
+    out.corn = { price: cornDelivered(lm.cbot_corn, lm.usdcad), when: new Date(lm.date + "T12:00").toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" }), zc: lm.cbot_corn, fx: lm.usdcad };
+    return out;
+  }
+
+  // generic line chart over categorical x labels (crop years, survey dates, months)
+  function lineChart(host, opts) {
+    host.replaceChildren();
+    const W = host.clientWidth, H = host.clientHeight;
+    if (!W) return;
+    const xs = opts.x, n = xs.length;
+    const m = { l: opts.pctAxis ? 44 : 52, r: 12, t: 10, b: 24 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const vals = opts.series.flatMap((s) => s.values).filter((v) => v != null && isFinite(v));
+    let min = opts.zero === false ? Math.min(...vals) : Math.min(0, ...vals), max = Math.max(...vals, opts.zero === false ? -Infinity : 0);
+    if (!(max > min)) max = min + 1;
+    const step = niceStep(max - min, 4);
+    min = Math.floor(min / step) * step; max = Math.ceil(max / step) * step;
+    const x = (i) => m.l + (n === 1 ? iw / 2 : (i / (n - 1)) * iw);
+    const y = (v) => m.t + ih - ((v - min) / (max - min)) * ih;
+    const svg = makeSvg(host, W, H, opts.aria, true);
+    for (let v = min; v <= max + 1e-9; v += step) {
+      el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: Math.abs(v) < 1e-9 ? css("--axis") : css("--grid") }, svg);
+      svgText(svg, { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, opts.pctAxis ? Math.round(v * 100) + "%" : Math.round(v).toLocaleString());
+    }
+    let lastX = -Infinity;
+    xs.forEach((lab, i) => {
+      const t = opts.xLabel ? opts.xLabel(lab) : lab;
+      if (!t || x(i) - lastX < 44) return;
+      svgText(svg, { x: x(i), y: H - 6, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, t);
+      lastX = x(i);
+    });
+    for (const s of opts.series) {
+      let d = "", pen = false;
+      s.values.forEach((v, i) => { if (v == null || !isFinite(v)) { pen = false; return; } d += (pen ? "L" : "M") + x(i) + "," + y(v); pen = true; });
+      const p = el("path", { d, fill: "none", "stroke-width": s.width || 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+      p.style.stroke = s.color;
+      if (s.dots) s.values.forEach((v, i) => { if (v != null && isFinite(v)) { const c = el("circle", { cx: x(i), cy: y(v), r: 3.5, "stroke-width": 1.5 }, svg); c.style.fill = s.color; c.style.stroke = "var(--surface)"; } });
+    }
+    const cross = el("line", { y1: m.t, y2: m.t + ih, stroke: css("--axis"), visibility: "hidden" }, svg);
+    const hit = el("rect", { x: m.l - 6, y: 0, width: iw + 12, height: H, fill: "transparent" }, svg);
+    let fi = n - 1;
+    const show = (i, cx, cy) => {
+      i = Math.max(0, Math.min(n - 1, i));
+      cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible");
+      showTip(cx, cy, opts.xLabel ? opts.xLabel(xs[i], true) : xs[i], opts.series.map((s) => ({ value: opts.fmt ? opts.fmt(s.values[i]) : n1(s.values[i]), label: s.label, color: s.color })));
+    };
+    const hide = () => { cross.setAttribute("visibility", "hidden"); hideTip(); };
+    hit.addEventListener("pointermove", (e) => { const r = svg.getBoundingClientRect(); show(Math.round(((e.clientX - r.left - m.l) / iw) * (n - 1)), e.clientX, e.clientY); });
+    hit.addEventListener("pointerleave", hide);
+    svg.addEventListener("blur", hide);
+    svg.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault(); fi = Math.max(0, Math.min(n - 1, fi + (e.key === "ArrowRight" ? 1 : -1)));
+      const r = svg.getBoundingClientRect(); show(fi, r.left + x(fi), r.top + m.t + 10);
+    });
+  }
+
+  // tables with optional group rows; cells are strings
+  function buildTable(table, head, groups, opts = {}) {
+    table.replaceChildren();
+    const hr = table.createTHead().insertRow();
+    head.forEach((h, i) => { const th = document.createElement("th"); th.scope = "col"; th.textContent = h; if ((opts.seps || []).includes(i)) th.className = "sep"; hr.appendChild(th); });
+    const body = table.createTBody();
+    for (const [title, rows] of groups) {
+      const live = rows.filter(Boolean);
+      if (!live.length) continue;
+      if (title) { const g = body.insertRow(); g.className = "grp"; const td = g.insertCell(); td.colSpan = head.length; td.textContent = title; }
+      for (const r of live) {
+        const tr = body.insertRow();
+        if (r.cls) tr.className = r.cls;
+        const td0 = tr.insertCell(); td0.textContent = r.label;
+        if (r.color) { const k = document.createElement("span"); k.className = "dot"; k.style.cssText = `background:${r.color};margin-right:6px;vertical-align:-1px`; td0.prepend(k); }
+        r.cells.forEach((v, i) => { const td = tr.insertCell(); td.textContent = v; if (String(v).startsWith("−")) td.className = "neg"; if ((opts.seps || []).includes(i + 1)) td.classList.add("sep"); });
+      }
+    }
+  }
+
+  // ---------- summary tiles ----------
+  function renderSummary() {
+    const host = $("summary");
+    host.replaceChildren();
+    host.style.setProperty("--rest", 4);
+    const tile = (label, color) => {
+      const t = document.createElement("div"); t.className = "tile";
+      const l = document.createElement("div"); l.className = "label";
+      if (color) { const d = document.createElement("span"); d.className = "dot"; d.style.background = color; l.appendChild(d); }
+      l.appendChild(document.createTextNode(label)); t.appendChild(l); host.appendChild(t); return t;
+    };
+    const big = (t, text, unit, cls = "tile-value") => { const v = document.createElement("div"); v.className = cls; v.textContent = text; if (unit) { const s = document.createElement("small"); s.textContent = unit; v.appendChild(s); } t.appendChild(v); };
+    const deltas = (t, pairs) => { const d = document.createElement("div"); d.className = "deltas"; for (const [p, txt] of pairs) { const s = document.createElement("span"); s.append(chip(p), document.createTextNode(" " + txt)); d.appendChild(s); } t.appendChild(d); };
+    const note = (t, text) => { const n = document.createElement("div"); n.className = "note"; n.textContent = text; t.appendChild(n); };
+
+    const lyTot = sumOf(Object.values(EST.last_year)), avgTot = sumOf(Object.values(EST.avg_5yr));
+    const t1 = tile(`Feed use estimate, ${short(cur)}`);
+    big(t1, (EST.total / 1000).toFixed(1), "million t", "hero-value");
+    deltas(t1, [[pct(EST.total, lyTot), `vs ${short(lastYr)}`], [pct(EST.total, avgTot), "vs 5-yr average"]]);
+    note(t1, `Barley ${fmtKt(EST.by_grain.barley)} · wheat ${fmtKt(EST.by_grain.wheat)} · corn imports ${fmtKt(EST.by_grain.corn)} · oats ${fmtKt(EST.by_grain.oats)} · durum ${fmtKt(EST.by_grain.durum)}`);
+
+    const lp = latestPrices();
+    const ranked = GR.map((g) => ({ ...g, adj: eAdj(g.key, lp[g.key].price) })).sort((a, b) => a.adj - b.adj);
+    const t2 = tile("Cheapest feed energy", ranked[0].color);
+    big(t2, ranked[0].label.replace(" (West)", ""), "");
+    note(t2, `${money(ranked[0].adj)}/t barley-equivalent, against ${ranked.slice(1).map((r) => `${r.label.replace(" (ex-durum)", "").replace("Imported corn (West)", "US corn")} ${money(r.adj)}`).join(", ")}.`);
+
+    const bp = Object.entries(PR.barley.values), [bm, bv] = bp[bp.length - 1];
+    const yoy = PR.barley.values[`${+bm.slice(0, 4) - 1}${bm.slice(4)}`];
+    const avg5 = mean([1, 2, 3, 4, 5].map((k) => PR.barley.values[`${+bm.slice(0, 4) - k}${bm.slice(4)}`]));
+    const t3 = tile(`Feed barley, Alberta, ${monthName(bm)}`, "var(--c1)");
+    big(t3, money(bv), "/t");
+    deltas(t3, [[pct(bv, yoy), "vs a year earlier"], [pct(bv, avg5), "vs 5-yr average"]]);
+
+    const inv = LIV.inventory, dates = Object.keys(inv.feedlot_steers).sort(), dl = dates[dates.length - 1];
+    const fl = (d) => (inv.feedlot_steers[d] ?? 0) + (inv.feedlot_heifers[d] ?? 0);
+    const prevYear = `${+dl.slice(0, 4) - 1}${dl.slice(4)}`;
+    const t4 = tile(`Feedlot cattle, Western Canada, ${dl.endsWith("01") ? "Jan 1" : "Jul 1"} ${dl.slice(0, 4)}`);
+    big(t4, Math.round(fl(dl)).toLocaleString(), "thousand head");
+    deltas(t4, [[pct(fl(dl), fl(prevYear)), "vs a year earlier"]]);
+    note(t4, `Hogs ${Math.round(inv.hogs[dl] ?? 0).toLocaleString()}k (${fmtPct(pct(inv.hogs[dl], inv.hogs[prevYear]))} y/y) · beef cows ${Math.round(inv.beef_cows[dl]).toLocaleString()}k`);
+
+    const c = wk("us_corn_receipts", cur), w = lastWeek(c, W_NOW);
+    const now = w ? at(c, w) : 0, ly = at(wk("us_corn_receipts", lastYr), w || W_NOW), a5 = mean(ref.map((r) => at(wk("us_corn_receipts", r), w || W_NOW)));
+    const t5 = tile("US corn received so far", "var(--c5)");
+    big(t5, fmtKt(now).replace(" kt", "").replace(" Mt", ""), fmtKt(now).endsWith("Mt") ? "million t" : "thousand t");
+    deltas(t5, [[pct(now, ly), `vs ${short(lastYr)}`], [pct(now, a5), "vs 5-yr average"]]);
+    note(t5, "At CGC-licensed elevators and processors in Western Canada");
+  }
+
+  // ---------- weekly flash ----------
+  function flowRow(label, key, cls) {
+    const c = wk(key, cur), w = lastWeek(c, W_NOW);
+    if (w == null) return null;
+    const d = diff(c), a4 = mean(d.slice(Math.max(0, w - 4), w));
+    const cy = at(c, w), ly = at(wk(key, lastYr), w), avg5 = mean(ref.map((r) => at(wk(key, r), w)));
+    return { label: label + (w < W_NOW ? ` (to wk ${w})` : ""), cls,
+      cells: [n1(d[w - 1]), n1(d[w - 2]), chg(d[w - 1] - d[w - 2]), n1(a4), n1(diff(wk(key, lastYr))[w - 1]), n1(cy), n1(ly), fmtPct(pct(cy, ly)), n1(avg5), fmtPct(pct(cy, avg5))] };
+  }
+  function shareRow(label, num, den) {
+    const f = (y, w) => { const a = at(wk(num, y), w), b = at(wk(den, y), w); return a != null && b ? a / b : null; };
+    const fw = (y, w) => { const a = diff(wk(num, y))[w - 1], b = diff(wk(den, y))[w - 1]; return a != null && b ? a / b : null; };
+    const w = lastWeek(wk(num, cur), W_NOW);
+    if (w == null) return null;
+    const cy = f(cur, w), ly = f(lastYr, w), a5 = mean(ref.map((r) => f(r, w)));
+    return { label: label + (w < W_NOW ? ` (to wk ${w})` : ""), cls: "sub",
+      cells: [pctTxt(fw(cur, w)), pctTxt(fw(cur, w - 1)), pp(fw(cur, w) - fw(cur, w - 1)), "–", pctTxt(fw(lastYr, w)), pctTxt(cy), pctTxt(ly), pp(cy - ly), pctTxt(a5), pp(cy - a5)] };
+  }
+  function renderFlash() {
+    const wEnd = new Date(D.meta.week_ending + "T12:00").toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
+    $("flash-eyebrow").textContent = `CGC · ${short(cur)} · week ${W_NOW} · ending ${wEnd} · kt`;
+    const meal = (y) => wk("canola_crush", y).map((v) => v == null ? null : v * A.canola_meal_yield);
+    WK.canola_meal = Object.fromEntries(Object.keys(WK.canola_crush || {}).map((y) => [y, meal(y)]));
+    const head = ["Thousand tonnes", `Wk ${W_NOW}`, `Wk ${W_NOW - 1}`, "Chg", "4-wk avg", `LY wk ${W_NOW}`, "CYTD", "LY CYTD", "y/y", "5-yr CYTD", "vs 5-yr"];
+    buildTable($("flash-table"), head, [
+      ["Barley", [flowRow("Feed barley delivered to elevators", "barley_feed_deliveries"), flowRow("Feed barley shipped for domestic feed", "barley_feed_shipments"),
+        flowRow("All barley delivered to elevators", "barley_primary_deliveries"), shareRow("Feed share of elevator deliveries", "barley_feed_deliveries", "barley_primary_deliveries")]],
+      ["Wheat (ex-durum)", [flowRow("Feed wheat delivered to elevators", "wheat_feed_deliveries"), flowRow("Feed wheat shipped for domestic feed", "wheat_feed_shipments"),
+        flowRow("All wheat delivered to elevators", "wheat_primary_deliveries"), shareRow("Feed share of elevator deliveries", "wheat_feed_deliveries", "wheat_primary_deliveries")]],
+      ["Imports", [flowRow("US corn received (licensed elevators and processors)", "us_corn_receipts")]],
+      ["Protein meal", [flowRow(`Canola meal output (crush × ${A.canola_meal_yield})`, "canola_meal")]],
+    ], { seps: [6, 8] });
+    $("flash-note").textContent = `Weekly values are week-over-week changes in CGC crop-year totals. Share rows are percents, and their changes are percentage points. LY = ${short(lastYr)}; 5-yr = ${short(ref[0])} to ${short(lastYr)} at the same week. Feed-grade deliveries and shipments come from CGC's domestic feed grain table (a subset of elevator deliveries). Canola meal is estimated from CGC crush at ${A.canola_meal_yield} t of meal per t of seed; most is exported.`;
+  }
+
+  // ---------- estimate ----------
+  function renderEstimate() {
+    const lp = latestPrices();
+    $("est-eyebrow").textContent = `${short(cur)} · kt`;
+    $("est-sub").textContent = `Each grain's estimate is half the model (its share of the ${short(EST.avg_years[0])} to ${short(EST.avg_years[1])} average total, set by availability and energy-adjusted price) and half its own 5-year average. Supply is carry-in plus StatCan's latest production estimate plus last year's imports.`;
+    const head = ["Thousand tonnes", `Estimate ${short(cur)}`, "Model only", "5-yr avg", short(lastYr), "vs last year", "Supply", "Latest price", "C$/t barley-eq", "Model share"];
+    const rows = GR.map((g) => {
+      const e = EST.by_grain[g.key], ly = EST.last_year[g.key];
+      return { label: g.label + (g.key === "corn" && EST.last_year_corn_estimated ? "*" : ""), color: g.color,
+        cells: [n1(e), n1(EST.model_only[g.key]), n1(EST.avg_5yr[g.key]), n1(ly), fmtPct(pct(e, ly)),
+          g.key === "corn" ? "imports" : n1(EST.supply[g.key]), money(lp[g.key].price), money(eAdj(g.key, lp[g.key].price)), pctTxt(EST.shares[g.key])] };
+    });
+    const tot = { label: "Total", cls: "total", cells: [n1(EST.total), n1(sumOf(Object.values(EST.model_only))), n1(sumOf(Object.values(EST.avg_5yr))), n1(sumOf(Object.values(EST.last_year))),
+      fmtPct(pct(EST.total, sumOf(Object.values(EST.last_year)))), "", "", "", "100%"] };
+    buildTable($("est-table"), head, [[null, [...rows, tot]]], { seps: [1, 6, 7] });
+
+    const bm = MODEL.backtest_mae, ty = MODEL.test_years;
+    $("acc-p").textContent = `Mean absolute error, kt, forecasting each crop year from ${short(ty[0])} to ${short(ty[ty.length - 1])} using only earlier years. Lower is better; bold is best.`;
+    const methods = [["estimate", "Estimate (50/50)"], ["model_only", "Model only"], ["avg_5yr", "5-yr average"], ["last_year", "Last year"]];
+    buildTable($("acc-table"), ["Grain", ...methods.map((m) => m[1])], [[null, [...GR.map((g) => ({ key: g.key, label: g.label, color: g.color })), { key: "total", label: "Total" }].map((g) => {
+      const v = methods.map(([k]) => bm[g.key][k]), best = Math.min(...v);
+      return { label: g.label, color: g.color, cls: g.key === "total" ? "total" : "", cells: v.map((x) => n1(x) + (x === best && g.key !== "total" ? " ●" : "")) };
+    })]]);
+
+    // estimate vs last year: grouped horizontal bars
+    const host = $("ch-estbar");
+    host.replaceChildren();
+    legend($("leg-estbar"), [{ label: short(cur) + " estimate", color: "var(--c1)", kind: "rect" }, { label: short(lastYr), color: "var(--other)", kind: "rect" }]);
+    const Wd = host.clientWidth; if (!Wd) return;
+    const rowH = 38, m = { l: 128, r: 64, t: 4, b: 4 }, H = m.t + m.b + GR.length * rowH;
+    host.style.height = H + "px";
+    const max = Math.max(...GR.map((g) => Math.max(EST.by_grain[g.key], EST.last_year[g.key] || 0)));
+    const xw = (v) => (v / max) * (Wd - m.l - m.r);
+    const svg = makeSvg(host, Wd, H, "Feed use estimate by grain against last crop year");
+    GR.forEach((g, i) => {
+      const y0 = m.t + i * rowH;
+      svgText(svg, { x: m.l - 8, y: y0 + rowH / 2 + 4, "text-anchor": "end", "font-size": 12, fill: css("--ink") }, g.label);
+      [[EST.by_grain[g.key], "var(--c1)", 6], [EST.last_year[g.key], "var(--other)", 20]].forEach(([v, col, dy]) => {
+        if (v == null) return;
+        const r = el("rect", { x: m.l, y: y0 + dy, width: Math.max(1, xw(v)), height: 12, rx: 3 }, svg); r.style.fill = col;
+        svgText(svg, { x: m.l + xw(v) + 6, y: y0 + dy + 10, "font-size": 11, fill: css("--ink-2") }, fmtKt(v));
+      });
+    });
+  }
+
+  // ---------- feed economics ----------
+  function renderCalc() {
+    const host = $("calc");
+    host.replaceChildren();
+    const field = (id, label, value, step, onInput, suffix) => {
+      const w = document.createElement("label"); w.className = "calc-field"; w.htmlFor = id;
+      const s = document.createElement("span"); s.textContent = label;
+      const inp = document.createElement("input"); inp.type = "number"; inp.id = id; inp.step = step; inp.value = value;
+      inp.addEventListener("input", () => { const v = parseFloat(inp.value); if (isFinite(v) && v > 0) { onInput(v); saveCalc(); renderEconomics(); renderSummary(); renderEstimate(); } });
+      const sf = document.createElement("em"); sf.textContent = suffix || "";
+      w.append(s, inp, sf); host.appendChild(w);
+    };
+    field("calc-basis", "US corn basis + freight to southern Alberta", calc.basis, 0.05, (v) => { calc.basis = v; }, "US$/bu over CBOT");
+    for (const g of GR.filter((x) => x.key !== "barley")) field(`calc-e-${g.key}`, `${g.label.replace(" (West)", "")} energy vs barley`, calc.energy[g.key], 0.01, (v) => { calc.energy[g.key] = v; }, "× barley");
+    const reset = document.createElement("button"); reset.type = "button"; reset.className = "btn"; reset.textContent = "Reset to defaults";
+    reset.addEventListener("click", () => { calc.basis = A.corn_basis_usd_bu; calc.energy = { ...A.energy_vs_barley }; saveCalc(); renderCalc(); renderEconomics(); renderSummary(); renderEstimate(); });
+    host.appendChild(reset);
+  }
+  function renderEconomics() {
+    const lp = latestPrices();
+    const ranked = GR.map((g) => ({ ...g, price: lp[g.key].price, when: lp[g.key].when, adj: eAdj(g.key, lp[g.key].price) })).sort((a, b) => a.adj - b.adj);
+    $("rank-h").textContent = `Cheapest feed energy: ${ranked[0].label.replace(" (West)", "")}`;
+    $("rank-p").textContent = "Latest available prices. StatCan farm prices lag by about two months; CBOT corn is this week's close.";
+    const bAdj = eAdj("barley", lp.barley.price);
+    buildTable($("rank-table"), ["Grain", "C$/t", "As of", "Barley-eq", "vs barley"], [[null, ranked.map((r, i) => ({
+      label: `${i + 1}. ${r.label.replace(" (West)", "")}`, color: r.color, cells: [money(r.price), r.when, money(r.adj), fmtPct(pct(r.adj, bAdj))] }))]]);
+    $("corn-note").textContent = `US corn delivered: (CBOT ${lp.corn.zc.toFixed(2)}¢/bu ÷ 100 + US$${calc.basis.toFixed(2)} basis and freight) × ${A.bu_corn_per_t} bu/t × ${lp.corn.fx.toFixed(4)} USD/CAD = ${money(lp.corn.price)}/t. Wheat price is StatCan's "wheat (except durum), other" (non-milling) series; durum and oats are all grades.`;
+
+    const months = Object.keys(PR.barley.values).filter((mo) => mo >= "2016-01");
+    legend($("leg-eprice"), GR.map((g) => ({ label: g.label.replace(" (West)", "").replace("Imported corn", "US corn delivered"), color: g.color })));
+    lineChart($("ch-eprice"), {
+      x: months, aria: "Energy-adjusted feed grain prices by month",
+      xLabel: (mo, long) => long ? monthName(mo) : (mo.endsWith("-01") ? mo.slice(0, 4) : ""),
+      series: GR.map((g) => ({ label: g.label, color: g.color, values: months.map((mo) => { const p = monthlyPrice(g.key, mo); return p == null ? null : eAdj(g.key, p); }), width: g.key === "barley" ? 2.5 : 1.75 })),
+      fmt: (v) => money(v),
+    });
+
+    const yrs = doneYears.filter((y) => y >= "2013-2014");
+    const cyAvg = (g, y) => { const y0 = +y.slice(0, 4); const ms = [...[8, 9, 10, 11, 12].map((mo) => `${y0}-${String(mo).padStart(2, "0")}`), ...[1, 2, 3, 4, 5, 6, 7].map((mo) => `${y0 + 1}-${String(mo).padStart(2, "0")}`)];
+      return mean(ms.map((mo) => { const p = monthlyPrice(g, mo); return p == null ? null : eAdj(g, p); })); };
+    yearStack($("ch-spread"), {
+      years: yrs, aria: "US corn premium over barley by crop year",
+      keys: [{ key: "spread", label: "Corn premium over barley", color: "var(--c5)" }],
+      getVals: (y) => { const c = cyAvg("corn", y), b = cyAvg("barley", y); return { spread: c != null && b != null ? Math.max(0, c - b) : 0 }; },
+      tipExtra: (y) => [{ value: money(cyAvg("corn", y) - cyAvg("barley", y)), label: "corn minus barley, C$/t barley-eq" }],
+      capLabel: (y) => { const v = cyAvg("corn", y) - cyAvg("barley", y); return v < 0 ? "−" + Math.round(-v) : ""; },
+    });
+    const cornYears = cropYears.filter((y) => y >= "2013-2014" && y !== cur && D.corn[y]);
+    legend($("leg-corn"), [{ label: "StatCan imports (West)", color: "var(--c5)", kind: "rect" }, { label: "US corn received at CGC-licensed facilities", kind: "mark" }]);
+    yearStack($("ch-corn"), {
+      years: cornYears, aria: "Corn imports into Western Canada by crop year",
+      keys: [{ key: "imports", label: "StatCan imports (West)", color: "var(--c5)" }],
+      getVals: (y) => ({ imports: (D.corn[y].aug || {}).imports_west ?? (PANEL[y]?.corn_estimated ? PANEL[y].feed_corn : 0) }),
+      marker: { label: "US corn received at CGC-licensed facilities", get: (y) => finalOf(wk("us_corn_receipts", y)) },
+      tipExtra: (y) => (D.corn[y].aug ? [] : [{ value: "est.", label: "August not yet published: March scaled by the usual ratio" }]),
+    });
+  }
+
+  // ---------- history ----------
+  function renderHistory() {
+    legend($("leg-feed"), GR.map((g) => ({ label: g.label, color: g.color, kind: "rect" })));
+    yearStack($("ch-feed"), {
+      years: cropYears.filter((y) => y >= "2012-2013" && y !== cur), maxBar: 40, aria: "Feed use by grain and crop year",
+      keys: GR, getVals: (y) => Object.fromEntries(GR.map((g) => [g.key, PANEL[y][`feed_${g.key}`] || 0])),
+      tipExtra: (y) => (PANEL[y].corn_estimated ? [{ value: "*", label: "corn estimated (August not yet published)" }] : []),
+    });
+    const sd = D.supply_disposition, yrs = cropYears.filter((y) => y !== cur && y >= "2012-2013");
+    const small = GR.filter((g) => g.key !== "corn");
+    legend($("leg-fedshare"), small.map((g) => ({ label: g.label, color: g.color })));
+    lineChart($("ch-fedshare"), {
+      x: yrs, aria: "Share of production fed by grain", pctAxis: true, xLabel: (y, long) => long ? short(y) : "'" + y.slice(2, 4),
+      series: small.map((g) => ({ label: g.label, color: g.color, dots: true, values: yrs.map((y) => { const r = sd[g.key]?.[y]?.jul; return r && r.production ? r.feed / r.production : null; }) })),
+      fmt: (v) => pctTxt(v),
+    });
+    const qy = cropYears.filter((y) => WK.barley_primary_deliveries?.[y]);
+    const qshare = (g, y) => { const a = finalOf(wk(`${g}_feed_deliveries`, y)), b = finalOf(wk(`${g}_primary_deliveries`, y)); return a != null && b ? a / b : null; };
+    legend($("leg-quality"), [{ label: "Barley", color: "var(--c1)" }, { label: "Wheat (ex-durum)", color: "var(--c2)" }]);
+    lineChart($("ch-quality"), {
+      x: qy, aria: "Feed-grade share of elevator deliveries", pctAxis: true, xLabel: (y, long) => long ? short(y) + (y === cur ? ` (to wk ${W_NOW})` : "") : "'" + y.slice(2, 4),
+      series: [{ label: "Barley", color: "var(--c1)", dots: true, values: qy.map((y) => qshare("barley", y)) }, { label: "Wheat (ex-durum)", color: "var(--c2)", dots: true, values: qy.map((y) => qshare("wheat", y)) }],
+      fmt: (v) => pctTxt(v),
+    });
+
+    const table = document.createElement("table");
+    const head = ["Crop year", ...GR.map((g) => g.label + " fed"), "Total fed", ...small.map((g) => g.label + " % of production"), "Feed barley $/t", "Wheat (other) $/t", "US corn $/t", "Western on-farm barley fed"];
+    const hr = table.createTHead().insertRow();
+    head.forEach((h) => { const th = document.createElement("th"); th.scope = "col"; th.textContent = h; hr.appendChild(th); });
+    const body = table.createTBody();
+    for (const y of yrs.slice().reverse()) {
+      const p = PANEL[y], tr = body.insertRow();
+      const fedTot = sumOf(GR.map((g) => p[`feed_${g.key}`]));
+      [short(y), ...GR.map((g) => n1(p[`feed_${g.key}`]) + (g.key === "corn" && p.corn_estimated ? "*" : "")), n1(fedTot),
+        ...small.map((g) => { const r = sd[g.key]?.[y]?.jul; return r && r.production ? pctTxt(r.feed / r.production) : "–"; }),
+        money(p.price_barley), money(p.price_wheat), money(p.price_corn), n1(D.western_farm_feed.barley?.[y])].forEach((v) => { tr.insertCell().textContent = v; });
+    }
+    $("hist-table").replaceChildren(table);
+  }
+
+  // ---------- livestock ----------
+  function renderLivestock() {
+    const inv = LIV.inventory, dates = Object.keys(inv.total_cattle).filter((d) => d >= "2012-01").sort();
+    const dLab = (d, long) => long ? (d.endsWith("01") ? "Jan 1 " : "Jul 1 ") + d.slice(0, 4) : (d.endsWith("-01") ? d.slice(0, 4) : "");
+    legend($("leg-cattle"), [{ label: "Total cattle", color: "var(--c3)" }, { label: "Beef cows", color: "var(--c2)" }, { label: "Feedlot (steers + slaughter heifers)", color: "var(--c1)" }]);
+    lineChart($("ch-cattle"), {
+      x: dates, aria: "Cattle inventories in Western Canada", xLabel: dLab,
+      series: [
+        { label: "Total cattle", color: "var(--c3)", values: dates.map((d) => inv.total_cattle[d]) },
+        { label: "Beef cows", color: "var(--c2)", values: dates.map((d) => inv.beef_cows[d]) },
+        { label: "Feedlot", color: "var(--c1)", values: dates.map((d) => (inv.feedlot_steers[d] ?? 0) + (inv.feedlot_heifers[d] ?? 0)) },
+      ],
+    });
+    const hd = Object.keys(inv.hogs).filter((d) => d >= "2012-01").sort();
+    lineChart($("ch-hogs"), { x: hd, aria: "Hog inventories in Western Canada", xLabel: dLab, zero: false, series: [{ label: "Hogs", color: "var(--c1)", values: hd.map((d) => inv.hogs[d]), dots: true }] });
+
+    const my = Object.keys(LIV.meat.pork).filter((y) => y >= "2012").sort();
+    const MEAT = [{ key: "beef", label: "Beef and veal", color: "var(--c1)" }, { key: "pork", label: "Pork", color: "var(--c2)" }, { key: "poultry", label: "Poultry", color: "var(--c3)" }];
+    legend($("leg-meat"), MEAT.map((k) => ({ label: k.label, color: k.color, kind: "rect" })));
+    yearStack($("ch-meat"), { years: my, aria: "Meat production in Canada by year", keys: MEAT,
+      getVals: (y) => ({ beef: (LIV.meat.beef[y] || 0) + (LIV.meat.veal[y] || 0), pork: LIV.meat.pork[y], poultry: LIV.meat.poultry[y] }) });
+    const sy = Object.keys(LIV.slaughter.hogs).sort().slice(-6).reverse();
+    buildTable($("slaughter-table"), ["Year", "Cattle", "Calves", "Hogs", "Beef + veal kt", "Pork kt", "Poultry kt"], [[null, sy.map((y) => ({ label: y,
+      cells: [n1(LIV.slaughter.cattle[y]), n1(LIV.slaughter.calves[y]), n1(LIV.slaughter.hogs[y]), n1((LIV.meat.beef[y] || 0) + (LIV.meat.veal[y] || 0)), n1(LIV.meat.pork[y]), n1(LIV.meat.poultry[y])] }))]]);
+
+    const dem = D.demand_index, dy = Object.keys(dem).sort(), W8 = A.demand_weights;
+    $("dem-p").textContent = `Tonnes of grain implied by animal numbers, per crop year: feedlot cattle × ${W8.feedlot} t, beef cows × ${W8.beef_cows} t, dairy cows × ${W8.dairy_cows} t, hogs × ${W8.hogs} t per head of inventory, and ${W8.poultry} t per tonne of poultry meat. A rough gauge of how demand moves; the estimate does not use it, because it did not improve accuracy in the backtest.`;
+    const DK = [{ key: "feedlot", label: "Feedlot cattle", color: "var(--c1)" }, { key: "hogs", label: "Hogs", color: "var(--c2)" }, { key: "poultry", label: "Poultry", color: "var(--c3)" }, { key: "beef_cows", label: "Beef cows", color: "var(--c4)" }, { key: "dairy_cows", label: "Dairy cows", color: "var(--c5)" }];
+    legend($("leg-dem"), DK.map((k) => ({ label: k.label, color: k.color, kind: "rect" })));
+    yearStack($("ch-dem"), { years: dy, maxBar: 40, aria: "Grain demand index by component", keys: DK, getVals: (y) => dem[y] });
+  }
+
+  function renderNotes() {
+    const ul = $("notes-list");
+    ul.replaceChildren();
+    const li = (...parts) => { const l = document.createElement("li"); l.append(...parts); ul.appendChild(l); };
+    const link = (t, h) => { const a = document.createElement("a"); a.href = h; a.target = "_blank"; a.rel = "noopener"; a.textContent = t; return a; };
+    li("Feed use is StatCan's \"animal feed, waste and dockage\" (table 32-10-0013, supply and disposition of grains; corn: 32-10-0014), a residual of the supply and disposition balance, so it also absorbs measurement error. StatCan publishes it for Aug–Dec, Aug–Mar and the full crop year.");
+    li("Barley, wheat, durum and oats feed use are Canada totals; most of it is in Western Canada (StatCan's farm supply and disposition, 32-10-0015, puts about three-quarters of barley feeding on western farms). Corn is StatCan's imports into provinces other than Ontario and Quebec, as a proxy for corn fed in Western Canada; Ontario and Quebec feed their own corn crop.");
+    li("Feed-grade share of elevator deliveries uses CGC's domestic feed grain table (Grain Statistics Weekly). CGC notes the licensed elevator system handles only about 10–15% of feed grain use. The wheat share fell sharply after 2020-21, likely because more feed wheat moves outside licensed elevators rather than because quality improved.");
+    li("Prices: StatCan farm product prices for Alberta (32-10-0077): feed barley, non-milling (\"other\") wheat, durum and oats. CBOT corn and USD/CAD are weekly closes from Yahoo Finance; the corn basis and freight is an editable assumption.");
+    li("Livestock: StatCan cattle (32-10-0130) and hog (32-10-0160) inventories for the western provinces; slaughter and meat production (32-10-0125, 32-10-0126); poultry meat (32-10-0117).");
+    li(`Estimate method: model fitted on ${short(MODEL.fit.train_years[0])} to ${short(MODEL.fit.train_years[1])}: log(share of grain ÷ share of barley) = crop constant + ${MODEL.fit.a.toFixed(2)} × log(availability ratio) ${MODEL.fit.b < 0 ? "−" : "+"} ${Math.abs(MODEL.fit.b).toFixed(2)} × log(energy-adjusted price ratio). Availability is supply relative to the grain's own average. The estimate averages the model with each grain's 5-year average; the backtest table shows how each method would have done. The model uses the default energy values, so changing them on this page changes the price table but not the estimate.`);
+    li("* Corn imports for the latest complete crop year are estimated where StatCan has not yet published the August figure.");
+    li("Harvest-sample grade distributions (CGC Harvest Sample Program) would add a direct quality measure, but CGC publishes them in inconsistent formats across years, so they are not included yet.");
+    li("Related pages: ", link("Prairie Delivery Pace", "../"), ", ", link("Barley Pipeline", "../barley/"), ", ",
+      link("Wheat Pipeline", "../wheat/"), ", ", link("Durum Pipeline", "../durum/"), ", ", link("Canola Pipeline", "../canola/"), ".");
+    const gen = document.createElement("li");
+    gen.textContent = `CGC data through ${short(cur)} week ${W_NOW} (week ending ${D.meta.week_ending}). Built ${D.meta.generated}.`;
+    ul.appendChild(gen);
+  }
+
+  // copy a table as tab-separated text
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-copy]");
+    if (!btn) return;
+    const table = $(btn.dataset.copy);
+    const tsv = [...table.rows].map((r) => [...r.cells].map((c) => c.textContent.replace(/−/g, "-").replace(" ●", "")).join("\t")).join("\n");
+    const done = (ok) => { btn.textContent = ok ? "Copied" : "Selected: press Ctrl/Cmd+C"; setTimeout(() => { btn.textContent = "Copy table"; }, 2000); };
+    const fallback = () => { const r = document.createRange(); r.selectNode(table); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); done(false); };
+    try { navigator.clipboard.writeText(tsv).then(() => done(true), fallback); } catch (err) { fallback(); }
+  });
+  $("toggle-table").addEventListener("click", (e) => {
+    const t = $("hist-table"), open = t.hidden;
+    t.hidden = !open; e.target.setAttribute("aria-expanded", open); e.target.textContent = open ? "Hide data table" : "Show data table";
+  });
+
+  // ---------- boot ----------
+  $("asof").textContent = `Crop year ${short(cur)} · CGC week ${W_NOW} · compared with ${short(ref[0])} to ${short(lastYr)} · StatCan tables as published`;
+  const renderAll = () => { renderSummary(); renderFlash(); renderEstimate(); renderEconomics(); renderHistory(); renderLivestock(); };
+  renderCalc();
+  renderAll();
+  renderNotes();
+  let rt;
+  new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(renderAll, 120); }).observe(document.querySelector(".wrap"));
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
+  new MutationObserver(renderAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+})();
+</script>
+
+</html>

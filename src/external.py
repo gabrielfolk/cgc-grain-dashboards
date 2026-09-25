@@ -166,3 +166,48 @@ if __name__ == "__main__":
     today = pd.Timestamp.today().normalize()
     print("production known today:", production_known(today.year if today.month >= 8 else today.year - 1, today))
     print("prices today:", {k: round(v, 3) for k, v in prices_as_of(today).items()})
+
+
+# ---------------------------------------------------------------- feed grains page
+
+def statcan(table: str, refresh: bool = False) -> pd.DataFrame:
+    """Any StatCan table by id (e.g. "32100013"), downloaded once and cached."""
+    return _statcan_csv(table, refresh)
+
+
+def yahoo_weekly(symbol: str, refresh: bool = False) -> pd.Series:
+    """Weekly closes for a Yahoo Finance symbol (e.g. "ZC=F" CBOT corn, US cents/bu)."""
+    return _yahoo_weekly(symbol, refresh)
+
+
+CGC_QUALITY = "https://www.grainscanada.gc.ca/en/grain-research/export-quality/cereals/wheat/western"
+CGC_CLASSES = {"cwrs": "canada-western-red-spring", "cwad": "canada-western-amber-durum"}
+
+
+def cgc_grade_distribution(cls: str, years: range, refresh: bool = False) -> pd.DataFrame:
+    """Share of CGC Harvest Sample Program samples by grade, per harvest year.
+
+    From CGC's annual "degrading factors" pages (Canada Western Red Spring and Canada
+    Western Amber Durum). Returns rows (year, grade, pct, samples). Years without a
+    page (or with CGC's soft-404 page) are skipped.
+    """
+    cache = RAW / "cgc_quality"
+    cache.mkdir(parents=True, exist_ok=True)
+    rows = []
+    for year in years:
+        path = cache / f"{cls}_{year}.html"
+        if refresh or not path.exists():
+            try:
+                r = requests.get(f"{CGC_QUALITY}/{year}/{CGC_CLASSES[cls]}/degrading-factors.html", headers=UA, timeout=60)
+                path.write_text(r.text if r.ok else "")
+            except requests.RequestException:
+                continue
+        html = path.read_text()
+        if "% of total" not in html:
+            continue
+        table = next(t for t in pd.read_html(io.StringIO(html)) if t.iloc[:, 0].astype(str).str.contains("% of total").any())
+        table = table.set_index(table.columns[0])
+        for grade in table.columns:
+            rows.append({"year": year, "grade": str(grade), "pct": float(table.loc["% of total", grade]),
+                         "samples": float(table.loc["Number of samples", grade])})
+    return pd.DataFrame(rows)

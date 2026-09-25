@@ -18,3 +18,7 @@
   a public Pages site.
 - [ ] **Consider a GitHub no-reply commit email** (Settings → Emails) so the personal email isn't shown in the
   public commit history.
+- [ ] **Add CGC harvest-sample grade distributions to the feed page** (share of CWRS, durum, barley and oats samples
+  grading feed). CGC publishes them in different formats each year (HTML tables, spreadsheets, PDFs), and the
+  2023-2025 reports have moved on CGC's site, so each year needs its own parser.
+- [ ] **Add AAFC weekly slaughter data** to the feed page for a timelier livestock signal than StatCan's annual figures.

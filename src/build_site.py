@@ -26,13 +26,14 @@ PAGES = {
     "wheat": "https://claude.ai/artifact/7ihCwx3TgUNdg2yfSKKyG4",
     "durum": "https://claude.ai/artifact/GUgDjqNEfP8vHb1HrKi2uH",
     "barley": "https://claude.ai/artifact/U6tuj2LiEW7VGqnQLQYwVa",
+    "feed": "https://claude.ai/artifact/Hndxeu4uQDiZQiTd1YQvLn",
 }
 DATA_FILES = ["data.json", "forecast.json"]
 
 # Bar-chart favicons, embedded so every page has one without a separate file
 # (claude.ai adds its own icon; on GitHub Pages the page must declare one).
 # The all-crops page uses multicoloured bars on dark; each crop page gets its own colour.
-CROP_COLORS = {"canola": "#f2c200", "wheat": "#c89b3c", "durum": "#e0662a", "barley": "#4e9a3a"}
+CROP_COLORS = {"canola": "#f2c200", "wheat": "#c89b3c", "durum": "#e0662a", "barley": "#4e9a3a", "feed": "#7c5cc4"}
 
 
 def favicon(page: str) -> str:

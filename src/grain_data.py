@@ -58,6 +58,7 @@ LINKS = {
     "Wheat Pipeline": "https://claude.ai/artifact/7ihCwx3TgUNdg2yfSKKyG4",
     "Durum Pipeline": "https://claude.ai/artifact/GUgDjqNEfP8vHb1HrKi2uH",
     "Barley Pipeline": "https://claude.ai/artifact/U6tuj2LiEW7VGqnQLQYwVa",
+    "Western Feed Grains": "https://claude.ai/artifact/Hndxeu4uQDiZQiTd1YQvLn",
 }
 
 GRAINS = {

@@ -39,6 +39,14 @@ Edit the template, not the copies. Crop settings (labels, which uses to show, no
 
 Then republish each page with its data.json. To preview locally, run `python3 -m http.server` inside `dashboard/`.
 
+## Feed grains
+
+`dashboard/feed/index.html` ("Western Feed Grains") covers Canadian feed use of barley, wheat, durum, oats and
+imported corn: CGC weekly feed-grain movement, StatCan supply and disposition, livestock numbers, meat production
+and energy-adjusted feed prices, plus a backtested estimate of this crop year's feed use by grain.
+`.venv/bin/python src/feed_data.py` builds `dashboard/feed/data.json` (it downloads and caches the StatCan tables and
+CBOT corn on first run). Unlike the crop pages, the feed page is edited directly rather than generated from a template.
+
 ## Forecasts
 
 `src/canola_forecast.py` forecasts weekly canola crush and exports 1-4 weeks ahead and full crop-year totals. It
@@ -56,6 +64,7 @@ StatCan publishes a new in-season canola estimate (late August, mid-September, e
 .venv/bin/python src/dashboard_data.py
 .venv/bin/python src/grain_data.py
 .venv/bin/python src/canola_forecast.py
+.venv/bin/python src/feed_data.py
 .venv/bin/python src/build_site.py
 git add -A && git commit -m "Weekly refresh: week N" && git push
 ```
