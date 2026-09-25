@@ -189,7 +189,7 @@
   <header>
     <div class="eyebrow">CGC Grain Statistics Weekly · Wheat</div>
     <h1>Wheat Pipeline</h1>
-    <p class="sub" id="lede">Western Canadian wheat (ex-durum) from CGC weekly data: producer deliveries, exports by port, terminal receipts, licensed milling, feed-grain deliveries and commercial stocks.</p>
+    <p class="sub" id="lede">Western Canadian wheat (ex-durum) from CGC weekly data: producer deliveries, exports by port, terminal receipts, licensed milling, domestic feed shipments and commercial stocks.</p>
     <p class="asof" id="asof"></p>
   </header>
 
@@ -328,7 +328,7 @@
   ];
   // the uses of the grain CGC tracks, in stacking order (bottom first)
   const USES = [
-    ...(META.feed ? [{ key: "feed", label: "Feed grains", verb: "Delivered to feed-grain facilities", color: "var(--feed)", unit: "Thousand tonnes reported by licensed feed-grain facilities" }] : []),
+    ...(META.feed ? [{ key: "feed", label: "Domestic feed", verb: "Shipped for domestic feed", color: "var(--feed)", unit: "Thousand tonnes shipped from primary elevators for domestic feed" }] : []),
     ...(META.process ? [{ key: "process", label: META.process.label, verb: META.process.verb, color: "var(--process)", unit: "Thousand tonnes" }] : []),
     { key: "exports", label: "Exports", verb: "Exported", color: "var(--exports)", unit: "Thousand tonnes, port terminals plus direct shipments" },
   ];
@@ -738,7 +738,7 @@
         const pac = at(flow("exports_pacific", cur), W_NOW), term = at(series.terminal(cur), W_NOW);
         note(t, term > 0 ? `${Math.round(100 * pac / term)}% of terminal exports went through Pacific ports` : "No terminal exports yet");
       }
-      if (u.key === "feed") note(t, "Reported separately from producer deliveries");
+      if (u.key === "feed") note(t, "Elevator shipments only. CGC estimates elevators handle about 10–15% of feed grain use.");
     };
 
     const tiles = [HERO, ...USES.filter((u) => u !== HERO)];
@@ -764,9 +764,11 @@
     const dl = tile("Delivered by farmers so far", "var(--deliveries)");
     valueEl(dl, delNow, "tile-value");
     deltas(dl, delNow, series.deliveries, W_NOW);
-    const moved = USES.filter((u) => u.key !== "feed");
-    const movedNow = moved.reduce((a, u) => a + (at(series[u.key](cur), W_NOW) || 0), 0);
-    note(dl, `${Math.round(100 * movedNow / delNow)}% of it has already been ${moved.map((u) => u.verb.toLowerCase().replace(/ at .*/, "")).join(" or ")}`);
+    // each use at its latest reported week (feed grain reporting can lag)
+    const movedNow = USES.reduce((a, u) => { const c = series[u.key](cur); const w = lastWeek(c, W_NOW); return a + (w ? at(c, w) : 0); }, 0);
+    const verbs = USES.map((u) => u.verb.toLowerCase().replace(/ at .*/, ""));
+    const verbText = verbs.length > 1 ? verbs.slice(0, -1).join(", ") + " or " + verbs[verbs.length - 1] : verbs[0];
+    note(dl, `${Math.round(100 * movedNow / delNow)}% of it has already been ${verbText}`);
 
     const stNow = at(series.stocks(cur), W_NOW);
     const st = tile(`Commercial stocks, week ${W_NOW}`);
@@ -835,8 +837,11 @@
     $("flash-eyebrow").textContent = `${short(cur)} · week ${W_NOW} · ending ${wEnd} · kt`;
     const head = ["Thousand tonnes", `Wk ${W_NOW}`, `Wk ${W_NOW - 1}`, "Chg", "4-wk avg", `LY wk ${W_NOW}`, "CYTD", "LY CYTD", "y/y", "5-yr CYTD", "vs 5-yr"];
     const groups = [
-      ["Supply", [flowRow("Producer deliveries", series.deliveries), META.feed ? flowRow("Feed grains", series.feed) : null]],
-      ...(META.process ? [["Domestic use", [flowRow(META.process.label, series.process)]]] : []),
+      ["Supply", [flowRow("Producer deliveries", series.deliveries)]],
+      ...(META.process || META.feed ? [["Domestic use", [
+        META.process ? flowRow(META.process.label, series.process) : null,
+        META.feed ? flowRow("Domestic feed (elevator shipments)", series.feed) : null,
+      ]]] : []),
       ["Exports", [
         flowRow("Total exports", series.exports, "total"),
         ...PORT_ROWS.map(([k, l]) => flowRow(l, (y) => flow(k, y), "sub")),
@@ -856,7 +861,7 @@
     const rem = WEEKS - W_NOW;
     $("pace-sub").textContent = `Weekly pace needed over the remaining ${rem} weeks to reach last year's and the 5-year-average crop-year totals, against the current 4-week average.`;
     const head = ["Thousand tonnes", "CYTD", "LY total", "% of LY", "Need/wk (LY)", "5-yr avg total", "Need/wk (5-yr)", "4-wk avg", "4-wk vs need (LY)", "Record 4-wk avg"];
-    const rows = [...USES.filter((u) => u.key !== "feed"), { key: "deliveries", label: "Producer deliveries" }].map((u) => {
+    const rows = [...USES, { key: "deliveries", label: "Producer deliveries" }].map((u) => {
       const c = series[u.key](cur), w = lastWeek(c, W_NOW);
       const cy = at(c, w), lyT = finalOf(series[u.key](lastYr)), avgT = mean(ref.map((r) => finalOf(series[u.key](r))));
       const needLy = (lyT - cy) / (WEEKS - w), need5 = (avgT - cy) / (WEEKS - w);
@@ -865,13 +870,13 @@
     });
     buildTable($("pace-table"), head, [[null, rows]], [4, 7]);
     // weeks of cover: commercial stocks over the current weekly rate of processing + exports
-    const useKeys = USES.filter((u) => u.key !== "feed").map((u) => u.key);
+    const useKeys = USES.map((u) => u.key);
     const cover = (y, w) => {
       const a4 = sumOf(useKeys.map((k) => mean(diff(series[k](y)).slice(Math.max(0, w - 4), w)) || 0));
       return a4 > 0 ? at(series.stocks(y), w) / a4 : null;
     };
     const cNow = cover(cur, W_NOW), c5 = mean(ref.map((r) => cover(r, W_NOW)));
-    const useName = useKeys.map((k) => k === "process" ? META.process.label.toLowerCase() : k).join(" + ");
+    const useName = USES.map((u) => u.label.toLowerCase()).join(" + ");
     $("cover-note").textContent = `Commercial stocks of ${fmtKt(at(series.stocks(cur), W_NOW))} cover ${cNow ? cNow.toFixed(1) : "–"} weeks of current ${useName} (4-week average); the 5-yr average at this week is ${c5 ? c5.toFixed(1) : "–"} weeks.`;
   }
 
@@ -1274,7 +1279,7 @@
     }
     for (const n of META.notes || []) li(n);
     li("Exports are shipments from licensed port terminals, plus shipments from country elevators that go straight to export or to container loaders. Before 2018-19 CGC reports Vancouver and Prince Rupert together as Pacific.");
-    if (META.feed) li("Feed grains are CGC's Feed Grains table: deliveries reported by licensed feed-grain facilities. They are not part of producer deliveries.");
+    if (META.feed) li("Domestic feed is CGC's domestic feed grain table: shipments of feed grain from primary elevators. It is a subset of the all-grains figures, so the feed grain farmers deliver to elevators is already in producer deliveries. CGC notes that the licensed elevator system handles only about 10–15% of feed grain use; most is fed on farms or sold farm-to-farm and farm-to-feedlot.");
     li(`Commercial stocks cover licensed country elevators, ${(META.process ? META.process.site : "processors").toLowerCase()} and port terminals, matching CGC's published commercial stocks total. Grain stored on farms is not included. Ending stocks are the Jul 31 figure.`);
     li("Producer deliveries cover licensed elevators, direct deliveries to processors and producer cars. Grain fed on farms or sold directly to feedlots is not tracked by CGC.");
     li("Weekly values are week-over-week changes in CGC's crop-year totals, so revisions are included. Weeks 21–22 are one combined holiday report.");

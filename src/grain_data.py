@@ -9,8 +9,9 @@ and commercial stocks. Flows are crop-year-to-date (cumulative) series; stocks a
 week-end levels.
     deliveries      producer deliveries (elevators + direct to processors + producer cars)
     process         processed at licensed facilities (Process worksheet, "Milled/Mfg Grain")
-    feed            CGC's Feed Grains table: deliveries reported by licensed feed-grain
-                    facilities, which are not part of producer deliveries
+    feed            CGC's domestic feed grain table ("Feed Grains"): primary elevator shipments
+                    of grain for domestic feed. A subset of the all-grains figures, so feed
+                    grain delivered to elevators is already inside producer deliveries.
     exports_<port>  licensed port terminal exports, ports grouped so all years compare
     exports_direct  shipped from country elevators straight to export destinations or
                     container loaders, bypassing port terminals
@@ -66,7 +67,7 @@ GRAINS = {
     },
     "wheat": {
         "grain": "Wheat", "title": "Wheat Pipeline", "name": "wheat",
-        "lede": "Western Canadian wheat (ex-durum) from CGC weekly data: producer deliveries, exports by port, terminal receipts, licensed milling, feed-grain deliveries and commercial stocks.",
+        "lede": "Western Canadian wheat (ex-durum) from CGC weekly data: producer deliveries, exports by port, terminal receipts, licensed milling, domestic feed shipments and commercial stocks.",
         "process": {"label": "Licensed milling", "verb": "Milled at licensed mills", "site": "Mills"},
         "feed": True, "hero": "exports",
         "notes": [
@@ -82,7 +83,7 @@ GRAINS = {
     },
     "barley": {
         "grain": "Barley", "title": "Barley Pipeline", "name": "barley",
-        "lede": "Western Canadian barley from CGC weekly data: producer deliveries, exports by port, terminal receipts, malting and processing, feed-grain deliveries and commercial stocks.",
+        "lede": "Western Canadian barley from CGC weekly data: producer deliveries, exports by port, terminal receipts, malting and processing, domestic feed shipments and commercial stocks.",
         "process": {"label": "Malting & processing", "verb": "Processed", "site": "Processors"},
         "feed": True, "hero": "exports",
         "notes": [
@@ -104,7 +105,7 @@ where grain = '{grain}' and worksheet = 'Process' and metric = 'Milled/Mfg Grain
 group by all
 union all
 select 'feed', crop_year, grain_week, sum(ktonnes) from gsw
-where grain = '{grain}' and worksheet = 'Feed Grains' and metric = 'Deliveries' and period = 'Crop Year'
+where grain = '{grain}' and worksheet = 'Feed Grains' and metric = 'Shipments' and period = 'Crop Year'
 group by all
 union all
 select 'exports_' || case {" ".join(f"when region = '{k}' then '{v}'" for k, v in PORTS.items())} end,
