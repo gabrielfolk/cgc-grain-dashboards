@@ -1276,7 +1276,7 @@
   (function buildNotes() {
     const ul = $("notes-list");
     const li = (...parts) => { const l = document.createElement("li"); l.append(...parts); ul.appendChild(l); return l; };
-    const link = (text, href) => { const a = document.createElement("a"); a.href = href; a.target = "_blank"; a.rel = "noopener"; a.textContent = text; return a; };
+    const link = (text, href) => { const a = document.createElement("a"); a.href = href; if (/^https?:/.test(href)) { a.target = "_blank"; a.rel = "noopener"; } a.textContent = text; return a; };
     const src = li("Source: Canadian Grain Commission, ", link("Grain Statistics Weekly", "https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/"), ", crop years 2013-14 onward.");
     const others = Object.entries(META.links || {});
     if (others.length) {

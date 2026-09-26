@@ -2,15 +2,14 @@
 
     python src/build_site.py
 
-The dashboard pages are written as page bodies (a claude.ai page adds the document
-skeleton). This wraps each one in a full HTML document, copies its data files, and
-points cross-links at the other pages on the same site instead of claude.ai.
-GitHub Pages serves docs/ from the main branch.
+The dashboard pages are written as page bodies. This wraps each one in a full HTML
+document (charset, viewport, base styles and a favicon) and copies its data files.
+Links between pages are relative, so the same files work in docs/ and when previewing
+dashboard/ locally. GitHub Pages serves docs/ from the main branch.
 """
 
 from __future__ import annotations
 
-import os
 import shutil
 from pathlib import Path
 from urllib.parse import quote
@@ -19,19 +18,11 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "dashboard"
 OUT = ROOT / "docs"
 
-# page folder (relative to dashboard/ and docs/) -> its claude.ai URL
-PAGES = {
-    "": "https://claude.ai/artifact/Mv4x8SXoKdvg8o5mj19TMf",
-    "canola": "https://claude.ai/artifact/L9q7H7aYtaMgHopbBbEtjk",
-    "wheat": "https://claude.ai/artifact/7ihCwx3TgUNdg2yfSKKyG4",
-    "durum": "https://claude.ai/artifact/GUgDjqNEfP8vHb1HrKi2uH",
-    "barley": "https://claude.ai/artifact/U6tuj2LiEW7VGqnQLQYwVa",
-    "feed": "https://claude.ai/artifact/Hndxeu4uQDiZQiTd1YQvLn",
-}
+# page folders, relative to dashboard/ and docs/ ("" is the all-crops page)
+PAGES = ["", "canola", "wheat", "durum", "barley", "feed"]
 DATA_FILES = ["data.json", "forecast.json"]
 
 # Bar-chart favicons, embedded so every page has one without a separate file
-# (claude.ai adds its own icon; on GitHub Pages the page must declare one).
 # The all-crops page uses multicoloured bars on dark; each crop page gets its own colour.
 CROP_COLORS = {"canola": "#f2c200", "wheat": "#c89b3c", "durum": "#e0662a", "barley": "#4e9a3a", "feed": "#7c5cc4"}
 
@@ -67,25 +58,17 @@ HEAD = """<!doctype html>
 """
 
 
-def relink(text: str, page: str) -> str:
-    """Replace claude.ai page URLs with relative links from `page`'s folder."""
-    for target, url in PAGES.items():
-        rel = os.path.relpath(OUT / target, OUT / page).replace(os.sep, "/")
-        text = text.replace(url, "./" if rel == "." else rel + "/")
-    return text
-
-
 def main() -> None:
     if OUT.exists():
         shutil.rmtree(OUT)
     for page in PAGES:
         src_dir, out_dir = SRC / page, OUT / page
         out_dir.mkdir(parents=True, exist_ok=True)
-        body = relink((src_dir / "index.html").read_text(), page)
+        body = (src_dir / "index.html").read_text()
         (out_dir / "index.html").write_text(HEAD.replace("__FAVICON__", favicon(page)) + body + "\n</html>\n")
         for name in DATA_FILES:
             if (src_dir / name).exists():
-                (out_dir / name).write_text(relink((src_dir / name).read_text(), page))
+                shutil.copyfile(src_dir / name, out_dir / name)
         print(f"docs/{page + '/' if page else ''}index.html")
     (OUT / ".nojekyll").write_text("")  # serve files as-is, no Jekyll processing
 

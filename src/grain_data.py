@@ -51,14 +51,14 @@ DIRECT_EXPORT_REGIONS = ("Export Destinations", "Western Container", "Eastern Co
 PORT_SLUGS = {"Vancouver": "vancouver", "Prince Rupert": "prince_rupert", "Pacific": "pacific_combined",
               "Thunder Bay": "thunder_bay", "Bay & Lakes": "bay_lakes", "St. Lawrence": "st_lawrence", "Churchill": "churchill"}
 
-# Published page URLs, for cross-links between pages.
+# Links between pages, relative to a crop page (dashboard/<crop>/ on the site)
 LINKS = {
-    "Prairie Delivery Pace": "https://claude.ai/artifact/Mv4x8SXoKdvg8o5mj19TMf",
-    "Canola Pipeline": "https://claude.ai/artifact/L9q7H7aYtaMgHopbBbEtjk",
-    "Wheat Pipeline": "https://claude.ai/artifact/7ihCwx3TgUNdg2yfSKKyG4",
-    "Durum Pipeline": "https://claude.ai/artifact/GUgDjqNEfP8vHb1HrKi2uH",
-    "Barley Pipeline": "https://claude.ai/artifact/U6tuj2LiEW7VGqnQLQYwVa",
-    "Western Feed Grains": "https://claude.ai/artifact/Hndxeu4uQDiZQiTd1YQvLn",
+    "Prairie Delivery Pace": "../",
+    "Canola Pipeline": "../canola/",
+    "Wheat Pipeline": "../wheat/",
+    "Durum Pipeline": "../durum/",
+    "Barley Pipeline": "../barley/",
+    "Western Feed Grains": "../feed/",
 }
 
 GRAINS = {

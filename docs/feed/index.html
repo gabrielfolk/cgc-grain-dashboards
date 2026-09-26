@@ -1086,7 +1086,7 @@
     const ul = $("notes-list");
     ul.replaceChildren();
     const li = (...parts) => { const l = document.createElement("li"); l.append(...parts); ul.appendChild(l); };
-    const link = (t, h) => { const a = document.createElement("a"); a.href = h; a.target = "_blank"; a.rel = "noopener"; a.textContent = t; return a; };
+    const link = (t, h) => { const a = document.createElement("a"); a.href = h; if (/^https?:/.test(h)) { a.target = "_blank"; a.rel = "noopener"; } a.textContent = t; return a; };
     li("Feed use is StatCan's \"animal feed, waste and dockage\" (table 32-10-0013, supply and disposition of grains; corn: 32-10-0014), a residual of the supply and disposition balance, so it also absorbs measurement error. StatCan publishes it for Aug–Dec, Aug–Mar and the full crop year.");
     li("Barley, wheat, durum and oats feed use are Canada totals; most of it is in Western Canada (StatCan's farm supply and disposition, 32-10-0015, puts about three-quarters of barley feeding on western farms). Corn is StatCan's imports into provinces other than Ontario and Quebec, as a proxy for corn fed in Western Canada; Ontario and Quebec feed their own corn crop.");
     li("Feed-grade share of elevator deliveries uses CGC's domestic feed grain table (Grain Statistics Weekly). CGC notes the licensed elevator system handles only about 10–15% of feed grain use. The wheat share fell sharply after 2020-21, likely because more feed wheat moves outside licensed elevators rather than because quality improved.");

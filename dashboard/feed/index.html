@@ -1074,7 +1074,7 @@
     const ul = $("notes-list");
     ul.replaceChildren();
     const li = (...parts) => { const l = document.createElement("li"); l.append(...parts); ul.appendChild(l); };
-    const link = (t, h) => { const a = document.createElement("a"); a.href = h; a.target = "_blank"; a.rel = "noopener"; a.textContent = t; return a; };
+    const link = (t, h) => { const a = document.createElement("a"); a.href = h; if (/^https?:/.test(h)) { a.target = "_blank"; a.rel = "noopener"; } a.textContent = t; return a; };
     li("Feed use is StatCan's \"animal feed, waste and dockage\" (table 32-10-0013, supply and disposition of grains; corn: 32-10-0014), a residual of the supply and disposition balance, so it also absorbs measurement error. StatCan publishes it for Aug–Dec, Aug–Mar and the full crop year.");
     li("Barley, wheat, durum and oats feed use are Canada totals; most of it is in Western Canada (StatCan's farm supply and disposition, 32-10-0015, puts about three-quarters of barley feeding on western farms). Corn is StatCan's imports into provinces other than Ontario and Quebec, as a proxy for corn fed in Western Canada; Ontario and Quebec feed their own corn crop.");
     li("Feed-grade share of elevator deliveries uses CGC's domestic feed grain table (Grain Statistics Weekly). CGC notes the licensed elevator system handles only about 10–15% of feed grain use. The wheat share fell sharply after 2020-21, likely because more feed wheat moves outside licensed elevators rather than because quality improved.");
@@ -1083,8 +1083,8 @@
     li(`Estimate method: model fitted on ${short(MODEL.fit.train_years[0])} to ${short(MODEL.fit.train_years[1])}: log(share of grain ÷ share of barley) = crop constant + ${MODEL.fit.a.toFixed(2)} × log(availability ratio) ${MODEL.fit.b < 0 ? "−" : "+"} ${Math.abs(MODEL.fit.b).toFixed(2)} × log(energy-adjusted price ratio). Availability is supply relative to the grain's own average. The estimate averages the model with each grain's 5-year average; the backtest table shows how each method would have done. The model uses the default energy values, so changing them on this page changes the price table but not the estimate.`);
     li("* Corn imports for the latest complete crop year are estimated where StatCan has not yet published the August figure.");
     li("Harvest-sample grade distributions (CGC Harvest Sample Program) would add a direct quality measure, but CGC publishes them in inconsistent formats across years, so they are not included yet.");
-    li("Related pages: ", link("Prairie Delivery Pace", "https://claude.ai/artifact/Mv4x8SXoKdvg8o5mj19TMf"), ", ", link("Barley Pipeline", "https://claude.ai/artifact/U6tuj2LiEW7VGqnQLQYwVa"), ", ",
-      link("Wheat Pipeline", "https://claude.ai/artifact/7ihCwx3TgUNdg2yfSKKyG4"), ", ", link("Durum Pipeline", "https://claude.ai/artifact/GUgDjqNEfP8vHb1HrKi2uH"), ", ", link("Canola Pipeline", "https://claude.ai/artifact/L9q7H7aYtaMgHopbBbEtjk"), ".");
+    li("Related pages: ", link("Prairie Delivery Pace", "../"), ", ", link("Barley Pipeline", "../barley/"), ", ",
+      link("Wheat Pipeline", "../wheat/"), ", ", link("Durum Pipeline", "../durum/"), ", ", link("Canola Pipeline", "../canola/"), ".");
     const gen = document.createElement("li");
     gen.textContent = `CGC data through ${short(cur)} week ${W_NOW} (week ending ${D.meta.week_ending}). Built ${D.meta.generated}.`;
     ul.appendChild(gen);

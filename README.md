@@ -37,7 +37,7 @@ Crop deep dives (canola, wheat, durum, barley) share one page template, `dashboa
 Edit the template, not the copies. Crop settings (labels, which uses to show, notes, page links) are in `GRAINS` and
 `LINKS` in `src/grain_data.py`.
 
-Then republish each page with its data.json. To preview locally, run `python3 -m http.server` inside `dashboard/`.
+Then run `src/build_site.py` and push (see Website below). To preview locally, run `python3 -m http.server` inside `dashboard/`; links between pages are relative, so they work there too.
 
 ## Feed grains
 
