@@ -3,7 +3,8 @@
     python src/build_site.py
 
 The dashboard pages are written as page bodies. This wraps each one in a full HTML
-document (charset, viewport, base styles and a favicon) and copies its data files.
+document (charset, viewport, base styles and a favicon), adds the site navigation bar,
+and copies its data files.
 Links between pages are relative, so the same files work in docs/ and when previewing
 dashboard/ locally. GitHub Pages serves docs/ from the main branch.
 """
@@ -18,8 +19,9 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "dashboard"
 OUT = ROOT / "docs"
 
-# page folders, relative to dashboard/ and docs/ ("" is the all-crops page)
-PAGES = ["", "canola", "wheat", "durum", "barley", "feed"]
+# page folders, relative to dashboard/ and docs/ ("" is the all-crops page), with their nav labels
+NAV = {"": "Overview", "canola": "Canola", "wheat": "Wheat", "durum": "Durum", "barley": "Barley", "feed": "Feed grains"}
+PAGES = list(NAV)
 DATA_FILES = ["data.json", "forecast.json"]
 
 # Bar-chart favicons, embedded so every page has one without a separate file
@@ -54,8 +56,49 @@ HEAD = """<!doctype html>
   body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: #f9f9f7; }
   img { max-width: 100%; }
   [hidden] { display: none !important; }
+
+  /* site navigation: sticks to the top, full width, uses each page's own theme tokens */
+  .site-nav {
+    position: sticky; top: 0; z-index: 5;
+    margin: -28px -16px 24px;
+    padding-top: env(safe-area-inset-top, 0px);
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .site-nav-inner {
+    max-width: 1240px; margin: 0 auto; padding: 0 16px;
+    display: flex; align-items: center; gap: 4px 20px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .site-nav-inner::-webkit-scrollbar { display: none; }
+  .site-nav .site-name {
+    font: 500 11px/1 var(--mono, ui-monospace, monospace); letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); white-space: nowrap; margin-right: auto; padding: 14px 0;
+  }
+  .site-nav ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 2px; }
+  .site-nav a {
+    display: block; padding: 13px 10px 11px; white-space: nowrap;
+    font: 500 13px/1 var(--sans, system-ui, sans-serif); color: var(--ink-2); text-decoration: none;
+    border-bottom: 2px solid transparent;
+  }
+  .site-nav a:hover { color: var(--ink); }
+  .site-nav a[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+  .site-nav a:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+  @media (max-width: 640px) { .site-nav .site-name { display: none; } }
 </style>
 """
+
+
+def nav(page: str) -> str:
+    """Navigation bar for `page`, with links relative to its folder."""
+    up = "../" if page else ""
+    items = "".join(
+        f'<li><a href="{up + (target + "/" if target else "") or "./"}"'
+        + (' aria-current="page"' if target == page else "")
+        + f">{label}</a></li>"
+        for target, label in NAV.items()
+    )
+    return (f'<nav class="site-nav" aria-label="Dashboards"><div class="site-nav-inner">'
+            f'<span class="site-name">CGC grain dashboards</span><ul>{items}</ul></div></nav>\n')
 
 
 def main() -> None:
@@ -65,6 +108,8 @@ def main() -> None:
         src_dir, out_dir = SRC / page, OUT / page
         out_dir.mkdir(parents=True, exist_ok=True)
         body = (src_dir / "index.html").read_text()
+        assert body.count('<div class="wrap">') == 1, f"{page or 'overview'}: expected one content wrapper"
+        body = body.replace('<div class="wrap">', nav(page) + '<div class="wrap">')
         (out_dir / "index.html").write_text(HEAD.replace("__FAVICON__", favicon(page)) + body + "\n</html>\n")
         for name in DATA_FILES:
             if (src_dir / name).exists():

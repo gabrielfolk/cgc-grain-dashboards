@@ -9,6 +9,34 @@
   body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: #f9f9f7; }
   img { max-width: 100%; }
   [hidden] { display: none !important; }
+
+  /* site navigation: sticks to the top, full width, uses each page's own theme tokens */
+  .site-nav {
+    position: sticky; top: 0; z-index: 5;
+    margin: -28px -16px 24px;
+    padding-top: env(safe-area-inset-top, 0px);
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .site-nav-inner {
+    max-width: 1240px; margin: 0 auto; padding: 0 16px;
+    display: flex; align-items: center; gap: 4px 20px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .site-nav-inner::-webkit-scrollbar { display: none; }
+  .site-nav .site-name {
+    font: 500 11px/1 var(--mono, ui-monospace, monospace); letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); white-space: nowrap; margin-right: auto; padding: 14px 0;
+  }
+  .site-nav ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 2px; }
+  .site-nav a {
+    display: block; padding: 13px 10px 11px; white-space: nowrap;
+    font: 500 13px/1 var(--sans, system-ui, sans-serif); color: var(--ink-2); text-decoration: none;
+    border-bottom: 2px solid transparent;
+  }
+  .site-nav a:hover { color: var(--ink); }
+  .site-nav a[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+  .site-nav a:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+  @media (max-width: 640px) { .site-nav .site-name { display: none; } }
 </style>
 <title>Wheat Pipeline</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -186,6 +214,7 @@
   @media (prefers-reduced-motion: no-preference) { .btn { transition: background 0.12s; } }
 </style>
 
+<nav class="site-nav" aria-label="Dashboards"><div class="site-nav-inner"><span class="site-name">CGC grain dashboards</span><ul><li><a href="../">Overview</a></li><li><a href="../canola/">Canola</a></li><li><a href="../wheat/" aria-current="page">Wheat</a></li><li><a href="../durum/">Durum</a></li><li><a href="../barley/">Barley</a></li><li><a href="../feed/">Feed grains</a></li></ul></div></nav>
 <div class="wrap">
   <header>
     <div class="eyebrow">CGC Grain Statistics Weekly · Wheat</div>
