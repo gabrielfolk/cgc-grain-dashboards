@@ -33,6 +33,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import html
+import re
 import sys
 from pathlib import Path
 
@@ -290,6 +291,67 @@ group by all
 """
 
 
+# CGC spells the same grade differently across years ("No. 2 CWRS", "No.2 CW RS"); grades are matched
+# on letters and digits only, with these aliases on top
+GRADE_ALIASES = {"NO1CAN": "NO1CANADA", "CWFEED": "FEEDCW", "OTHERCAN": "OTHER", "ALLGRADESCOMBINED": "OTHER"}
+MIN_GRADE_SHARE = 0.03  # a grade gets its own series if it is at least this share of recent exports
+MIN_NAMED_SHARE = 0.5   # skip the grade mix when named grades are under half of recent exports
+MIN_GRADE_KT = 100      # or when terminal exports average under this many kt a year
+
+
+def grade_key(grade: str) -> str:
+    k = re.sub(r"[^A-Z0-9]", "", grade.upper())
+    return GRADE_ALIASES.get(k, k)
+
+
+def export_grades(con, grain: str, years: list[str]) -> dict:
+    """Terminal exports by grade: {"grades": [labels, largest first], "series": {label: {crop_year: [52 cumulative kt]}}}.
+
+    Grades that make up at least MIN_GRADE_SHARE of the last five completed crop years' terminal
+    exports keep their own series (labelled with CGC's latest spelling); everything else, including
+    grades CGC named in early years but now reports as OTHER, is grouped as "Other grades", so the mix
+    compares like with like across years. Western grain only (Canada Eastern grades are left out).
+    Series start in the first crop year CGC named any tracked grade (before that, some crops were
+    reported only as OTHER or all grades combined). Empty when fewer than two grades are tracked or
+    named grades are under MIN_NAMED_SHARE of recent exports, or volumes are too small to matter.
+    """
+    rows = con.execute(
+        f"""
+        select grade, crop_year, grain_week, sum(ktonnes) from gsw
+        where grain = '{grain}' and worksheet = 'Terminal Exports' and period = 'Crop Year' and not {EASTERN_GRADE}
+        group by all
+        """
+    ).fetchall()
+    label = {grade_key(g): g for g, y, w, kt in sorted(rows, key=lambda r: (r[1], r[2]))}  # latest spelling wins
+    by_key = to_series([(grade_key(g), y, w, kt) for g, y, w, kt in rows], cumulative=True, add=True)
+
+    def final(k: str, y: str) -> float:
+        s = by_key[k].get(y)
+        return max((v for v in s if v is not None), default=0) if s else 0
+
+    recent = years[-6:-1]
+    total = {k: sum(final(k, y) for y in recent) for k in by_key}
+    grand = sum(total.values())
+    if grand / len(recent) < MIN_GRADE_KT:
+        return {}
+    tracked = [k for k in sorted(total, key=total.get, reverse=True) if k != "OTHER" and total[k] / grand >= MIN_GRADE_SHARE]
+    other = [k for k in by_key if k not in tracked]
+    if not tracked or len(tracked) + bool(other) < 2 or sum(total[k] for k in tracked) / grand < MIN_NAMED_SHARE:
+        return {}
+    first = next(y for y in years if any(final(k, y) > 0 for k in tracked))
+    years = years[years.index(first):]
+
+    series = {label[k]: {y: v for y, v in by_key[k].items() if y in years} for k in tracked}
+    if other:
+        series["Other grades"] = {
+            y: [None if all(by_key[k].get(y, [None] * WEEKS)[i] is None for k in other)
+                else round(sum(by_key[k].get(y, [None] * WEEKS)[i] or 0 for k in other), 1) for i in range(WEEKS)]
+            for y in years
+        }
+    order = list(series)
+    return {"grades": order, "series": series}
+
+
 def stocks_sql(grain: str) -> str:
     return f"""
 select 'stocks_' || case location when 'country' then 'country' when 'process' then 'process' else 'terminals' end,
@@ -298,10 +360,12 @@ from commercial_stocks where grain = '{grain}'
 """
 
 
-def to_series(rows, cumulative: bool) -> dict:
+def to_series(rows, cumulative: bool, add: bool = False) -> dict:
+    """{name: {crop_year: [52 values]}} from (name, crop_year, week, kt) rows; `add` sums rows that share a slot."""
     out: dict = {}
     for name, year, week, kt in rows:
-        out.setdefault(name, {}).setdefault(year, [None] * WEEKS)[week - 1] = round(kt, 1)
+        s = out.setdefault(name, {}).setdefault(year, [None] * WEEKS)
+        s[week - 1] = round((s[week - 1] or 0) + kt if add else kt, 1)
     if cumulative:
         # carry cumulative totals over unreported weeks (holiday report), up to the last week
         for years in out.values():
@@ -347,6 +411,7 @@ def build(con, slug: str) -> None:
         "province": province.get(cfg["grain"], {}),
         "channel": channel.get(cfg["grain"], {}),
         "production": western_production([cfg["grain"]], int(years[0][:4])).get(cfg["grain"], {}),
+        "grades": export_grades(con, cfg["grain"], years),
     }
     out = ROOT / "dashboard" / slug
     out.mkdir(parents=True, exist_ok=True)

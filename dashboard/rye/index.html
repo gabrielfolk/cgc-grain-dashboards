@@ -169,6 +169,11 @@
   .fc-label { font-size: 12px; font-weight: 600; color: var(--ink-2); margin-top: 6px; }
   #acc-table td.best { font-weight: 600; }
   #acc-table tr.now td { background: var(--hover); }
+  .insights { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+  .insight { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: grid; gap: 6px; align-content: start; }
+  .insight .kicker { font: 500 11px/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .insight h3 { font-size: 16px; line-height: 1.3; }
+  .insight p { font-size: 13px; color: var(--ink-2); }
   .explain { font-size: 13px; color: var(--ink-2); max-width: 90ch; }
   .explain summary { cursor: pointer; color: var(--ink); font-weight: 500; width: max-content; }
   .explain ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; }
@@ -190,6 +195,17 @@
   </header>
 
   <div class="summary" id="summary"></div>
+
+  <section aria-labelledby="watch-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="watch-eyebrow"></div>
+        <h2 id="watch-h">Things to watch</h2>
+        <p class="sub">The measures furthest from normal this week, picked automatically from the sections below.</p>
+      </div>
+    </div>
+    <div class="insights" id="watch"></div>
+  </section>
 
   <section aria-labelledby="flash-h">
     <div class="section-head">
@@ -280,6 +296,34 @@
         <div class="panel-head"><h3>Weeks of cover in country elevators</h3><p>Country elevator stocks divided by the 4-week average of shipments out</p></div>
         <div class="legend" id="leg-cover"></div>
         <div class="chart" id="ch-cover" style="height:260px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="port-h" id="port-section">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="port-eyebrow"></div>
+        <h2 id="port-h">Port terminals</h2>
+        <p class="sub">Rail unloads at port against vessel loadings, how many weeks of exports terminal stocks cover, and which grades are being shipped.</p>
+      </div>
+    </div>
+    <div class="summary" id="port-tiles"></div>
+    <div class="two">
+      <div class="panel" id="gap-panel">
+        <div class="panel-head"><h3>Pacific receipts minus exports</h3><p>Thousand tonnes unloaded at Vancouver and Prince Rupert terminals less thousand tonnes exported, since Aug 1. Rising = rail delivering faster than ships load.</p></div>
+        <div class="legend" id="leg-gap"></div>
+        <div class="chart" id="ch-gap" style="height:260px"></div>
+      </div>
+      <div class="panel" id="tcover-panel">
+        <div class="panel-head"><h3>Weeks of cover at port terminals</h3><p>Terminal stocks, all ports, divided by the 4-week average of terminal exports</p></div>
+        <div class="legend" id="leg-tcover"></div>
+        <div class="chart" id="ch-tcover" style="height:260px"></div>
+      </div>
+      <div class="panel wide" id="grade-panel">
+        <div class="panel-head"><h3>Export grade mix</h3><p id="grade-p"></p></div>
+        <div class="legend" id="leg-grade"></div>
+        <div class="chart" id="ch-grade" style="height:260px"></div>
       </div>
     </div>
   </section>
@@ -1307,34 +1351,48 @@
 
   // ---------- country elevators ----------
   const netBuild = (y) => { const d = series.pdel(y), sh = series.pship(y); return d.map((v, i) => v == null || sh[i] == null ? null : v - sh[i]); };
-  // country stocks over the 4-week average of weekly shipments out
-  function coverSeries(y) {
-    const wk = diff(series.pship(y)), st = stock("stocks_country", y);
-    return st.map((v, i) => {
+  // stocks over the 4-week average of weekly outflow; left blank when the outflow is under a quarter of
+  // that crop year's average week (holiday and freeze-up stalls would otherwise spike the ratio)
+  function weeksOfCover(stocks, cumOut) {
+    const wk = diff(cumOut), base = (finalOf(cumOut) || 0) / WEEKS;
+    return stocks.map((v, i) => {
       const a4 = mean(wk.slice(Math.max(0, i - 3), i + 1));
-      return v == null || i < 3 || !(a4 > 0) ? null : v / a4;
+      return v == null || i < 3 || !(a4 > 0.25 * base) ? null : v / a4;
     });
   }
-  function renderElev() {
-    $("elev-eyebrow").textContent = `${NAME} · ${short(cur)} · week ${W_NOW}`;
-    const host = $("elev-tiles");
+  // country stocks over the 4-week average of weekly shipments out
+  const coverSeries = (y) => weeksOfCover(stock("stocks_country", y), series.pship(y));
+  const signedKt = (v) => v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + fmtKt(Math.abs(v));
+  // tile builders for a .summary strip
+  function tileKit(host) {
     host.replaceChildren();
     const tile = (label) => { const t = document.createElement("div"); t.className = "tile"; const l = document.createElement("div"); l.className = "label"; l.textContent = label; t.appendChild(l); host.appendChild(t); return t; };
     const big = (t, text) => { const v = document.createElement("div"); v.className = "tile-value"; v.textContent = text; t.appendChild(v); };
     const note = (t, text) => { const d = document.createElement("div"); d.className = "note"; d.textContent = text; t.appendChild(d); };
-
+    const vs = (t, p, text) => { const d = document.createElement("div"); d.className = "deltas"; const sp = document.createElement("span"); sp.append(chip(p), document.createTextNode(text)); d.appendChild(sp); t.appendChild(d); };
+    return { tile, big, note, vs };
+  }
+  function elevStats() {
     const ratio = (y) => { const d = at(series.pdel(y), W_NOW), sh = at(series.pship(y), W_NOW); return d > 0 && sh != null ? sh / d : null; };
-    const rNow = ratio(cur), r5 = mean(ref.map(ratio));
+    return {
+      rNow: ratio(cur), r5: mean(ref.map(ratio)),
+      bNow: at(netBuild(cur), W_NOW), b5: mean(ref.map((r) => at(netBuild(r), W_NOW))),
+      cNow: at(coverSeries(cur), W_NOW), c5: mean(ref.map((r) => at(coverSeries(r), W_NOW))),
+      delNow: at(series.pdel(cur), W_NOW),
+    };
+  }
+  function renderElev() {
+    $("elev-eyebrow").textContent = `${NAME} · ${short(cur)} · week ${W_NOW}`;
+    const { tile, big, note } = tileKit($("elev-tiles"));
+    const { rNow, r5, bNow, b5, cNow, c5 } = elevStats();
     const t1 = tile("Shipped out per tonne delivered in");
     big(t1, rNow == null ? "–" : (100 * rNow).toFixed(0) + "%");
     note(t1, `${fmtKt(at(series.pship(cur), W_NOW))} shipped against ${fmtKt(at(series.pdel(cur), W_NOW))} delivered since Aug 1. The 5-yr average at week ${W_NOW} is ${r5 == null ? "–" : (100 * r5).toFixed(0) + "%"}.`);
 
-    const bNow = at(netBuild(cur), W_NOW), b5 = mean(ref.map((r) => at(netBuild(r), W_NOW)));
     const t2 = tile(`Net build since Aug 1`);
-    big(t2, bNow == null ? "–" : (bNow > 0 ? "+" : bNow < 0 ? "−" : "") + fmtKt(Math.abs(bNow)));
-    note(t2, `Country elevator stocks are ${fmtKt(at(stock("stocks_country", cur), W_NOW))}. The 5-yr average net build by week ${W_NOW} is ${b5 == null ? "–" : (b5 > 0 ? "+" : b5 < 0 ? "−" : "") + fmtKt(Math.abs(b5))}.`);
+    big(t2, signedKt(bNow));
+    note(t2, `Country elevator stocks are ${fmtKt(at(stock("stocks_country", cur), W_NOW))}. The 5-yr average net build by week ${W_NOW} is ${signedKt(b5)}.`);
 
-    const cNow = at(coverSeries(cur), W_NOW), c5 = mean(ref.map((r) => at(coverSeries(r), W_NOW)));
     const t3 = tile("Weeks of cover");
     big(t3, cNow == null ? "–" : cNow.toFixed(1));
     const d = document.createElement("div"); d.className = "deltas";
@@ -1363,6 +1421,220 @@
         { label: short(cur), color: "var(--exports)", values: upTo(coverSeries(cur), W_NOW), dot: true, em: true },
       ],
     });
+  }
+
+  // ---------- port terminals ----------
+  const pacGap = (y) => { const r = flow("receipts_pacific", y), e = flow("exports_pacific", y); return r.map((v, i) => v == null || e[i] == null ? null : v - e[i]); };
+  // terminal stocks (all ports) over the 4-week average of weekly terminal exports
+  const termCover = (y) => weeksOfCover(stock("stocks_terminals", y), series.terminal(y));
+  const hasTerminal = () => (mean(ref.map((r) => finalOf(series.terminal(r)))) || 0) >= 20;
+  const hasPacific = () => (mean(ref.map((r) => finalOf(flow("receipts_pacific", r)))) || 0) >= 50;
+  const GR = D.grades?.grades ? D.grades : null;
+  const GRADE_COLORS = ["var(--process)", "var(--exports)", "var(--deliveries)", "var(--feed)"];
+  const gradeColor = (g, i) => g === "Other grades" ? "var(--other)" : GRADE_COLORS[i % GRADE_COLORS.length];
+  // percent of terminal exports by grade in crop year y, cumulative to week w (full year when w is null)
+  function gradeMix(y, w) {
+    if (!GR) return null;
+    const v = Object.fromEntries(GR.grades.map((g) => { const s = GR.series[g][y]; return [g, s ? (w ? at(s, w) : finalOf(s)) || 0 : null]; }));
+    if (Object.values(v).every((x) => x == null)) return null;
+    const tot = sumOf(Object.values(v).map((x) => x || 0));
+    return tot > 0 ? { tot, pct: Object.fromEntries(GR.grades.map((g) => [g, 100 * (v[g] || 0) / tot])), kt: v } : null;
+  }
+  const avg4 = (fn, y) => mean(diff(fn(y)).slice(Math.max(0, W_NOW - 4), W_NOW));
+  function portStats() {
+    const cover = { now: at(termCover(cur), W_NOW), avg: mean(ref.map((r) => at(termCover(r), W_NOW))) };
+    const stNow = at(stock("stocks_terminals", cur), W_NOW), stAvg = mean(ref.map((r) => at(stock("stocks_terminals", r), W_NOW)));
+    const pacShare = (y) => { const t = at(series.terminal(y), W_NOW); return t > 0 ? at(flow("exports_pacific", y), W_NOW) / t : null; };
+    const g = { now: at(pacGap(cur), W_NOW), avg: mean(ref.map((r) => at(pacGap(r), W_NOW))) };
+    return {
+      cover, stNow, stAvg, gap: g, pac: { now: pacShare(cur), avg: mean(ref.map(pacShare)) },
+      rec4: avg4((y) => flow("receipts_pacific", y), cur), exp4: avg4((y) => flow("exports_pacific", y), cur),
+    };
+  }
+  function gradeStats() {
+    const now = gradeMix(cur, W_NOW);
+    if (!now) return null;
+    const prior = ref.map((r) => gradeMix(r, W_NOW)).filter(Boolean);
+    if (prior.length < 3) return null;
+    return GR.grades.map((g) => ({ g, now: now.pct[g], avg: mean(prior.map((m) => m.pct[g])), tot: now.tot }));
+  }
+
+  function renderPorts() {
+    const show = hasTerminal();
+    $("port-section").hidden = !show;
+    if (!show) return;
+    $("port-eyebrow").textContent = `${NAME} · ${short(cur)} · week ${W_NOW}`;
+    const P = portStats(), host = $("port-tiles");
+    const { tile, big, note, vs } = tileKit(host);
+    let n = 0;
+    if (hasPacific()) {
+      n++;
+      const t = tile("Pacific: received / exported per week");
+      big(t, `${n1(P.rec4)} / ${n1(P.exp4)} kt`);
+      note(t, `Last 4 weeks at Vancouver and Prince Rupert. Since Aug 1, receipts have run ${signedKt(P.gap.now)} ahead of exports, against ${signedKt(P.gap.avg)} on average by this week.`);
+    }
+    n++;
+    const t2 = tile("Weeks of cover at port");
+    big(t2, P.cover.now == null ? "–" : P.cover.now.toFixed(1));
+    vs(t2, P.cover.now != null && P.cover.avg ? P.cover.now / P.cover.avg - 1 : null, " vs 5-yr average");
+    note(t2, `Terminal stocks of ${fmtKt(P.stNow)} (5-yr average at this week ${fmtKt(P.stAvg)}) against the recent pace of terminal exports.`);
+    const G = gradeStats();
+    if (G) {
+      n++;
+      const t3 = tile("Export grade mix so far");
+      const top = G.filter((r) => r.g !== "Other grades")[0];
+      big(t3, `${Math.round(top.now)}% ${top.g}`);
+      for (const r of G) note(t3, `${r.g}: ${r.now.toFixed(0)}% (5-yr at this week ${r.avg.toFixed(0)}%)`);
+    }
+    host.style.setProperty("--rest", n - 1);
+    host.style.gridTemplateColumns = n === 1 ? "minmax(0, 1fr)" : "";
+
+    $("gap-panel").hidden = !hasPacific();
+    if (hasPacific()) {
+      const gs = stat(ref.map(pacGap));
+      legend($("leg-gap"), [{ label: short(cur), color: "var(--exports)" }, { label: "5-yr average", color: "var(--avg)" }, { label: "5-yr range", kind: "band" }]);
+      weekChart($("ch-gap"), {
+        aria: `${NAME} Pacific terminal receipts minus exports`,
+        band: { lo: gs.lo, hi: gs.hi, label: "5-yr range" },
+        series: [
+          { label: "5-yr average", color: "var(--avg)", values: gs.avg, width: 1.5 },
+          { label: short(lastYr), values: pacGap(lastYr), hidden: true },
+          { label: short(cur), color: "var(--exports)", values: upTo(pacGap(cur), W_NOW), dot: true, em: true },
+        ],
+      });
+    }
+    $("tcover-panel").classList.toggle("wide", !hasPacific());
+    const cv = stat(ref.map(termCover));
+    legend($("leg-tcover"), [{ label: short(cur), color: "var(--process)" }, { label: "5-yr average", color: "var(--avg)" }, { label: "5-yr range", kind: "band" }]);
+    weekChart($("ch-tcover"), {
+      aria: `${NAME} weeks of cover at port terminals`, unit: "weeks",
+      band: { lo: cv.lo, hi: cv.hi, label: "5-yr range" },
+      series: [
+        { label: "5-yr average", color: "var(--avg)", values: cv.avg, width: 1.5 },
+        { label: short(lastYr), values: termCover(lastYr), hidden: true },
+        { label: short(cur), color: "var(--process)", values: upTo(termCover(cur), W_NOW), dot: true, em: true },
+      ],
+    });
+
+    $("grade-panel").hidden = !GR;
+    if (GR) {
+      const first = years.find((y) => gradeMix(y, null));
+      $("grade-p").textContent = `Percent of terminal exports by grade in each crop year (${short(cur)} to week ${W_NOW}). Grades CGC now reports only as OTHER are grouped in Other grades for every year, so years compare like with like${first !== years[0] ? `; CGC names these grades from ${short(first)}` : ""}. Direct exports from country elevators have no grade detail.`;
+      const keys = GR.grades.map((g, i) => ({ key: g, label: g, color: gradeColor(g, i), labelInk: g === "Other grades" ? css("--ink") : "#ffffff" }));
+      legend($("leg-grade"), keys.map((k) => ({ label: k.label, color: k.color, kind: "rect" })));
+      yearColumns($("ch-grade"), {
+        aria: `${NAME} terminal exports by grade and crop year`,
+        keys,
+        getVals: (yr) => gradeMix(yr, yr === cur ? W_NOW : null)?.pct ?? null,
+        kt: (yr, k) => gradeMix(yr, yr === cur ? W_NOW : null)?.kt[k],
+        inlineLabels: true,
+      });
+    }
+  }
+
+  // ---------- things to watch ----------
+  // Each rule looks at one measure against its 5-year norm at this week and returns a card with a score;
+  // the page shows the strongest few, so the cards change as the data does.
+  function renderWatch() {
+    $("watch-eyebrow").textContent = `${NAME} · ${short(cur)} · week ${W_NOW}`;
+    const pc = (v, d = 0) => v == null ? "–" : (100 * v).toFixed(d) + "%";
+    const absPct = (v) => Math.round(Math.abs(100 * v)) + "%";
+    const cards = [];
+    const add = (score, kicker, title, text) => { if (score > 0) cards.push({ score, kicker, title, text }); };
+    const sz = sizedPace();
+
+    // farmer selling, sized to the crop
+    if (sz && Math.abs(sz.sized) >= 0.05) {
+      const outside = sz.share < sz.lo ? " That is below every one of the last five years." : sz.share > sz.hi ? " That is above every one of the last five years." : "";
+      const late = ["soybeans", "corn"].includes(META.slug) && W_NOW < 13 ? ` ${NAME} is harvested later than other crops, so early gaps can close quickly.` : "";
+      add(Math.abs(sz.sized) * 3 + (outside ? 0.5 : 0), "Farmer selling",
+        sz.sized < 0 ? "Farmers are holding back" : "Farmers are selling ahead of normal",
+        `${pc(sz.share, 1)} of the ${cur.slice(0, 4)} crop is delivered by week ${W_NOW}, against ${pc(sz.normal, 1)} normally (5-yr range ${pc(sz.lo, 1)}–${pc(sz.hi, 1)}).${outside} StatCan puts the western crop at ${fmtKt(sz.prod)}, ${fmtPct(sz.size)} against the 5-yr average.${late}`);
+    }
+
+    // country elevators: shipments against deliveries
+    const E = elevStats();
+    // skip crops whose elevators normally ship far more than farmers deliver (other receipts, e.g. corn)
+    if (E.rNow != null && E.r5 != null && E.r5 <= 1.5 && E.delNow >= 20) {
+      const dev = E.rNow - E.r5, cov = E.cNow != null && E.c5 ? E.cNow / E.c5 - 1 : 0;
+      if (Math.abs(dev) >= 0.12 || Math.abs(cov) >= 0.25) {
+        let text = `Elevators have shipped ${pc(E.rNow)} of what farmers delivered since Aug 1, against a 5-yr average of ${pc(E.r5)} at this week. Stocks are ${E.bNow < 0 ? "down" : "up"} ${fmtKt(Math.abs(E.bNow))}, when they normally ${E.b5 >= 0 ? "build" : "draw down"} about ${fmtKt(Math.abs(E.b5))} by now` +
+          (Math.abs(cov) >= 0.05 ? `, and weeks of cover are ${absPct(cov)} ${cov < 0 ? "below" : "above"} average.` : ".");
+        if (dev > 0 && sz && sz.sized < -0.03) text += ` That fits the Farmer selling tiles, which show deliveries ${absPct(sz.sized)} behind the usual share of the crop.`;
+        if (dev < 0) text += sz && sz.sized > 0.03 ? ` Farmers are also selling ${absPct(sz.sized)} ahead of the usual share, adding to the build.` : " Shipments not keeping up usually points to rail or port congestion and weaker basis.";
+        const title = dev > 0
+          ? (E.rNow > 1 ? "Rail is moving grain faster than farmers are bringing it in" : "Elevators are shipping out more of what comes in than usual")
+          : (E.rNow < 1 ? "Grain is backing up in country elevators" : "Elevators are shipping out less of what comes in than usual");
+        add(Math.abs(dev) * 4 + Math.abs(cov), "Country elevators", title, text);
+      }
+    }
+
+    // each use (exports, processing, feed) against its 5-yr pace and last year's total
+    for (const u of USES) {
+      const c = series[u.key](cur), w = lastWeek(c, W_NOW);
+      if (!w) continue;
+      const cy = at(c, w), avg5 = mean(ref.map((r) => at(series[u.key](r), w))), ly = at(series[u.key](lastYr), w);
+      const lyT = finalOf(series[u.key](lastYr));
+      if (!(lyT >= 50) || !(avg5 > 5)) continue;
+      const vs5 = pct(cy, avg5), a4 = mean(diff(c).slice(Math.max(0, w - 4), w)), needLy = (lyT - cy) / (WEEKS - w), rec = recordRate(u.key);
+      const nearRec = a4 >= 0.95 * rec.v && rec.v > 0;
+      if (Math.abs(vs5) < 0.15 && !nearRec) continue;
+      let text = `${fmtKt(cy)} so far, ${fmtPct(pct(cy, ly))} on ${short(lastYr)} at the same week. Matching last year's ${fmtKt(lyT)} needs ${n1(needLy)} kt a week from here; the last 4 weeks averaged ${n1(a4)} kt.`;
+      if (u.key === "exports" && ["soybeans", "corn"].includes(META.slug)) text += ` Exports through eastern ports include ${NAME.toLowerCase()} grown outside Western Canada.`;
+      if (nearRec) text += ` That 4-week rate is ${a4 >= rec.v ? "a record" : "close to the record"} of ${n1(rec.v)} kt a week (${short(rec.y)}).`;
+      // small flows (under ~5% of the crop's deliveries) rank lower: big percentages on little tonnage
+      const weight = Math.min(1, lyT / (0.05 * (finalOf(series.deliveries(lastYr)) || lyT)));
+      add((Math.abs(vs5) * 2 + (nearRec ? 1 : 0)) * weight, u.label,
+        `${u.label} ${vs5 >= 0 ? "running" : "lagging"} ${absPct(vs5)} ${vs5 >= 0 ? "ahead of" : "behind"} the 5-yr pace`, text);
+    }
+
+    // commercial stocks, with the location that explains most of the gap
+    const stNow = at(series.stocks(cur), W_NOW), stAvg = mean(ref.map((r) => at(series.stocks(r), W_NOW))), stDev = pct(stNow, stAvg);
+    if (stDev != null && Math.abs(stDev) >= 0.15 && stAvg >= 20) {
+      const locs = STOCKS.map((s) => ({ s, now: at(stock(s.key, cur), W_NOW) || 0, avg: mean(ref.map((r) => at(stock(s.key, r), W_NOW))) || 0 }))
+        .sort((a, b) => Math.abs(b.now - b.avg) - Math.abs(a.now - a.avg));
+      add(Math.abs(stDev) * 1.5, "Commercial stocks", `Stocks are ${absPct(stDev)} ${stDev > 0 ? "above" : "below"} average`,
+        `${fmtKt(stNow)} in the licensed system at week ${W_NOW}, against a 5-yr average of ${fmtKt(stAvg)}. ${locs[0].s.label} account for most of the gap: ${fmtKt(locs[0].now)} against ${fmtKt(locs[0].avg)} normally.`);
+    }
+
+    // port terminals
+    if (hasTerminal()) {
+      const P = portStats();
+      const cov = P.cover.now != null && P.cover.avg ? P.cover.now / P.cover.avg - 1 : null;
+      if (cov != null && Math.abs(cov) >= 0.25 && P.stAvg >= 20) {
+        add(Math.abs(cov), "Port terminals", cov < 0 ? "Port stocks are thin for the export pace" : "Grain is piling up at port",
+          `Terminal stocks cover ${P.cover.now.toFixed(1)} weeks of exports at the recent pace, against ${P.cover.avg.toFixed(1)} normally at this week.` +
+          (hasPacific() ? ` Over the last 4 weeks Pacific terminals unloaded ${n1(P.rec4)} kt a week and exported ${n1(P.exp4)} kt.` : ""));
+      }
+      if (P.pac.now != null && P.pac.avg != null && Math.abs(P.pac.now - P.pac.avg) >= 0.1 && at(series.terminal(cur), W_NOW) >= 50) {
+        const d = P.pac.now - P.pac.avg;
+        add(Math.abs(d) * 3, "Export routes", d > 0 ? "More is going west than usual" : "More is going east than usual",
+          `Pacific ports have handled ${pc(P.pac.now)} of terminal exports so far, against ${pc(P.pac.avg)} at this week over the last five years.`);
+      }
+    }
+
+    // export grades
+    const G = gradeStats();
+    if (G && G[0].tot >= 50) {
+      const big = G.filter((r) => r.g !== "Other grades").sort((a, b) => Math.abs(b.now - b.avg) - Math.abs(a.now - a.avg))[0];
+      const d = big.now - big.avg;
+      if (Math.abs(d) >= 8) add(Math.abs(d) / 12, "Export grades", `${big.g} is ${Math.round(Math.abs(d))} points ${d > 0 ? "more" : "less"} of exports than usual`,
+        `${big.g} makes up ${big.now.toFixed(0)}% of terminal exports so far, against ${big.avg.toFixed(0)}% at this week over the last five years. Early in the crop year the mix still includes old-crop grain.`);
+    }
+
+    const host = $("watch");
+    host.replaceChildren();
+    const shown = cards.sort((a, b) => b.score - a.score).slice(0, 4);
+    if (!shown.length) shown.push({ kicker: "This week", title: "Nothing far from normal", text: `Delivery pace, uses, stocks and handling are all within their usual range for week ${W_NOW}.` });
+    for (const c of shown) {
+      const d = document.createElement("div");
+      d.className = "insight";
+      const k = document.createElement("div"); k.className = "kicker"; k.textContent = c.kicker;
+      const h = document.createElement("h3"); h.textContent = c.title;
+      const p = document.createElement("p"); p.textContent = c.text;
+      d.append(k, h, p);
+      host.appendChild(d);
+    }
   }
 
   // ---------- forecast ----------
@@ -1597,6 +1869,8 @@
     if (hasEastern()) li(`Western Canadian ${NAME.toLowerCase()} only: exports, terminal receipts and terminal stocks leave out grain graded Canada Eastern (CE grades, grown in Ontario and Quebec and handled at eastern terminals). Eastern exports are shown as a memo line in the weekly flash; add them back to match CGC's all-Canada totals.`);
     li("Producer deliveries cover licensed elevators, direct deliveries to processors and producer cars. Grain fed on farms or sold directly to feedlots is not tracked by CGC.");
     li("Weekly values are week-over-week changes in CGC's crop-year totals, so revisions are included. Weeks 21–22 are one combined holiday report.");
+    li("Port terminal receipts are unloads at licensed terminals, mostly by rail. Pacific receipts minus exports does not reconcile exactly with Pacific terminal stocks (the gap drifts by up to about 5% of a year's exports), so read it against its own 5-year range rather than as a stock level. Thunder Bay and St. Lawrence are left out of that gap because grain moved on from Thunder Bay is received again downstream. Export grades are CGC's terminal export grades, Western grain only; grades CGC now reports as OTHER are grouped for every year.");
+    li("Things to watch is generated from the data: each measure is compared with its 5-year average at the same week, and the ones furthest from normal are shown. Early in the crop year, small volumes can make changes look large.");
     li("Country elevator deliveries and shipments are CGC's primary elevator figures: grain delivered into licensed country elevators and shipped out to every destination (port terminals, processors, domestic users and containers). Net build is deliveries minus shipments; grade transfers and shrink mean it will not match the change in stocks exactly.");
     const gen = document.createElement("li");
     gen.id = "gen";
@@ -1609,9 +1883,11 @@
   setMode(state.mode);
   renderFarm();
   renderElev();
+  renderPorts();
+  renderWatch();
   renderHistory();
 
-  const rerender = () => { renderYear(); renderFarm(); renderElev(); renderHistory(); if (FORECAST) renderForecast(FORECAST); };
+  const rerender = () => { renderYear(); renderFarm(); renderElev(); renderPorts(); renderHistory(); if (FORECAST) renderForecast(FORECAST); };
   let rt;
   new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(rerender, 120); }).observe(document.querySelector(".wrap"));
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerender);
