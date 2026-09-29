@@ -24,7 +24,7 @@ OUT = ROOT / "docs"
 # Page folders, relative to dashboard/ and docs/ ("" is the all-crops page), in nav order.
 # A list entry is a dropdown menu: (menu label, [page folders]).
 NAV = ["", "margins", "feed", "canola", "wheat", "durum", "barley", "peas", "oats", "lentils", "soybeans", "corn",
-       ("Special crops", ["flaxseed", "rye", "beans", "canaryseed", "chickpeas", "mustard"])]
+       ("Special Crops", ["flaxseed", "rye", "beans", "canaryseed", "chickpeas", "mustard"])]
 LABELS = {"": "Overview", "margins": "Producer Margins", "feed": "Western Feed Grains",
           **{slug: cfg["title"].removesuffix(" Pipeline") for slug, cfg in GRAINS.items()}}
 PAGES = [p for entry in NAV for p in (entry[1] if isinstance(entry, tuple) else [entry])]
