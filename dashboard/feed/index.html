@@ -1083,7 +1083,7 @@
     li(`Estimate method: model fitted on ${short(MODEL.fit.train_years[0])} to ${short(MODEL.fit.train_years[1])}: log(share of grain ÷ share of barley) = crop constant + ${MODEL.fit.a.toFixed(2)} × log(availability ratio) ${MODEL.fit.b < 0 ? "−" : "+"} ${Math.abs(MODEL.fit.b).toFixed(2)} × log(energy-adjusted price ratio). Availability is supply relative to the grain's own average. The estimate averages the model with each grain's 5-year average; the backtest table shows how each method would have done. The model uses the default energy values, so changing them on this page changes the price table but not the estimate.`);
     li("* Corn imports for the latest complete crop year are estimated where StatCan has not yet published the August figure.");
     li("Harvest-sample grade distributions (CGC Harvest Sample Program) would add a direct quality measure, but CGC publishes them in inconsistent formats across years, so they are not included yet.");
-    li("Related pages: ", link("Prairie Delivery Pace", "../"), ", ", link("Barley Pipeline", "../barley/"), ", ",
+    li("Related pages: ", link("Overview", "../"), ", ", link("Barley Pipeline", "../barley/"), ", ",
       link("Wheat Pipeline", "../wheat/"), ", ", link("Durum Pipeline", "../durum/"), ", ", link("Canola Pipeline", "../canola/"), ".");
     const gen = document.createElement("li");
     gen.textContent = `CGC data through ${short(cur)} week ${W_NOW} (week ending ${D.meta.week_ending}). Built ${D.meta.generated}.`;

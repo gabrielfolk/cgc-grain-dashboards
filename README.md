@@ -11,7 +11,7 @@ with Statistics Canada crop, livestock and price data and CBOT futures. Crop yea
 
 | Page | Path | What it answers |
 |---|---|---|
-| **Prairie Delivery Pace** (overview) | `/` | What are farmers doing across all 15 crops? Selling pace sized to the crop, the all-crops weekly flash, pace cards, a 13-year heatmap, crop mix, and all-crops deliveries and commercial stocks. |
+| **Overview** | `/` | What are farmers doing across all 15 crops? Selling pace sized to the crop, the all-crops weekly flash, pace cards, a 13-year heatmap, crop mix, and all-crops deliveries and commercial stocks. |
 | **Crop pages** (15) | `/wheat/`, `/canola/`, `/durum/`, `/barley/`, `/peas/`, `/oats/`, `/lentils/`, `/soybeans/`, `/corn/`, `/flaxseed/`, `/rye/`, `/beans/`, `/canaryseed/`, `/chickpeas/`, `/mustard/` | One crop from farm to use: weekly flash, pace math, farmer selling (pace sized to the crop, rank, projection, direct-to-processor and province shares), exports by port, processing, feed and stocks. Canola adds a backtested crush and export forecast. |
 | **Western Feed Grains** | `/feed/` | How much barley, wheat, durum, oats and imported corn is fed. Covers quality, livestock numbers, energy-adjusted feed prices and a backtested feed-use estimate. |
 | **Producer Margins** | `/margins/` | What does an acre of each crop earn after variable costs, at seeding (April) and harvest (August) prices, and how does that compare with what farmers have actually delivered? Saskatchewan budgets, 9 crops, 2017 on. |

@@ -54,7 +54,7 @@ PORT_SLUGS = {"Vancouver": "vancouver", "Prince Rupert": "prince_rupert", "Pacif
 
 # Links to the cross-crop pages, relative to a crop page (dashboard/<crop>/ on the site)
 LINKS = {
-    "Prairie Delivery Pace": "../",
+    "Overview": "../",
     "Western Feed Grains": "../feed/",
     "Producer Margins": "../margins/",
 }
