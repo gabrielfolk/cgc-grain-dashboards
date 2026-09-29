@@ -108,16 +108,7 @@
   :focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
   a { color: var(--s1); }
 
-  /* header + commodity picker */
   header { display: grid; gap: 14px; }
-  .picker { display: flex; flex-wrap: wrap; gap: 6px; }
-  .pick {
-    font: 500 13px var(--sans); color: var(--ink-2);
-    background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
-    padding: 5px 12px; cursor: pointer;
-  }
-  .pick:hover { color: var(--ink); border-color: var(--axis); }
-  .pick[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
   .asof { font-size: 13px; color: var(--muted); }
 
   .btn, .seg {
@@ -204,7 +195,6 @@
   .insight p { font-size: 13px; color: var(--ink-2); }
   .insight .rows { display: grid; gap: 4px; font-size: 13px; }
   .insight .rows span { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
-  .crop-picker { display: grid; gap: 12px; }
 
   /* pace grid */
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(212px, 1fr)); gap: 12px; }
@@ -214,7 +204,6 @@
     font: inherit; color: inherit;
   }
   .card:hover { border-color: var(--axis); }
-  .card[aria-current="true"] { border-color: var(--s1); box-shadow: inset 0 0 0 1px var(--s1); }
   .card-top { display: flex; justify-content: space-between; align-items: start; gap: 8px; }
   .card-name { font-weight: 600; }
   .card-val { font-size: 13px; color: var(--ink-2); }
@@ -237,7 +226,6 @@
   .heat th, .heat td { border: 0; padding: 0; }
   .heat th { padding: 4px 6px; font-size: 10px; }
   .heat th[scope="row"] { font: 500 13px var(--sans); letter-spacing: 0; text-transform: none; color: var(--ink); padding-right: 12px; text-align: left; cursor: pointer; }
-  .heat tr.current th[scope="row"] { font-weight: 600; text-decoration: underline; text-decoration-color: var(--s1); text-decoration-thickness: 2px; text-underline-offset: 4px; }
   .heat td { width: 62px; height: 30px; text-align: center; font: 500 11px var(--mono); border-radius: 3px; cursor: pointer; }
   .heat td:hover, .heat td:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
   .scale { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-2); white-space: nowrap; }
@@ -260,7 +248,7 @@
   svg text { font-family: var(--sans); }
   .notes { display: grid; gap: 8px; font-size: 13px; color: var(--ink-2); max-width: 80ch; }
   .notes ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
-  @media (prefers-reduced-motion: no-preference) { .card, .btn, .pick { transition: border-color 0.12s, background 0.12s, color 0.12s; } }
+  @media (prefers-reduced-motion: no-preference) { .card, .btn { transition: border-color 0.12s, background 0.12s, color 0.12s; } }
 </style>
 
 <div class="wrap">
@@ -270,18 +258,6 @@
     <p class="sub" id="lede">Producer deliveries, exports, licensed processing and commercial stocks for 15 Western Canadian crops, with selling pace measured against StatCan crop estimates.</p>
     <p class="asof" id="asof"></p>
   </header>
-
-  <section aria-labelledby="mflash-h">
-    <div class="section-head">
-      <div>
-        <div class="eyebrow" id="mflash-eyebrow"></div>
-        <h2 id="mflash-h">Weekly flash: all crops</h2>
-      </div>
-      <button type="button" class="btn" data-copy="mflash-table">Copy table</button>
-    </div>
-    <div class="flash-wrap"><table class="flash" id="mflash-table"></table></div>
-    <p class="flash-note" id="mflash-note"></p>
-  </section>
 
   <section aria-labelledby="ins-h">
     <div class="section-head">
@@ -310,12 +286,24 @@
     </div>
   </section>
 
+  <section aria-labelledby="mflash-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="mflash-eyebrow"></div>
+        <h2 id="mflash-h">Weekly flash: all crops</h2>
+      </div>
+      <button type="button" class="btn" data-copy="mflash-table">Copy table</button>
+    </div>
+    <div class="flash-wrap"><table class="flash" id="mflash-table"></table></div>
+    <p class="flash-note" id="mflash-note"></p>
+  </section>
+
   <section aria-labelledby="pace-h">
     <div class="section-head">
       <div>
         <div class="eyebrow">All commodities</div>
         <h2 id="pace-h">Pace across crops</h2>
-        <p class="sub">Each crop's deliveries this crop year against its own 5-year pattern. Pick one to open it in crop detail below.</p>
+        <p class="sub">Each crop's deliveries this crop year against its own 5-year pattern. Pick one to open its page.</p>
       </div>
       <div class="seg" role="group" aria-label="Pace view">
         <button type="button" id="view-cards" aria-pressed="true">Charts</button>
@@ -344,25 +332,17 @@
     <div class="table-wrap" style="padding:10px" id="heat"></div>
   </section>
 
-  <section aria-labelledby="crop-h" id="crop" class="crop-picker">
+  <section aria-labelledby="all-h" id="all">
     <div class="section-head">
       <div>
-        <div class="eyebrow">One crop at a time</div>
-        <h2 id="crop-h">Crop detail</h2>
-        <p class="sub">Pick a crop to see its delivery pace, stocks and history. All grains is the total of the 15 crops.</p>
+        <div class="eyebrow" id="all-eyebrow"></div>
+        <h2 id="all-h">All crops combined</h2>
+        <p class="sub">Total producer deliveries and commercial stocks of the 15 crops. Each crop's own delivery pace, stocks, uses and history are on its page.</p>
       </div>
     </div>
-    <div class="picker" id="picker" role="group" aria-label="Commodity"></div>
-  </section>
-
-  <div class="summary" id="summary" aria-live="polite"></div>
-
-  <section aria-labelledby="year-h">
+    <div class="summary" id="summary"></div>
     <div class="section-head">
-      <div>
-        <div class="eyebrow" id="year-eyebrow"></div>
-        <h2 id="year-h">This crop year</h2>
-      </div>
+      <h3 id="year-h">This crop year</h3>
     </div>
     <div class="two">
       <div class="panel wide">
@@ -381,14 +361,8 @@
         <div class="chart" id="ch-stock" style="height:220px"></div>
       </div>
     </div>
-  </section>
-
-  <section aria-labelledby="hist-h">
     <div class="section-head">
-      <div>
-        <div class="eyebrow">Since 2013-14</div>
-        <h2 id="hist-h">Past crop years</h2>
-      </div>
+      <h3 id="hist-h">Past crop years, since 2013-14</h3>
       <button type="button" class="btn" id="toggle-table" aria-expanded="false">Show data table</button>
     </div>
     <div class="two">
@@ -427,11 +401,11 @@
   <footer class="notes">
     <h3 style="color:var(--ink)">About the data</h3>
     <ul>
-      <li>Source: Canadian Grain Commission, <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">Grain Statistics Weekly</a>, crop years 2013-14 onward. Crop deep dives (uses, exports by port, stocks): <a href="canola/">Canola</a>, <a href="wheat/">Wheat</a>, <a href="durum/">Durum</a>, <a href="barley/">Barley</a>. Feed use, livestock and feed prices: <a href="feed/">Western Feed Grains</a>.</li>
+      <li>Source: Canadian Grain Commission, <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">Grain Statistics Weekly</a>, crop years 2013-14 onward. Each crop has its own page (delivery pace, uses, exports by port, stocks), linked from the tables above and the Crops menu. Feed use, livestock and feed prices: <a href="feed/">Western Feed Grains</a>.</li>
       <li>Producer deliveries are the sum of deliveries into licensed primary elevators, direct deliveries to processors, and producer-car shipments.</li>
       <li>Weekly values are the week-over-week change in CGC's crop-year-to-date totals. CGC applies revisions only to those totals, so its own weekly rows add up 1–4% short. A revision can make a week negative.</li>
       <li>Commercial stocks are week-end stocks in licensed country elevators, processors and port terminals. Grain stored on farms is not included. Ending stocks are the Jul 31 figure.</li>
-      <li>Figures cover Western Canadian grain. Wheat and corn graded Canada Eastern (CE grades, grown in Ontario and Quebec) are left out of exports and terminal stocks, so totals are lower than CGC's all-Canada figures. Soybean grades do not show origin, so soybean exports and stocks at eastern terminals may include Ontario and Quebec beans.</li>
+      <li>Figures cover Western Canadian grain. Wheat and corn graded Canada Eastern (CE grades, grown in Ontario and Quebec) are left out of exports and terminal stocks, so totals are lower than CGC's all-Canada figures. Soybean grades, and corn grades other than CE, do not record origin, so soybean and corn exports and stocks at eastern terminals include grain grown outside Western Canada.</li>
       <li>The 5-year average and range use the five crop years before this one, compared week for week.</li>
       <li>Crop sizes are StatCan's production estimates for Manitoba, Saskatchewan, Alberta and British Columbia (table 32-10-0359), the region CGC's weekly data covers. The current year uses StatCan's latest in-season estimate, which will be revised. Wheat excludes durum.</li>
       <li>The full-year projection scales deliveries so far by the share of the year's deliveries that usually arrive by this week (5-year average). It is a simple pace estimate, not a forecast.</li>
@@ -471,15 +445,15 @@
   const lastYr = ref[ref.length - 1];
   const completed = years.filter((y) => y !== cur || W_NOW >= WEEKS);
   const slug = (g) => g.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  const state = { grain: ALL, view: "cards", table: false, heat: "deliveries" };
+  const state = { view: "cards", table: false, heat: "deliveries" };
   try {
-    const saved = JSON.parse(localStorage.getItem("pdp-state") || "{}");
-    if (D.grains.includes(saved.grain)) state.grain = saved.grain;
-    if (saved.view === "table") state.view = "table";
+    if (JSON.parse(localStorage.getItem("pdp-state") || "{}").view === "table") state.view = "table";
   } catch (e) {}
+  const save = () => { try { localStorage.setItem("pdp-state", JSON.stringify({ view: state.view })); } catch (e) {} };
+  // each crop has its own page; old #crop links from when crop detail lived here go straight to it
+  const pageOf = (g) => D.meta.pages?.[g] ? D.meta.pages[g] + "/" : null;
   const fromHash = D.grains.find((g) => slug(g) === location.hash.slice(1));
-  if (fromHash) state.grain = fromHash;
-  const save = () => { try { localStorage.setItem("pdp-state", JSON.stringify({ grain: state.grain, view: state.view })); } catch (e) {} };
+  if (fromHash && pageOf(fromHash)) { location.replace(pageOf(fromHash)); return; }
 
   // ---------- helpers ----------
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
@@ -887,23 +861,10 @@
     return ranked.findIndex((r) => r.yr === cur) + 1;
   }
 
-  // ---------- commodity picker ----------
-  const picker = $("picker");
-  for (const g of D.grains) {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "pick";
-    b.dataset.grain = g;
-    b.textContent = g;
-    b.addEventListener("click", () => pickGrain(g, false));
-    picker.appendChild(b);
-  }
-  function pickGrain(g, scroll) {
-    state.grain = g;
-    save();
-    try { history.replaceState(null, "", "#" + slug(g)); } catch (e) {}
-    renderGrain();
-    if (scroll) $("crop").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  // ---------- links to crop pages ----------
+  function openCrop(g) {
+    if (pageOf(g)) { location.href = pageOf(g); return; }
+    $("all").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   }
   function setView(v) {
     state.view = v;
@@ -989,7 +950,7 @@
     const note = (parent, text) => { const n = document.createElement("div"); n.className = "note"; n.textContent = text; parent.appendChild(n); };
     const big = (parent, text, cls) => { const v = document.createElement("div"); v.className = cls || "tile-value"; v.textContent = text; parent.appendChild(v); return v; };
 
-    const hero = tile(`${g === ALL ? "All crops" : g} delivered so far in ${short(cur)}`);
+    const hero = tile(`All crops delivered so far in ${short(cur)}`);
     const hv = document.createElement("div");
     hv.className = "hero-value";
     if (p.now >= 1000) {
@@ -1018,15 +979,10 @@
     note(st, `${short(lastYr)} ended with ${fmtKt(endStocks(g, lastYr))} on Jul 31`);
   }
 
-  // ---------- render: selected commodity ----------
+  // ---------- render: all crops combined ----------
   function renderGrain() {
-    const g = state.grain;
-    for (const b of picker.children) b.setAttribute("aria-pressed", b.dataset.grain === g);
-    for (const c of document.querySelectorAll(".card")) c.setAttribute("aria-current", c.dataset.grain === g);
-    for (const tr of document.querySelectorAll(".heat tbody tr")) tr.classList.toggle("current", tr.dataset.grain === g);
-    $("year-eyebrow").textContent = `${g} · ${short(cur)}`;
-    $("hist-h").textContent = `${g}: past crop years`;
-    $("year-h").textContent = `${g}: this crop year`;
+    const g = ALL;
+    $("all-eyebrow").textContent = `All 15 crops · ${short(cur)} · week ${W_NOW}`;
 
     const cy = upTo(cum(g, cur), W_NOW);
     const st = stat(ref.map((r) => cum(g, r)));
@@ -1153,7 +1109,6 @@
       card.type = "button";
       card.className = "card";
       card.dataset.grain = g;
-      card.setAttribute("aria-current", g === state.grain);
       const top = document.createElement("div");
       top.className = "card-top";
       const left = document.createElement("div");
@@ -1168,7 +1123,7 @@
       const mini = document.createElement("div");
       mini.className = "mini";
       card.append(top, mini);
-      card.addEventListener("click", () => pickGrain(g, true));
+      card.addEventListener("click", () => openCrop(g));
       host.appendChild(card);
       const st = stat(ref.map((r) => cum(g, r)));
       weekChart(mini, {
@@ -1194,8 +1149,8 @@
       const tr = body.insertRow();
       tr.className = "clickable";
       tr.tabIndex = 0;
-      tr.addEventListener("click", () => pickGrain(g, true));
-      tr.addEventListener("keydown", (e) => { if (e.key === "Enter") pickGrain(g, true); });
+      tr.addEventListener("click", () => openCrop(g));
+      tr.addEventListener("keydown", (e) => { if (e.key === "Enter") openCrop(g); });
       [g, fmtKt(p.now), fmtKt(p.last), fmtKt(p.avg), fmtPct(p.vsAvg), fmtPct(p.vsLast), fmtKt(p.projected), fmtKt(p.st), fmtPct(p.stVsAvg), fmtKt(endStocks(g, lastYr))]
         .forEach((c, i) => { const td = tr.insertCell(); td.textContent = c; if (i === 0 && g === ALL) td.style.fontWeight = 600; });
     }
@@ -1215,8 +1170,8 @@
     $("heat-del").setAttribute("aria-pressed", !isStk);
     $("heat-stk").setAttribute("aria-pressed", isStk);
     $("heat-sub").textContent = isStk
-      ? "Commercial stocks on Jul 31 at the end of each crop year, compared with that crop's average ending stocks. Pick a row to switch to that crop."
-      : "Full crop-year deliveries of each crop, compared with that crop's average over completed years. Pick a row to switch to that crop.";
+      ? "Commercial stocks on Jul 31 at the end of each crop year, compared with that crop's average ending stocks. Pick a row to open that crop."
+      : "Full crop-year deliveries of each crop, compared with that crop's average over completed years. Pick a row to open that crop.";
     const measure = isStk ? "ending stocks" : "delivered";
     for (const g of D.grains) {
       const vals = completed.map((yr) => isStk ? endStocks(g, yr) : finalOf(cum(g, yr)));
@@ -1225,8 +1180,8 @@
       tr.dataset.grain = g;
       const th = document.createElement("th");
       th.scope = "row"; th.textContent = g; th.tabIndex = 0;
-      th.addEventListener("click", () => pickGrain(g, true));
-      th.addEventListener("keydown", (e) => { if (e.key === "Enter") pickGrain(g, true); });
+      th.addEventListener("click", () => openCrop(g));
+      th.addEventListener("keydown", (e) => { if (e.key === "Enter") openCrop(g); });
       tr.appendChild(th);
       completed.forEach((yr, i) => {
         const v = vals[i], p = pct(v, avg);
@@ -1243,14 +1198,13 @@
         td.addEventListener("pointerleave", hideTip);
         td.addEventListener("focus", () => { const r = td.getBoundingClientRect(); showTip(r.right, r.bottom, head, rows); });
         td.addEventListener("blur", hideTip);
-        td.addEventListener("click", () => pickGrain(g, true));
+        td.addEventListener("click", () => openCrop(g));
       });
       const avgTd = tr.insertCell();
       avgTd.textContent = fmtKt(avg);
       avgTd.style.cssText = "width:auto;padding:0 8px;text-align:right;color:var(--ink-2);background:none;cursor:default";
     }
     $("heat").replaceChildren(table);
-    for (const tr of table.tBodies[0].rows) tr.classList.toggle("current", tr.dataset.grain === state.grain);
   }
   $("heat-del").addEventListener("click", () => { state.heat = "deliveries"; renderHeat(); });
   $("heat-stk").addEventListener("click", () => { state.heat = "stocks"; renderHeat(); });
@@ -1398,7 +1352,7 @@
     rows.forEach((r, i) => {
       const yc = m.t + i * rowH + rowH / 2;
       const t = svgText(svg, { x: m.l - 10, y: yc + 4, "text-anchor": "end", "font-size": 12, fill: css("--ink"), cursor: "pointer" }, r.g);
-      t.addEventListener("click", () => pickGrain(r.g, true));
+      t.addEventListener("click", () => openCrop(r.g));
       el("rect", { x: x(r.lo), y: yc - 7, width: Math.max(2, x(r.hi) - x(r.lo)), height: 14, rx: 3, fill: css("--band") }, svg);
       el("line", { x1: x(r.normal), x2: x(r.normal), y1: yc - 8, y2: yc + 8, stroke: css("--avg"), "stroke-width": 2, "stroke-linecap": "round" }, svg);
       el("circle", { cx: x(r.share), cy: yc, r: 5, fill: css("--s1"), stroke: css("--surface"), "stroke-width": 2 }, svg);
@@ -1415,8 +1369,8 @@
       hit.addEventListener("pointerleave", hideTip);
       hit.addEventListener("focus", () => { const b = hit.getBoundingClientRect(); showTip(b.left + x(r.share), b.bottom, r.g, tipRows); });
       hit.addEventListener("blur", hideTip);
-      hit.addEventListener("click", () => pickGrain(r.g, true));
-      hit.addEventListener("keydown", (e) => { if (e.key === "Enter") pickGrain(r.g, true); });
+      hit.addEventListener("click", () => openCrop(r.g));
+      hit.addEventListener("keydown", (e) => { if (e.key === "Enter") openCrop(r.g); });
     });
   }
 
@@ -1542,8 +1496,8 @@
       const tr = body.insertRow();
       if (r.g === ALL) tr.className = "total";
       tr.tabIndex = 0;
-      tr.addEventListener("click", () => pickGrain(r.g, true));
-      tr.addEventListener("keydown", (e) => { if (e.key === "Enter") pickGrain(r.g, true); });
+      tr.addEventListener("click", () => openCrop(r.g));
+      tr.addEventListener("keydown", (e) => { if (e.key === "Enter") openCrop(r.g); });
       tr.insertCell().textContent = r.g;
       FLASH_COLS.forEach(([grp, , key, fmt], i) => {
         const td = tr.insertCell();
@@ -1553,7 +1507,7 @@
         if (i === 0 || FLASH_COLS[i - 1][0] !== grp) td.classList.add("sep");
       });
     }
-    $("mflash-note").textContent = `Wk = week ${W_NOW} (week-over-week change in CGC crop-year totals); Chg = change from week ${W_NOW - 1}. y/y vs ${short(lastYr)} and vs 5-yr (${short(ref[0])} to ${short(lastYr)}) compare crop year to date at the same week; stock comparisons are levels. Exports = port terminals plus direct shipments. Licensed processing covers CGC-licensed process elevators only. Sized to crop = share of StatCan's ${harvest} western production estimate delivered, against the usual share by this week. Click a column to sort, or a crop to open it below.`;
+    $("mflash-note").textContent = `Wk = week ${W_NOW} (week-over-week change in CGC crop-year totals); Chg = change from week ${W_NOW - 1}. y/y vs ${short(lastYr)} and vs 5-yr (${short(ref[0])} to ${short(lastYr)}) compare crop year to date at the same week; stock comparisons are levels. Exports = port terminals plus direct shipments. Licensed processing covers CGC-licensed process elevators only. Sized to crop = share of StatCan's ${harvest} western production estimate delivered, against the usual share by this week. Click a column to sort, or a crop to open its page.`;
   }
 
   // copy a table as tab-separated text (paste into a spreadsheet)

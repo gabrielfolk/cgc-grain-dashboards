@@ -223,6 +223,37 @@
     <div class="two" id="year-panels"></div>
   </section>
 
+  <section aria-labelledby="farm-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="farm-eyebrow"></div>
+        <h2 id="farm-h">Farmer selling</h2>
+        <p class="sub">How fast farmers are delivering this crop, sized to the harvest and ranked against every crop year since 2013-14.</p>
+      </div>
+    </div>
+    <div class="summary" id="farm-tiles" style="--rest:2"></div>
+    <div class="two">
+      <div class="panel">
+        <div class="panel-head"><h3 id="rank-h">Delivered by this week</h3><p id="rank-p"></p></div>
+        <div class="chart" id="ch-rank"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Deliveries, every crop year</h3><p>Cumulative thousand tonnes. Hover to compare all years at one week.</p></div>
+        <div class="legend" id="leg-delall"></div>
+        <div class="chart" id="ch-delall" style="height:330px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Share delivered directly to processors</h3><p>Percent of crop-year deliveries going straight to crushers, mills and other processors</p></div>
+        <div class="chart" id="ch-proc" style="height:220px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Elevator deliveries by province</h3><p>Percent of deliveries to elevators and producer cars. CGC rarely reports a province for direct-to-processor deliveries.</p></div>
+        <div class="legend" id="leg-prov"></div>
+        <div class="chart" id="ch-prov" style="height:220px"></div>
+      </div>
+    </div>
+  </section>
+
   <section aria-labelledby="fc-h" id="fc-section" hidden>
     <div class="section-head">
       <div>
@@ -260,7 +291,7 @@
         <div class="legend" id="leg-heroall"></div>
         <div class="chart" id="ch-heroall" style="height:280px"></div>
       </div>
-      <div class="panel">
+      <div class="panel" id="ports-panel">
         <div class="panel-head"><h3>Terminal exports by port</h3><p>Thousand tonnes through licensed port terminals in each completed crop year</p></div>
         <div class="legend" id="leg-ports"></div>
         <div class="chart" id="ch-ports" style="height:280px"></div>
@@ -298,6 +329,7 @@
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const NS = "http://www.w3.org/2000/svg";
   const TERMINAL_PORTS = ["exports_pacific", "exports_thunder_bay", "exports_st_lawrence", "exports_churchill"];
+  const PROV = [["SK", "Saskatchewan", "var(--process)"], ["AB", "Alberta", "var(--exports)"], ["MB", "Manitoba", "var(--deliveries)"], ["BC", "British Columbia", "var(--feed)"]];
   const EAST_TONE = "color-mix(in oklab, var(--exports) 42%, var(--surface))";
 
   const $ = (id) => document.getElementById(id);
@@ -970,7 +1002,7 @@
       getVals: (yr) => Object.fromEntries(USES.map((u) => [u.key, finalOf(series[u.key](yr))])),
       marker: { label: "Producer deliveries", get: (yr) => finalOf(series.deliveries(yr)) },
       shareKey: HERO.key,
-      shareLabel: (yr) => Math.round(100 * finalOf(series[HERO.key](yr)) / finalOf(series.use(yr))) + "%",
+      shareLabel: (yr) => finalOf(series.use(yr)) > 0 ? Math.round(100 * finalOf(series[HERO.key](yr)) / finalOf(series.use(yr))) + "%" : "",
     });
     const flip = META.process && done.find((yr) => finalOf(series.process(yr)) > finalOf(series.exports(yr)));
     const avgExp = mean(done.map(exportShare));
@@ -998,6 +1030,8 @@
       { key: "pacific", label: "Pacific (Vancouver, Prince Rupert)", color: "var(--exports)" },
       { key: "east", label: "Thunder Bay, St. Lawrence, Churchill", color: EAST_TONE },
     ];
+    $("ports-panel").hidden = !done.some((yr) => finalOf(series.terminal(yr)) > 0.5);
+    $("ch-end").closest(".panel").classList.toggle("wide", $("ports-panel").hidden);  // keep the grid even
     legend($("leg-ports"), portKeys.map((k) => ({ label: k.label, color: k.color, kind: "rect" })));
     yearStack($("ch-ports"), {
       years: done, aria: `${NAME} terminal exports by port group and crop year`,
@@ -1023,8 +1057,8 @@
       years: done, aria: `${NAME} commercial stocks at the end of each crop year, by location`,
       keys: STOCKS,
       getVals: (yr) => Object.fromEntries(STOCKS.map((s) => [s.key, finalOf(stock(s.key, yr))])),
-      capLabel: (yr) => Math.round(100 * finalOf(series.stocks(yr)) / use(yr)) + "%",
-      tipExtra: (yr) => [{ value: (100 * finalOf(series.stocks(yr)) / use(yr)).toFixed(1) + "%", label: "of " + useWords }],
+      capLabel: (yr) => use(yr) > 0 ? Math.round(100 * finalOf(series.stocks(yr)) / use(yr)) + "%" : "",
+      tipExtra: (yr) => use(yr) > 0 ? [{ value: (100 * finalOf(series.stocks(yr)) / use(yr)).toFixed(1) + "%", label: "of " + useWords }] : [],
     });
 
     $("stk-h").textContent = `Commercial stocks at week ${W_NOW} in each crop year`;
@@ -1039,7 +1073,7 @@
     // data table
     const table = document.createElement("table");
     const head = table.createTHead().insertRow();
-    const cols = ["Crop year", "Deliveries", ...USES.filter((u) => u.key !== "exports").map((u) => u.label), "Terminal exports", "Direct exports",
+    const cols = ["Crop year", "Deliveries", `Share by wk ${W_NOW}`, "Direct to processors", ...PROV.map((p) => p[0] + " share"), ...USES.filter((u) => u.key !== "exports").map((u) => u.label), "Terminal exports", "Direct exports",
       "Exports share of use", "Pacific share", `Stocks, wk ${W_NOW}`, "Ending stocks", "Ending stocks / use"];
     for (const c of cols) { const th = document.createElement("th"); th.scope = "col"; th.textContent = c; head.appendChild(th); }
     const body = table.createTBody();
@@ -1047,13 +1081,191 @@
       const tr = body.insertRow();
       if (yr === cur) tr.className = "current";
       const t = finalOf(series.terminal(yr)), x = finalOf(flow("exports_direct", yr)) || 0, p = finalOf(flow("exports_pacific", yr)), u = finalOf(series.use(yr));
-      [short(yr) + (yr === cur ? ` (to wk ${W_NOW})` : ""), fmtKt(finalOf(series.deliveries(yr))),
+      const dFull = finalOf(series.deliveries(yr)), dWk = at(series.deliveries(yr), W_NOW), ch = channelShare(yr), pv = provShare(yr);
+      [short(yr) + (yr === cur ? ` (to wk ${W_NOW})` : ""), fmtKt(dFull),
+        yr === cur || !dFull || dWk == null ? "–" : Math.round(100 * dWk / dFull) + "%",
+        ch != null ? ch.toFixed(1) + "%" : "–", ...PROV.map(([k]) => pv ? pv[k].toFixed(1) + "%" : "–"),
         ...USES.filter((q) => q.key !== "exports").map((q) => fmtKt(finalOf(series[q.key](yr)))), fmtKt(t), fmtKt(x),
         u > 0 ? Math.round(100 * (t + x) / u) + "%" : "–", t > 0 ? Math.round(100 * p / t) + "%" : "–", fmtKt(at(series.stocks(yr), W_NOW)),
-        yr === cur ? "–" : fmtKt(finalOf(series.stocks(yr))), yr === cur ? "–" : (100 * finalOf(series.stocks(yr)) / u).toFixed(1) + "%"]
+        yr === cur ? "–" : fmtKt(finalOf(series.stocks(yr))), yr === cur || !(u > 0) ? "–" : (100 * finalOf(series.stocks(yr)) / u).toFixed(1) + "%"]
         .forEach((v) => { const td = tr.insertCell(); td.textContent = v; });
     }
     $("hist-table").replaceChildren(table);
+  }
+
+  // ---------- farmer selling ----------
+  // percent columns by crop year; keys [{key,label,color}], getVals(yr) -> {key: percent}
+  function yearColumns(host, opts) {
+    host.replaceChildren();
+    const W = host.clientWidth, H = host.clientHeight;
+    if (!W) return;
+    const m = { l: 36, r: 6, t: 16, b: 24 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const band = iw / years.length, bw = Math.max(6, Math.min(24, band - 4));
+    const y = (v) => m.t + ih - (v / 100) * ih;
+    const svg = makeSvg(host, W, H, opts.aria);
+    for (let v = 0; v <= 100; v += 25) {
+      el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: v === 0 ? css("--axis") : css("--grid") }, svg);
+      svgText(svg, { x: m.l - 6, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, v + "%");
+    }
+    const labelEvery = band < 34 ? 2 : 1;
+    years.forEach((yr, i) => {
+      const cx = m.l + band * (i + 0.5), x0 = cx - bw / 2;
+      if ((years.length - 1 - i) % labelEvery === 0) {
+        svgText(svg, { x: cx, y: H - 6, "text-anchor": "middle", "font-size": 11, fill: yr === cur ? css("--ink") : css("--muted"), "font-weight": yr === cur ? 600 : 400 }, "'" + yr.slice(2, 4));
+      }
+      const vals = opts.getVals(yr);
+      if (!vals) return;
+      const segs = opts.keys.filter((k) => vals[k.key] > 0.05);
+      let acc = 0;
+      segs.forEach((k, j) => {
+        const v = vals[k.key], top = j === segs.length - 1;
+        const yb = y(acc) - (j === 0 ? 0 : 1), yt = y(acc + v) + (top ? 0 : 1);
+        acc += v;
+        if (yb - yt <= 0) return;
+        const p = el("path", { d: top ? barPath(x0, bw, yb, yt, 4) : `M${x0},${yb}V${yt}h${bw}V${yb}Z`, tabindex: 0, "aria-label": `${short(yr)} ${k.label} ${v.toFixed(1)}%` }, svg);
+        p.style.fill = k.color;
+        const rows = () => opts.keys.filter((kk) => vals[kk.key] != null).map((kk) => ({ value: vals[kk.key].toFixed(1) + "%", label: kk.label + (opts.kt ? ` · ${fmtKt(opts.kt(yr, kk.key))}` : ""), color: kk.color, kind: "rect" }));
+        const head = short(yr) + (yr === cur && W_NOW < WEEKS ? ` (to week ${W_NOW})` : "");
+        p.addEventListener("pointermove", (e) => { p.setAttribute("opacity", 0.8); showTip(e.clientX, e.clientY, head, rows()); });
+        p.addEventListener("pointerleave", () => { p.setAttribute("opacity", 1); hideTip(); });
+        p.addEventListener("focus", () => { const r = p.getBoundingClientRect(); showTip(r.right, r.top, head, rows()); });
+        p.addEventListener("blur", hideTip);
+        if (opts.inlineLabels && yb - yt >= 16 && bw >= 22) {
+          svgText(svg, { x: cx, y: (yb + yt) / 2 + 4, "text-anchor": "middle", "font-size": 10, "font-weight": 500, fill: k.labelInk || "#ffffff", "pointer-events": "none" }, Math.round(v));
+        }
+        if (opts.capLabel && top && yr === cur) svgText(svg, { x: cx, y: yt - 5, "text-anchor": "middle", "font-size": 11, "font-weight": 600, fill: css("--ink") }, Math.round(v) + "%");
+      });
+    });
+  }
+
+  // deliveries by this week in every crop year, newest first; returns this year's rank
+  function rankBars(host) {
+    host.replaceChildren();
+    const W = host.clientWidth;
+    const rows = years.slice().reverse().map((yr) => {
+      const c = series.deliveries(yr), v = at(c, W_NOW), full = yr === cur ? null : finalOf(c);
+      return { yr, v, full, share: full ? v / full : null };
+    }).filter((r) => r.v != null);
+    const ranked = rows.slice().sort((a, b) => b.v - a.v);
+    const rank = ranked.findIndex((r) => r.yr === cur) + 1;
+    if (!W) return { rank, n: rows.length };
+    const rowH = 22, m = { l: 58, r: 64, t: 4, b: 4 };
+    const H = m.t + m.b + rows.length * rowH;
+    host.style.height = H + "px";
+    const iw = W - m.l - m.r, max = Math.max(1, ...rows.map((r) => r.v));
+    const svg = makeSvg(host, W, H, `${NAME} deliveries by week ${W_NOW} in each crop year`);
+    el("line", { x1: m.l, x2: m.l, y1: m.t, y2: H - m.b, stroke: css("--axis") }, svg);
+    rows.forEach((r, i) => {
+      const yc = m.t + i * rowH + rowH / 2, isCur = r.yr === cur, bh = 14;
+      svgText(svg, { x: m.l - 8, y: yc + 4, "text-anchor": "end", "font-size": 12, fill: isCur ? css("--ink") : css("--ink-2"), "font-weight": isCur ? 600 : 400 }, short(r.yr));
+      const len = Math.max(0, (r.v / max) * iw), x1 = m.l + len, rr = Math.min(4, len / 2), y0 = yc - bh / 2;
+      const color = isCur ? "var(--deliveries)" : r.yr === lastYr ? "var(--avg)" : "var(--other)";
+      if (len > 0) {
+        const p = el("path", { d: `M${m.l},${y0}H${x1 - rr}Q${x1},${y0} ${x1},${y0 + rr}V${y0 + bh - rr}Q${x1},${y0 + bh} ${x1 - rr},${y0 + bh}H${m.l}Z` }, svg);
+        p.style.fill = color;
+      }
+      svgText(svg, { x: x1 + 6, y: yc + 4, "font-size": 11, fill: isCur ? css("--ink") : css("--muted"), "font-weight": isCur ? 600 : 400 }, fmtKt(r.v));
+      const hit = el("rect", { x: 0, y: yc - rowH / 2, width: W, height: rowH, fill: "transparent", tabindex: 0, "aria-label": `${short(r.yr)}: ${fmtKt(r.v)} by week ${W_NOW}` }, svg);
+      const tipRows = [
+        { value: fmtKt(r.v), label: `by week ${W_NOW} (${ordinal(ranked.indexOf(r) + 1)} of ${rows.length})`, color, kind: "rect" },
+        ...(r.full ? [{ value: fmtKt(r.full), label: "full crop year" }, { value: Math.round(r.share * 100) + "%", label: `of the year delivered by week ${W_NOW}` }] : []),
+      ];
+      hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, short(r.yr), tipRows));
+      hit.addEventListener("pointerleave", hideTip);
+      hit.addEventListener("focus", () => { const b = hit.getBoundingClientRect(); showTip(b.left + x1, b.bottom, short(r.yr), tipRows); });
+      hit.addEventListener("blur", hideTip);
+    });
+    return { rank, n: rows.length };
+  }
+
+  function channelShare(y) {
+    const c = D.channel?.[y];
+    if (!c) return null;
+    const tot = (c.primary || 0) + (c.process || 0) + (c.producer_cars || 0);
+    return tot > 0 ? 100 * (c.process || 0) / tot : null;
+  }
+  function provShare(y) {
+    const p = D.province?.[y];
+    if (!p) return null;
+    const tot = PROV.reduce((a, [k]) => a + (p[k] || 0), 0) + (p.Other || 0);
+    if (tot <= 0) return null;
+    return Object.fromEntries(PROV.map(([k]) => [k, 100 * (p[k] || 0) / tot]));
+  }
+  // share of StatCan's western production delivered by this week, against the previous five crop years
+  function sizedPace() {
+    const prod = (y) => D.production?.[y.slice(0, 4)] ?? null;
+    const now = at(series.deliveries(cur), W_NOW), p = prod(cur);
+    const prior = ref.filter((r) => prod(r) > 0 && at(series.deliveries(r), W_NOW) != null);
+    if (!(p > 0) || now == null || prior.length < 3) return null;
+    const shares = prior.map((r) => at(series.deliveries(r), W_NOW) / prod(r));
+    const share = now / p, normal = mean(shares);
+    return { share, normal, lo: Math.min(...shares), hi: Math.max(...shares), sized: share / normal - 1, prod: p, size: pct(p, mean(prior.map(prod))) };
+  }
+  // full-year deliveries if the rest of the year follows the usual seasonal pattern
+  function paceProjection() {
+    const now = at(series.deliveries(cur), W_NOW);
+    const share = mean(ref.map((r) => { const f = finalOf(series.deliveries(r)), v = at(series.deliveries(r), W_NOW); return f > 0 && v != null ? v / f : null; }));
+    return { share, projected: share > 0.02 && now != null ? now / share : null, lastFull: finalOf(series.deliveries(lastYr)) };
+  }
+
+  function renderFarm() {
+    $("farm-eyebrow").textContent = `${NAME} · ${short(cur)} · week ${W_NOW}`;
+    $("rank-h").textContent = `Delivered by week ${W_NOW} in each crop year`;
+    $("rank-p").textContent = `The same point in the year, ~${weekDate(cur, W_NOW)}. Hover for the full-year total.`;
+    const { rank, n } = rankBars($("ch-rank"));
+
+    const host = $("farm-tiles");
+    host.replaceChildren();
+    const tile = (label) => { const t = document.createElement("div"); t.className = "tile"; const l = document.createElement("div"); l.className = "label"; l.textContent = label; t.appendChild(l); host.appendChild(t); return t; };
+    const big = (t, text) => { const v = document.createElement("div"); v.className = "tile-value"; v.textContent = text; t.appendChild(v); };
+    const note = (t, text) => { const d = document.createElement("div"); d.className = "note"; d.textContent = text; t.appendChild(d); };
+    const line = (t, c, text) => { const d = document.createElement("div"); d.className = "deltas"; const sp = document.createElement("span"); sp.append(c, document.createTextNode(text)); d.appendChild(sp); t.appendChild(d); };
+
+    const sz = sizedPace(), harvest = cur.slice(0, 4);
+    const t1 = tile(`Share of the ${harvest} crop delivered`);
+    if (sz) {
+      big(t1, (100 * sz.share).toFixed(1) + "%");
+      line(t1, chip(sz.sized), " vs the usual share at this week");
+      note(t1, `Normally ${(100 * sz.normal).toFixed(1)}% by week ${W_NOW} (range ${(100 * sz.lo).toFixed(1)}–${(100 * sz.hi).toFixed(1)}%). StatCan puts the western crop at ${fmtKt(sz.prod)}, ${fmtPct(sz.size)} against the 5-yr average.`);
+    } else {
+      big(t1, "–");
+      note(t1, "No StatCan western production estimate for this crop year yet.");
+    }
+    const t2 = tile(`Pace rank at week ${W_NOW}`);
+    big(t2, `${ordinal(rank)} of ${n}`);
+    note(t2, rank === 1 ? `Fastest start of any crop year since ${short(years[0])}` : rank === n ? `Slowest start of any crop year since ${short(years[0])}` : `Crop years since ${short(years[0])}, ranked by deliveries at this week`);
+    const pj = paceProjection();
+    const t3 = tile("Full-year delivery pace projection");
+    big(t3, fmtKt(pj.projected));
+    line(t3, chip(pct(pj.projected, pj.lastFull)), ` vs ${short(lastYr)} (${fmtKt(pj.lastFull)})`);
+    note(t3, pj.share != null ? `About ${Math.round(pj.share * 100)}% of the year's deliveries usually arrive by week ${W_NOW}. A pace estimate, not a forecast.` : "Not enough history");
+
+    legend($("leg-delall"), [{ label: short(cur), color: "var(--deliveries)" }, { label: short(lastYr), color: "var(--avg)" }, { label: "Earlier years", color: "var(--other)" }]);
+    weekChart($("ch-delall"), {
+      aria: `Cumulative ${NAME} deliveries in every crop year`, sortTip: true,
+      series: [
+        ...years.filter((yr) => yr !== cur && yr !== lastYr).map((yr) => ({ label: short(yr), color: "var(--other)", tipColor: "var(--muted)", values: series.deliveries(yr), width: 1.25 })),
+        { label: short(lastYr), color: "var(--avg)", values: series.deliveries(lastYr), width: 1.5 },
+        { label: short(cur), color: "var(--deliveries)", values: upTo(series.deliveries(cur), W_NOW), dot: true, em: true },
+      ],
+    });
+
+    yearColumns($("ch-proc"), {
+      aria: `${NAME} share delivered directly to processors by crop year`,
+      keys: [{ key: "process", label: "Direct to processors", color: "var(--process)" }],
+      getVals: (yr) => { const c = channelShare(yr); return c == null ? null : { process: c }; },
+      kt: (yr) => D.channel?.[yr]?.process,
+      capLabel: true,
+    });
+    legend($("leg-prov"), PROV.map(([, label, color]) => ({ label, color, kind: "rect" })));
+    yearColumns($("ch-prov"), {
+      aria: `${NAME} elevator deliveries by province and crop year`,
+      keys: PROV.map(([key, label, color]) => ({ key, label, color, labelInk: key === "BC" ? "#101311" : "#ffffff" })),
+      getVals: provShare,
+      kt: (yr, k) => D.province?.[yr]?.[k],
+      inlineLabels: true,
+    });
   }
 
   // ---------- forecast ----------
@@ -1287,9 +1499,10 @@
   renderFlash();
   renderPace();
   setMode(state.mode);
+  renderFarm();
   renderHistory();
 
-  const rerender = () => { renderYear(); renderHistory(); if (FORECAST) renderForecast(FORECAST); };
+  const rerender = () => { renderYear(); renderFarm(); renderHistory(); if (FORECAST) renderForecast(FORECAST); };
   let rt;
   new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(rerender, 120); }).observe(document.querySelector(".wrap"));
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerender);

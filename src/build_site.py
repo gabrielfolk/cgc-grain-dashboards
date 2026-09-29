@@ -15,18 +15,30 @@ import shutil
 from pathlib import Path
 from urllib.parse import quote
 
+from grain_data import GRAINS
+
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "dashboard"
 OUT = ROOT / "docs"
 
 # page folders, relative to dashboard/ and docs/ ("" is the all-crops page), with their nav labels
-NAV = {"": "Overview", "margins": "Margins", "canola": "Canola", "wheat": "Wheat", "durum": "Durum", "barley": "Barley", "feed": "Feed grains"}
-PAGES = list(NAV)
+NAV = {"": "Overview", "feed": "Feed grains", "margins": "Margins"}
+# one page per crop, in the nav's second row, largest deliveries first
+CROP_ORDER = ["wheat", "canola", "durum", "barley", "peas", "oats", "lentils", "soybeans", "corn",
+              "flaxseed", "rye", "beans", "canaryseed", "chickpeas", "mustard"]
+CROP_NAV = {slug: GRAINS[slug]["title"].removesuffix(" Pipeline") for slug in CROP_ORDER}
+assert set(CROP_NAV) == set(GRAINS), "every crop page needs a place in CROP_ORDER"
+PAGES = [*NAV, *CROP_NAV]
 DATA_FILES = ["data.json", "forecast.json"]
 
 # Bar-chart favicons, embedded so every page has one without a separate file
 # The all-crops page uses multicoloured bars on dark; each crop page gets its own colour.
-CROP_COLORS = {"canola": "#f2c200", "wheat": "#c89b3c", "durum": "#e0662a", "barley": "#4e9a3a", "feed": "#7c5cc4", "margins": "#2a78d6"}
+CROP_COLORS = {
+    "canola": "#f2c200", "wheat": "#c89b3c", "durum": "#e0662a", "barley": "#4e9a3a", "feed": "#7c5cc4", "margins": "#2a78d6",
+    "peas": "#7cb342", "oats": "#cbb68a", "lentils": "#b5651d", "soybeans": "#a8a23c", "corn": "#e8a317",
+    "flaxseed": "#5b7fb8", "rye": "#8d6e63", "beans": "#a0522d", "canaryseed": "#d4c05a", "chickpeas": "#d9a066",
+    "mustard": "#c9a90a",
+}
 
 
 def favicon(page: str) -> str:
@@ -83,22 +95,29 @@ HEAD = """<!doctype html>
   .site-nav a:hover { color: var(--ink); }
   .site-nav a[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
   .site-nav a:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+  .site-nav .crops { border-top: 1px solid var(--border); gap: 4px 12px; }
+  .site-nav .crops .site-name { margin-right: 0; padding: 10px 0; }
+  .site-nav .crops a { padding: 9px 7px 7px; font-size: 12px; }
   @media (max-width: 640px) { .site-nav .site-name { display: none; } }
 </style>
 """
 
 
 def nav(page: str) -> str:
-    """Navigation bar for `page`, with links relative to its folder."""
+    """Navigation bar for `page`, with links relative to its folder: the cross-crop pages, then every crop."""
     up = "../" if page else ""
-    items = "".join(
-        f'<li><a href="{up + (target + "/" if target else "") or "./"}"'
-        + (' aria-current="page"' if target == page else "")
-        + f">{label}</a></li>"
-        for target, label in NAV.items()
-    )
-    return (f'<nav class="site-nav" aria-label="Dashboards"><div class="site-nav-inner">'
-            f'<span class="site-name">CGC grain dashboards</span><ul>{items}</ul></div></nav>\n')
+
+    def items(pages: dict) -> str:
+        return "".join(
+            f'<li><a href="{up + (target + "/" if target else "") or "./"}"'
+            + (' aria-current="page"' if target == page else "")
+            + f">{label}</a></li>"
+            for target, label in pages.items()
+        )
+
+    return (f'<nav class="site-nav" aria-label="Dashboards">'
+            f'<div class="site-nav-inner"><span class="site-name">CGC grain dashboards</span><ul>{items(NAV)}</ul></div>'
+            f'<div class="site-nav-inner crops"><span class="site-name">Crops</span><ul>{items(CROP_NAV)}</ul></div></nav>\n')
 
 
 def main() -> None:

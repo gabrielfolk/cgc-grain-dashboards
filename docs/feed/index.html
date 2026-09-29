@@ -36,6 +36,9 @@
   .site-nav a:hover { color: var(--ink); }
   .site-nav a[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
   .site-nav a:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+  .site-nav .crops { border-top: 1px solid var(--border); gap: 4px 12px; }
+  .site-nav .crops .site-name { margin-right: 0; padding: 10px 0; }
+  .site-nav .crops a { padding: 9px 7px 7px; font-size: 12px; }
   @media (max-width: 640px) { .site-nav .site-name { display: none; } }
 </style>
 <title>Western Feed Grains</title>
@@ -226,7 +229,7 @@
   .calc-field input:focus-visible { outline: 2px solid var(--c1); outline-offset: 1px; }
 </style>
 
-<nav class="site-nav" aria-label="Dashboards"><div class="site-nav-inner"><span class="site-name">CGC grain dashboards</span><ul><li><a href="../">Overview</a></li><li><a href="../margins/">Margins</a></li><li><a href="../canola/">Canola</a></li><li><a href="../wheat/">Wheat</a></li><li><a href="../durum/">Durum</a></li><li><a href="../barley/">Barley</a></li><li><a href="../feed/" aria-current="page">Feed grains</a></li></ul></div></nav>
+<nav class="site-nav" aria-label="Dashboards"><div class="site-nav-inner"><span class="site-name">CGC grain dashboards</span><ul><li><a href="../">Overview</a></li><li><a href="../feed/" aria-current="page">Feed grains</a></li><li><a href="../margins/">Margins</a></li></ul></div><div class="site-nav-inner crops"><span class="site-name">Crops</span><ul><li><a href="../wheat/">Wheat</a></li><li><a href="../canola/">Canola</a></li><li><a href="../durum/">Durum</a></li><li><a href="../barley/">Barley</a></li><li><a href="../peas/">Peas</a></li><li><a href="../oats/">Oats</a></li><li><a href="../lentils/">Lentils</a></li><li><a href="../soybeans/">Soybeans</a></li><li><a href="../corn/">Corn</a></li><li><a href="../flaxseed/">Flaxseed</a></li><li><a href="../rye/">Rye</a></li><li><a href="../beans/">Beans</a></li><li><a href="../canaryseed/">Canaryseed</a></li><li><a href="../chickpeas/">Chickpeas</a></li><li><a href="../mustard/">Mustard</a></li></ul></div></nav>
 <div class="wrap">
   <header>
     <div class="eyebrow">CGC · StatCan · CBOT · Feed grains</div>

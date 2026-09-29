@@ -11,13 +11,10 @@ with Statistics Canada crop, livestock and price data and CBOT futures. Crop yea
 
 | Page | Path | What it answers |
 |---|---|---|
-| **Prairie Delivery Pace** (overview) | `/` | How fast are farmers selling each of 15 crops, compared with crop size and the last five years? Includes an all-crops weekly flash, supply against uses, crop mix and commercial stocks. |
-| **Producer Margins** | `/margins/` | What does an acre of each crop earn after variable costs, at seeding (April) and harvest (August) prices, and how does that compare with what farmers have actually delivered? Saskatchewan budgets, 9 crops, 2017 on. |
-| **Canola Pipeline** | `/canola/` | Crush, exports by port, terminal receipts and stocks, with a backtested crush and export forecast. |
-| **Wheat Pipeline** | `/wheat/` | Wheat (ex-durum) exports by port, licensed milling, domestic feed shipments and stocks. Western grain only. |
-| **Durum Pipeline** | `/durum/` | Durum exports: Pacific, Thunder Bay, St. Lawrence and direct to the US. |
-| **Barley Pipeline** | `/barley/` | Barley exports, malting and processing, domestic feed shipments and stocks. |
+| **Prairie Delivery Pace** (overview) | `/` | What are farmers doing across all 15 crops? Selling pace sized to the crop, the all-crops weekly flash, pace cards, a 13-year heatmap, crop mix, and all-crops deliveries and commercial stocks. |
+| **Crop pages** (15) | `/wheat/`, `/canola/`, `/durum/`, `/barley/`, `/peas/`, `/oats/`, `/lentils/`, `/soybeans/`, `/corn/`, `/flaxseed/`, `/rye/`, `/beans/`, `/canaryseed/`, `/chickpeas/`, `/mustard/` | One crop from farm to use: weekly flash, pace math, farmer selling (pace sized to the crop, rank, projection, direct-to-processor and province shares), exports by port, processing, feed and stocks. Canola adds a backtested crush and export forecast. |
 | **Western Feed Grains** | `/feed/` | How much barley, wheat, durum, oats and imported corn is fed. Covers quality, livestock numbers, energy-adjusted feed prices and a backtested feed-use estimate. |
+| **Producer Margins** | `/margins/` | What does an acre of each crop earn after variable costs, at seeding (April) and harvest (August) prices, and how does that compare with what farmers have actually delivered? Saskatchewan budgets, 9 crops, 2017 on. |
 
 Every page has summary tiles or cards, a weekly flash table (with a copy-to-spreadsheet button) and charts.
 Methodology notes are at the foot of each page.
@@ -98,7 +95,7 @@ src/
   margins.py         producer margins by crop (price x trend yield - guide costs)
   margins_data.py    data for the Producer Margins page (margins plus deliveries of the same crops)
   dashboard_data.py  data for the overview page
-  grain_data.py      data for the crop pages, plus crop settings (GRAINS) and page links (LINKS)
+  grain_data.py      data for the crop pages, plus crop settings (GRAINS), province/channel splits and StatCan production
   canola_forecast.py canola crush and export forecast, with backtest
   feed_data.py       data and feed-use estimate for the feed page, with backtest
   build_site.py      builds docs/ (HTML wrapper, navigation bar, favicons)
@@ -116,8 +113,9 @@ TODO.md              next steps
 ```
 
 **Common changes:**
-- **Add a crop deep dive:** add an entry to `GRAINS` and `LINKS` in `src/grain_data.py`, then add the page to `NAV`
-  (and optionally `CROP_COLORS`) in `src/build_site.py`.
+- **Add a crop page:** add an entry to `GRAINS` (and its StatCan name to `STATCAN_CROPS`) in `src/grain_data.py`,
+  then add its slug to `CROP_ORDER` (and optionally `CROP_COLORS`) in `src/build_site.py`. The overview links to it
+  automatically.
 - **Add a new analysis page:** create `dashboard/<name>/index.html` and its data script, and add it to `NAV` in
   `src/build_site.py`.
 

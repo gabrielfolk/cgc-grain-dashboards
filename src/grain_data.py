@@ -32,6 +32,7 @@ import html
 import sys
 from pathlib import Path
 
+import external
 from db import EASTERN_GRADE, connect
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -51,14 +52,36 @@ DIRECT_EXPORT_REGIONS = ("Export Destinations", "Western Container", "Eastern Co
 PORT_SLUGS = {"Vancouver": "vancouver", "Prince Rupert": "prince_rupert", "Pacific": "pacific_combined",
               "Thunder Bay": "thunder_bay", "Bay & Lakes": "bay_lakes", "St. Lawrence": "st_lawrence", "Churchill": "churchill"}
 
-# Links between pages, relative to a crop page (dashboard/<crop>/ on the site)
+# Links to the cross-crop pages, relative to a crop page (dashboard/<crop>/ on the site)
 LINKS = {
     "Prairie Delivery Pace": "../",
-    "Canola Pipeline": "../canola/",
-    "Wheat Pipeline": "../wheat/",
-    "Durum Pipeline": "../durum/",
-    "Barley Pipeline": "../barley/",
     "Western Feed Grains": "../feed/",
+    "Producer Margins": "../margins/",
+}
+# CGC grain name -> StatCan field crop name (table 32-10-0359), to size deliveries against the crop
+STATCAN_CROPS = {
+    "Wheat": "Wheat, all excluding durum wheat",
+    "Amber Durum": "Wheat, durum",
+    "Canola": "Canola (rapeseed)",
+    "Barley": "Barley",
+    "Oats": "Oats",
+    "Peas": "Peas, dry",
+    "Lentils": "Lentils",
+    "Soybeans": "Soybeans",
+    "Corn": "Corn for grain",
+    "Flaxseed": "Flaxseed",
+    "Rye": "Rye, all",
+    "Beans": "Beans, all dry (white and coloured)",
+    "Canaryseed": "Canary seed",
+    "Chick Peas": "Chick peas",
+    "Mustard Seed": "Mustard seed",
+}
+PROVINCES = {
+    "Alberta": "AB",
+    "Alberta & B.C.": "AB",  # 2013-14 .. 2016-17 report AB and BC combined
+    "British Columbia": "BC",
+    "Saskatchewan": "SK",
+    "Manitoba": "MB",
 }
 
 GRAINS = {
@@ -95,7 +118,128 @@ GRAINS = {
             "Most barley is fed on farms or sold directly to feedlots, which CGC does not track.",
         ],
     },
+    "peas": {
+        "grain": "Peas", "title": "Peas Pipeline", "name": "peas",
+        "lede": "Western Canadian dry peas from CGC weekly data: producer deliveries, exports by port and direct, terminal receipts, licensed processing and commercial stocks.",
+        "process": {"label": "Processing", "verb": "Processed", "site": "Processors"},
+        "feed": False, "hero": "exports",
+        "notes": ["Processing is peas handled by CGC-licensed process elevators (“Milled/Mfg Grain”)."],
+    },
+    "lentils": {
+        "grain": "Lentils", "title": "Lentils Pipeline", "name": "lentils",
+        "lede": "Western Canadian lentils from CGC weekly data: producer deliveries, exports by port and direct, terminal receipts and commercial stocks.",
+        "process": None, "feed": False, "hero": "exports",
+        "notes": ["CGC reports almost no lentil processing at licensed facilities, so this page leaves processing out."],
+    },
+    "oats": {
+        "grain": "Oats", "title": "Oats Pipeline", "name": "oats",
+        "lede": "Western Canadian oats from CGC weekly data: producer deliveries, licensed milling, exports by port and direct from country elevators, terminal receipts and commercial stocks.",
+        "process": {"label": "Milling", "verb": "Milled", "site": "Mills"},
+        "feed": False, "hero": "exports",
+        "notes": [
+            "Milling is oats processed at CGC-licensed process elevators (“Milled/Mfg Grain”), mostly oat mills.",
+            "Most oat exports are direct: CGC records them as shipped from country elevators straight to export destinations, not through a port terminal.",
+        ],
+    },
+    "soybeans": {
+        "grain": "Soybeans", "title": "Soybeans Pipeline", "name": "soybeans",
+        "lede": "Soybeans from CGC weekly data: western producer deliveries, licensed processing, exports by port, terminal receipts and commercial stocks.",
+        "process": {"label": "Processing", "verb": "Processed", "site": "Processors"},
+        "feed": False, "hero": "exports",
+        "notes": ["Soybean grades do not record where the beans were grown. Exports, receipts and stocks at eastern terminals (Bay & Lakes, St. Lawrence) include Ontario and Quebec soybeans, so exports run well above western deliveries. Pacific exports are the better guide to western movement."],
+    },
+    "corn": {
+        "grain": "Corn", "title": "Corn Pipeline", "name": "corn",
+        "lede": "Corn from CGC weekly data: western producer deliveries, licensed processing, exports, terminal receipts and commercial stocks.",
+        "process": {"label": "Processing", "verb": "Processed", "site": "Processors"},
+        "feed": False, "hero": "process",
+        "notes": [
+            "Processing is corn handled by CGC-licensed process elevators (“Milled/Mfg Grain”); CGC leaves the province blank for much of it.",
+            "Corn graded Canada Eastern (CE) is left out of exports and stocks. Corn exported through Bay & Lakes and St. Lawrence under other grades does not record origin; those exports run well above western deliveries, so most of them are not Western Canadian corn.",
+        ],
+    },
+    "flaxseed": {
+        "grain": "Flaxseed", "title": "Flaxseed Pipeline", "name": "flaxseed",
+        "lede": "Western Canadian flaxseed from CGC weekly data: producer deliveries, licensed processing, exports by port and direct, terminal receipts and commercial stocks.",
+        "process": {"label": "Processing", "verb": "Processed", "site": "Processors"},
+        "feed": False, "hero": "exports",
+        "notes": ["Processing is flaxseed handled by CGC-licensed process elevators (“Milled/Mfg Grain”)."],
+    },
+    "rye": {
+        "grain": "Rye", "title": "Rye Pipeline", "name": "rye",
+        "lede": "Western Canadian rye from CGC weekly data: producer deliveries, licensed processing, exports and commercial stocks.",
+        "process": {"label": "Processing", "verb": "Processed", "site": "Processors"},
+        "feed": False, "hero": "exports",
+        "notes": ["Processing is rye handled by CGC-licensed process elevators (“Milled/Mfg Grain”)."],
+    },
+    "beans": {
+        "grain": "Beans", "title": "Beans Pipeline", "name": "beans",
+        "lede": "Western Canadian dry beans from CGC weekly data: producer deliveries, licensed processing, direct exports and commercial stocks.",
+        "process": {"label": "Processing", "verb": "Processed", "site": "Processors"},
+        "feed": False, "hero": "exports",
+        "notes": ["CGC reports no bean exports through port terminals. Bean exports are shipped from country elevators, split between containers and direct shipments to export destinations."],
+    },
+    "canaryseed": {
+        "grain": "Canaryseed", "title": "Canaryseed Pipeline", "name": "canaryseed",
+        "lede": "Western Canadian canaryseed from CGC weekly data: producer deliveries, exports (mostly direct from country elevators) and commercial stocks.",
+        "process": None, "feed": False, "hero": "exports",
+        "notes": ["CGC reports no canaryseed processing at licensed facilities, so this page leaves processing out."],
+    },
+    "chickpeas": {
+        "grain": "Chick Peas", "title": "Chickpeas Pipeline", "name": "chickpeas",
+        "lede": "Western Canadian chickpeas from CGC weekly data: producer deliveries, direct exports and commercial stocks.",
+        "process": None, "feed": False, "hero": "exports",
+        "notes": ["CGC reports almost no chickpea processing at licensed facilities and no exports through port terminals. Chickpea exports are shipped from country elevators, mostly by container."],
+    },
+    "mustard": {
+        "grain": "Mustard Seed", "title": "Mustard Pipeline", "name": "mustard seed",
+        "lede": "Western Canadian mustard seed from CGC weekly data: producer deliveries, direct exports and commercial stocks.",
+        "process": None, "feed": False, "hero": "exports",
+        "notes": ["CGC reports no mustard seed processing at licensed facilities and virtually no terminal exports. Mustard exports are shipped from country elevators, split between containers and direct shipments to export destinations."],
+    },
 }
+
+PAGE_OF = {cfg["grain"]: slug for slug, cfg in GRAINS.items()}
+
+
+def delivery_splits(con, grains: list[str], total: str | None = None) -> tuple[dict, dict]:
+    """Crop-year deliveries (to date, for the current year) by province and by channel.
+
+    Returns ({grain: {crop_year: {province: kt}}}, {grain: {crop_year: {channel: kt}}}).
+    With `total`, also adds the sum of `grains` under that name.
+    """
+    grain_list = ", ".join(f"'{g}'" for g in grains)
+    rows = con.execute(
+        f"""
+        with final as (
+            select grain, crop_year, province, channel,
+                   max_by(cumulative_kt, grain_week) kt
+            from producer_deliveries where grain in ({grain_list}) group by all
+        )
+        select grain, crop_year, province, channel, kt from final
+        """ + (f"union all select '{total}', crop_year, province, channel, sum(kt) from final group by all" if total else "")
+    ).fetchall()
+    province: dict = {}
+    channel: dict = {}
+    for grain, year, prov, chan, kt in rows:
+        # CGC rarely reports a province for direct-to-processor deliveries, so
+        # the province split covers elevator and producer-car deliveries only.
+        if chan != "process":
+            p = province.setdefault(grain, {}).setdefault(year, {})
+            key = PROVINCES.get(prov, "Other")
+            p[key] = round(p.get(key, 0) + kt, 1)
+        c = channel.setdefault(grain, {}).setdefault(year, {})
+        c[chan] = round(c.get(chan, 0) + kt, 1)
+    return province, channel
+
+
+def western_production(grains: list[str], first_year: int) -> dict:
+    """{grain: {harvest year: kt}}: StatCan production for MB, SK, AB and BC."""
+    wp = external.western_production()
+    return {
+        g: {str(y): round(v / 1000, 1) for y, v in wp[STATCAN_CROPS[g]].dropna().items() if y >= first_year and v > 0}
+        for g in grains if STATCAN_CROPS.get(g) in wp.columns
+    }
 
 
 def flows_sql(grain: str) -> str:
@@ -175,6 +319,7 @@ def build(con, slug: str) -> None:
         for y in years:
             flows[name].setdefault(y, [0.0] * WEEKS)
 
+    province, channel = delivery_splits(con, [cfg["grain"]])
     latest_week, week_ending = con.execute(
         "select grain_week, week_ending from gsw where crop_year = ? order by grain_week desc limit 1", [years[-1]]
     ).fetchone()
@@ -182,7 +327,7 @@ def build(con, slug: str) -> None:
         "meta": {
             **{k: cfg[k] for k in ("grain", "title", "name", "lede", "process", "feed", "hero", "notes")},
             "slug": slug,
-            "links": {t: u for t, u in LINKS.items() if t != cfg["title"]},
+            "links": LINKS,
             "current_year": years[-1],
             "latest_week": latest_week,
             "week_ending": week_ending.date().isoformat(),
@@ -191,6 +336,9 @@ def build(con, slug: str) -> None:
         "years": years,
         "flows": flows,
         "stocks": stocks,
+        "province": province.get(cfg["grain"], {}),
+        "channel": channel.get(cfg["grain"], {}),
+        "production": western_production([cfg["grain"]], int(years[0][:4])).get(cfg["grain"], {}),
     }
     out = ROOT / "dashboard" / slug
     out.mkdir(parents=True, exist_ok=True)

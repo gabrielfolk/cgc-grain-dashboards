@@ -36,6 +36,9 @@
   .site-nav a:hover { color: var(--ink); }
   .site-nav a[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
   .site-nav a:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+  .site-nav .crops { border-top: 1px solid var(--border); gap: 4px 12px; }
+  .site-nav .crops .site-name { margin-right: 0; padding: 10px 0; }
+  .site-nav .crops a { padding: 9px 7px 7px; font-size: 12px; }
   @media (max-width: 640px) { .site-nav .site-name { display: none; } }
 </style>
 <title>Producer Margins</title>
@@ -307,7 +310,7 @@
   @media (prefers-reduced-motion: no-preference) { .card, .btn, .pick { transition: border-color 0.12s, background 0.12s, color 0.12s; } }
   .quad-label { font: 500 11px var(--sans); fill: var(--muted); }
 </style>
-<nav class="site-nav" aria-label="Dashboards"><div class="site-nav-inner"><span class="site-name">CGC grain dashboards</span><ul><li><a href="../">Overview</a></li><li><a href="../margins/" aria-current="page">Margins</a></li><li><a href="../canola/">Canola</a></li><li><a href="../wheat/">Wheat</a></li><li><a href="../durum/">Durum</a></li><li><a href="../barley/">Barley</a></li><li><a href="../feed/">Feed grains</a></li></ul></div></nav>
+<nav class="site-nav" aria-label="Dashboards"><div class="site-nav-inner"><span class="site-name">CGC grain dashboards</span><ul><li><a href="../">Overview</a></li><li><a href="../feed/">Feed grains</a></li><li><a href="../margins/" aria-current="page">Margins</a></li></ul></div><div class="site-nav-inner crops"><span class="site-name">Crops</span><ul><li><a href="../wheat/">Wheat</a></li><li><a href="../canola/">Canola</a></li><li><a href="../durum/">Durum</a></li><li><a href="../barley/">Barley</a></li><li><a href="../peas/">Peas</a></li><li><a href="../oats/">Oats</a></li><li><a href="../lentils/">Lentils</a></li><li><a href="../soybeans/">Soybeans</a></li><li><a href="../corn/">Corn</a></li><li><a href="../flaxseed/">Flaxseed</a></li><li><a href="../rye/">Rye</a></li><li><a href="../beans/">Beans</a></li><li><a href="../canaryseed/">Canaryseed</a></li><li><a href="../chickpeas/">Chickpeas</a></li><li><a href="../mustard/">Mustard</a></li></ul></div></nav>
 <div class="wrap">
   <header>
     <div class="eyebrow">Saskatchewan crop budgets · CGC producer deliveries</div>
