@@ -12,6 +12,7 @@ import math
 from pathlib import Path
 
 import external
+import margins
 from grain_data import flows_sql
 from db import connect
 
@@ -188,6 +189,7 @@ def main() -> None:
         "process": uses["process"],
         "production": production,
         "groups": GROUPS,
+        "margins": margins.build(),
     }
 
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)

@@ -11,7 +11,7 @@ with Statistics Canada crop, livestock and price data and CBOT futures. Crop yea
 
 | Page | Path | What it answers |
 |---|---|---|
-| **Prairie Delivery Pace** (overview) | `/` | How fast are farmers selling each of 15 crops, compared with crop size and the last five years? Includes an all-crops weekly flash, supply against uses, crop mix and commercial stocks. |
+| **Prairie Delivery Pace** (overview) | `/` | How fast are farmers selling each of 15 crops, compared with crop size and the last five years? Includes an all-crops weekly flash, supply against uses, crop mix and commercial stocks, plus producer margins by crop at April (seeding) and August (harvest) prices. |
 | **Canola Pipeline** | `/canola/` | Crush, exports by port, terminal receipts and stocks, with a backtested crush and export forecast. |
 | **Wheat Pipeline** | `/wheat/` | Wheat (ex-durum) exports by port, licensed milling, domestic feed shipments and stocks. Western grain only. |
 | **Durum Pipeline** | `/durum/` | Durum exports: Pacific, Thunder Bay, St. Lawrence and direct to the US. |
@@ -36,6 +36,10 @@ CGC quality pages ──> src/external.py│                                    
                                      └─ src/feed_data.py       ─> dashboard/feed/data.json
                                                    │
                                        src/build_site.py ─> docs/ ─> GitHub Pages
+
+SK Crop Planning Guide PDFs ──> src/crop_guide.py ──> reference/sk_crop_planning_guide.csv
+                                                             │
+                              src/margins.py (+ StatCan prices, yields) ──> dashboard/data.json (overview margins)
 ```
 
 - **Pages are static HTML** that load their own `data.json`, with no server or build framework.
@@ -68,6 +72,10 @@ CGC publishes on Thursdays.
 git add -A && git commit -m "Weekly refresh: week N" && git push
 ```
 
+**Each January,** when Saskatchewan Agriculture publishes the new Crop Planning Guide: add its format id to `FORMAT_IDS`
+in `src/crop_guide.py` (from the Publications Centre archive, product 122661), then run `.venv/bin/python src/crop_guide.py`.
+The parser checks every budget against the guide's own arithmetic and stops if a column fails.
+
 **When StatCan publishes:**
 - **Production estimates** (late August, mid-September, early December): add a row for each new in-season canola
   estimate to `reference/statcan_canola_vintages.csv`.
@@ -84,6 +92,8 @@ src/
   ingest.py          download and clean CGC Grain Statistics Weekly
   db.py              DuckDB views over the cleaned data, plus the Canada Eastern grade filter
   external.py        StatCan tables, Yahoo futures, CGC harvest-quality pages (cached in data/raw/external/)
+  crop_guide.py      parse the Saskatchewan Crop Planning Guide PDFs into per-acre budgets
+  margins.py         producer margins by crop (price x trend yield - guide costs), for the overview page
   dashboard_data.py  data for the overview page
   grain_data.py      data for the crop pages, plus crop settings (GRAINS) and page links (LINKS)
   canola_forecast.py canola crush and export forecast, with backtest
@@ -95,7 +105,8 @@ dashboard/
   <crop>/            generated page copy plus data.json per crop
   feed/index.html    feed page (edited directly)
 reports/             forecast and estimate write-ups (canola_forecast.md, feed_estimate.md)
-reference/           hand-curated inputs (StatCan in-season canola estimates, with sources)
+reference/           hand-curated inputs (StatCan in-season canola estimates, with sources) and the parsed
+                     Crop Planning Guide budgets (sk_crop_planning_guide.csv)
 docs/                built site, served by GitHub Pages (generated; don't edit)
 TODO.md              next steps
 ```
@@ -108,6 +119,10 @@ TODO.md              next steps
 
 ## Definitions
 
+- **Producer margins:** revenue is the Saskatchewan monthly farm price times trend yield (average of the five
+  previous Saskatchewan harvests). **Operating margin** subtracts the Crop Planning Guide's variable costs per acre;
+  the margin over total costs also subtracts depreciation, taxes and imputed land, machinery and building costs
+  (Dark Brown zone, stubble seeded). From 2017, when the guide moved to a higher-input system.
 - **Crop year:** Aug 1 to Jul 31. "CYTD" is crop year to date. "5-yr" is the average of the previous five crop years
   at the same week.
 - **Weekly values** are week-over-week changes in CGC's crop-year totals. CGC applies revisions only to the totals,

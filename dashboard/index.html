@@ -129,6 +129,15 @@
   .seg { display: inline-flex; overflow: hidden; }
   .seg button { font: inherit; color: var(--ink-2); background: none; border: 0; padding: 6px 12px; cursor: pointer; }
   .seg button[aria-pressed="true"] { background: var(--chip); color: var(--ink); }
+  .seg button[hidden] { display: none; }
+  .ctrls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .sel { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+  .sel select { padding: 5px 8px; }
+  .explain { display: grid; gap: 3px; margin-top: 6px; padding: 2px 0 2px 12px; border-left: 2px solid var(--axis); font-size: 13px; color: var(--ink-2); max-width: 88ch; }
+  .explain b { font-weight: 600; color: var(--ink); }
+  .explain .src { color: var(--muted); }
+  .sources { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .notes code { font: 12px var(--mono); }
 
   /* summary */
   .summary {
@@ -267,7 +276,7 @@
   <header>
     <div class="eyebrow">CGC Grain Statistics Weekly · Producer deliveries</div>
     <h1>Prairie Delivery Pace</h1>
-    <p class="sub" id="lede">Producer deliveries, exports, licensed processing and commercial stocks for 15 Western Canadian crops, with selling pace measured against StatCan crop estimates.</p>
+    <p class="sub" id="lede">Producer deliveries, exports, licensed processing and commercial stocks for 15 Western Canadian crops, with selling pace measured against StatCan crop estimates, and producer margins at seeding and harvest.</p>
     <p class="asof" id="asof"></p>
   </header>
 
@@ -276,6 +285,11 @@
       <div>
         <div class="eyebrow" id="mflash-eyebrow"></div>
         <h2 id="mflash-h">Weekly flash: all crops</h2>
+        <div class="explain">
+          <p><b>What it shows:</b> The latest CGC week for all 15 crops at once: producer deliveries, exports, licensed processing and commercial stocks, each against last year and the 5-year average.</p>
+          <p><b>How to read it:</b> Compare the latest week (Wk) with the crop-year-to-date columns to see whether the newest data confirms or breaks the trend. <i>Sized to crop</i> adjusts delivery pace for crop size, so a big crop selling at a normal rate does not look fast.</p>
+          <p class="src"><b>Source:</b> <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">CGC Grain Statistics Weekly</a>; crop sizes from <a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210035901" target="_blank" rel="noopener">StatCan 32-10-0359</a>.</p>
+        </div>
       </div>
       <button type="button" class="btn" data-copy="mflash-table">Copy table</button>
     </div>
@@ -288,7 +302,11 @@
       <div>
         <div class="eyebrow" id="ins-eyebrow">All crops</div>
         <h2 id="ins-h">What farmers are doing</h2>
-        <p class="sub">Delivery pace sized to StatCan's western production estimates, plus the structural picture.</p>
+<div class="explain">
+          <p><b>What it shows:</b> How much of each crop farmers have sold so far, measured against the crop they grew, plus how much of each crop normally reaches the licensed system and how the delivery mix has shifted.</p>
+          <p><b>How to read it:</b> In the pace chart, a blue dot right of its grey band means farmers are selling that crop faster than in any of the last five years, relative to its size; left of the band means they are holding back. The cards summarize the biggest moves.</p>
+          <p class="src"><b>Source:</b> <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">CGC Grain Statistics Weekly</a>; western production from <a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210035901" target="_blank" rel="noopener">StatCan 32-10-0359</a>.</p>
+        </div>
       </div>
     </div>
     <div class="insights" id="insights"></div>
@@ -310,12 +328,58 @@
     </div>
   </section>
 
+  <section aria-labelledby="mrg-h" id="margins">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="mrg-eyebrow"></div>
+        <h2 id="mrg-h">Producer margins</h2>
+<div class="explain">
+          <p><b>What it shows:</b> Estimated profit per acre for a typical Saskatchewan grower, by crop. <i>Operating margin</i> is revenue minus variable (cash) costs: seed, fertilizer, chemicals, fuel, repairs, custom work, insurance and operating interest. It is the best guide to crop choice because land and machinery costs are much the same whichever crop is grown. <i>Margin over total costs</i> also charges for depreciation, taxes, land, machinery and buildings.</p>
+          <p><b>How to read it:</b> April prices show the economics when seeding decisions are made; August prices show them at harvest, when the crop is priced and sold. Rank and the y/y columns show which crops gained or lost ground. <i>Price vs total</i> shows how far the price is above or below the price needed to cover all costs. Pick another harvest year to compare.</p>
+          <p class="src"><b>Source:</b> costs from the <a href="https://www.saskatchewan.ca/business/agriculture-natural-resources-and-industry/agribusiness-farmers-and-ranchers/farm-business-management/crop-planning-guide-and-crop-planner" target="_blank" rel="noopener">Saskatchewan Crop Planning Guide</a> (Dark Brown soil zone); prices from <a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210007701" target="_blank" rel="noopener">StatCan 32-10-0077</a> (Saskatchewan monthly farm prices); yields and seeded area from <a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210035901" target="_blank" rel="noopener">StatCan 32-10-0359</a>.</p>
+        </div>
+      </div>
+      <div class="ctrls">
+        <label class="sel"><span class="muted">Harvest</span> <select id="mrg-year" class="btn"></select></label>
+        <div class="seg" role="group" aria-label="Price month">
+          <button type="button" data-month="apr" aria-pressed="true">April · seeding</button>
+          <button type="button" data-month="aug" aria-pressed="false">August · harvest</button>
+          <button type="button" data-month="latest" aria-pressed="false" id="mrg-latest"></button>
+        </div>
+        <button type="button" class="btn" data-copy="mrg-table">Copy table</button>
+      </div>
+    </div>
+    <div class="flash-wrap"><table class="flash" id="mrg-table"></table></div>
+    <p class="flash-note" id="mrg-note"></p>
+    <div class="two">
+      <div class="panel">
+        <div class="panel-head"><h3 id="path-h">Seeding to harvest</h3><p id="path-p"></p></div>
+        <div class="legend" id="leg-path"></div>
+        <div class="chart" id="ch-path"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Do acres follow April margins?</h3><p id="acres-p"></p></div>
+        <div class="legend" id="leg-acres"></div>
+        <div class="chart" id="ch-acres" style="height:300px"></div>
+      </div>
+      <div class="panel wide">
+        <div class="panel-head"><h3 id="mheat-h">Operating margin, every year</h3><p id="mheat-p"></p></div>
+        <div class="table-wrap" style="padding:10px;border:0" id="mheat"></div>
+        <div class="scale"><span>−$300/ac</span><span class="scale-bar"></span><span>+$300/ac</span><span class="muted">· $0 is the midpoint</span></div>
+      </div>
+    </div>
+  </section>
+
   <section aria-labelledby="pace-h">
     <div class="section-head">
       <div>
         <div class="eyebrow">All commodities</div>
         <h2 id="pace-h">Pace across crops</h2>
-        <p class="sub">Each crop's deliveries this crop year against its own 5-year pattern. Pick one to open it in crop detail below.</p>
+<div class="explain">
+          <p><b>What it shows:</b> Cumulative deliveries of each crop this crop year, against last year and the range of the previous five years.</p>
+          <p><b>How to read it:</b> A blue line above the grey band means deliveries are running ahead of all of the last five years; below means behind. The badge gives the gap to the 5-year average. Pick a crop to open it in crop detail below, or switch to the table.</p>
+          <p class="src"><b>Source:</b> <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">CGC Grain Statistics Weekly</a>.</p>
+        </div>
       </div>
       <div class="seg" role="group" aria-label="Pace view">
         <button type="button" id="view-cards" aria-pressed="true">Charts</button>
@@ -331,7 +395,11 @@
     <div class="section-head">
       <div>
         <h2 id="heat-h">Thirteen crop years at a glance</h2>
-        <p class="sub" id="heat-sub"></p>
+        <div class="explain">
+          <p><b>What it shows:</b> <span id="heat-sub"></span></p>
+          <p><b>How to read it:</b> Blue is above that crop's average, red is below; darker means further from average. Use it to spot unusually big or small marketing years, and years when grain was left in the system at year end.</p>
+          <p class="src"><b>Source:</b> <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">CGC Grain Statistics Weekly</a>.</p>
+        </div>
       </div>
       <div class="controls" style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center">
         <div class="seg" role="group" aria-label="Heatmap measure">
@@ -349,7 +417,11 @@
       <div>
         <div class="eyebrow">One crop at a time</div>
         <h2 id="crop-h">Crop detail</h2>
-        <p class="sub">Pick a crop to see its delivery pace, stocks and history. All grains is the total of the 15 crops.</p>
+<div class="explain">
+          <p><b>What it shows:</b> A drill-down into one crop: summary tiles, this crop year week by week, and every crop year since 2013-14.</p>
+          <p><b>How to read it:</b> Pick a crop (or All grains, the total of the 15 crops). The tiles and every chart below update to that crop.</p>
+          <p class="src"><b>Source:</b> <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">CGC Grain Statistics Weekly</a>; crop sizes from <a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210035901" target="_blank" rel="noopener">StatCan 32-10-0359</a>.</p>
+        </div>
       </div>
     </div>
     <div class="picker" id="picker" role="group" aria-label="Commodity"></div>
@@ -362,6 +434,11 @@
       <div>
         <div class="eyebrow" id="year-eyebrow"></div>
         <h2 id="year-h">This crop year</h2>
+        <div class="explain">
+          <p><b>What it shows:</b> The selected crop's deliveries and commercial stocks since Aug 1, week by week, against the previous five crop years.</p>
+          <p><b>How to read it:</b> The blue line is this year; the grey band is the 5-year range and the white line its average. Commercial stocks building faster than usual mean deliveries are outpacing what is being shipped or processed.</p>
+          <p class="src"><b>Source:</b> <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">CGC Grain Statistics Weekly</a>.</p>
+        </div>
       </div>
     </div>
     <div class="two">
@@ -388,6 +465,11 @@
       <div>
         <div class="eyebrow">Since 2013-14</div>
         <h2 id="hist-h">Past crop years</h2>
+        <div class="explain">
+          <p><b>What it shows:</b> Every crop year since 2013-14 for the selected crop: delivery curves, where this year ranks, stocks, and how deliveries split between processors and provinces.</p>
+          <p><b>How to read it:</b> Hover a chart to compare all years at the same week. The ranking shows where this year's deliveries stand against every past year at this point in the season. Show data table gives the numbers.</p>
+          <p class="src"><b>Source:</b> <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">CGC Grain Statistics Weekly</a>.</p>
+        </div>
       </div>
       <button type="button" class="btn" id="toggle-table" aria-expanded="false">Show data table</button>
     </div>
@@ -425,6 +507,13 @@
   </section>
 
   <footer class="notes">
+    <h3 style="color:var(--ink)">Sources</h3>
+    <ul class="sources">
+      <li><a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">CGC Grain Statistics Weekly</a>: producer deliveries, exports, licensed processing and commercial stocks, weekly, crop years 2013-14 onward.</li>
+      <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210035901" target="_blank" rel="noopener">StatCan 32-10-0359</a>, <i>Estimated areas, yield, production, average farm price and total farm value of principal field crops</i>: western production, Saskatchewan yields and seeded area.</li>
+      <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210007701" target="_blank" rel="noopener">StatCan 32-10-0077</a>, <i>Farm product prices, crops and livestock</i>: Saskatchewan monthly farm prices, $/t.</li>
+      <li><a href="https://www.saskatchewan.ca/business/agriculture-natural-resources-and-industry/agribusiness-farmers-and-ranchers/farm-business-management/crop-planning-guide-and-crop-planner" target="_blank" rel="noopener">Saskatchewan Crop Planning Guide</a> (Saskatchewan Ministry of Agriculture), 2017–2026 editions: per-acre crop budgets. Past editions: <a href="https://publications.saskatchewan.ca/#/products/122661" target="_blank" rel="noopener">Publications Centre archive</a>.</li>
+    </ul>
     <h3 style="color:var(--ink)">About the data</h3>
     <ul>
       <li>Source: Canadian Grain Commission, <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">Grain Statistics Weekly</a>, crop years 2013-14 onward. Crop deep dives (uses, exports by port, stocks): <a href="canola/">Canola</a>, <a href="wheat/">Wheat</a>, <a href="durum/">Durum</a>, <a href="barley/">Barley</a>. Feed use, livestock and feed prices: <a href="feed/">Western Feed Grains</a>.</li>
@@ -434,6 +523,7 @@
       <li>Figures cover Western Canadian grain. Wheat and corn graded Canada Eastern (CE grades, grown in Ontario and Quebec) are left out of exports and terminal stocks, so totals are lower than CGC's all-Canada figures. Soybean grades do not show origin, so soybean exports and stocks at eastern terminals may include Ontario and Quebec beans.</li>
       <li>The 5-year average and range use the five crop years before this one, compared week for week.</li>
       <li>Crop sizes are StatCan's production estimates for Manitoba, Saskatchewan, Alberta and British Columbia (table 32-10-0359), the region CGC's weekly data covers. The current year uses StatCan's latest in-season estimate, which will be revised. Wheat excludes durum.</li>
+      <li>Producer margins: operating margin is revenue minus variable costs; revenue is the Saskatchewan monthly farm price (StatCan table 32-10-0077, published about eight weeks after the month) times a trend yield, the average Saskatchewan yield of the five previous harvests (table 32-10-0359). Costs are the <a href="https://www.saskatchewan.ca/business/agriculture-natural-resources-and-industry/agribusiness-farmers-and-ranchers/farm-business-management/crop-planning-guide-and-crop-planner" target="_blank" rel="noopener">Saskatchewan Crop Planning Guide</a> budgets for the Dark Brown soil zone (stubble seeded), published each January; the parsed budgets for every zone are in <code>reference/sk_crop_planning_guide.csv</code>. The series starts in 2017, when the guide moved to a higher-input system; earlier budgets are not comparable. Total costs include imputed interest on land and machinery, which moves with interest rates and land values (it doubled in the 2023 guide), so the operating margin (over variable costs) is the steadier comparison across crops. These are budget margins for a typical grower, not farm survey results. Over 2017–2025, August margins were only weakly related to early-season delivery pace (correlation about 0.2).</li>
       <li>The full-year projection scales deliveries so far by the share of the year's deliveries that usually arrive by this week (5-year average). It is a simple pace estimate, not a forecast.</li>
       <li id="gen"></li>
     </ul>
@@ -1556,6 +1646,334 @@
     $("mflash-note").textContent = `Wk = week ${W_NOW} (week-over-week change in CGC crop-year totals); Chg = change from week ${W_NOW - 1}. y/y vs ${short(lastYr)} and vs 5-yr (${short(ref[0])} to ${short(lastYr)}) compare crop year to date at the same week; stock comparisons are levels. Exports = port terminals plus direct shipments. Licensed processing covers CGC-licensed process elevators only. Sized to crop = share of StatCan's ${harvest} western production estimate delivered, against the usual share by this week. Click a column to sort, or a crop to open it below.`;
   }
 
+  // ---------- producer margins ----------
+  // D.margins (src/margins.py): per crop and harvest year, Crop Planning Guide costs ($/ac),
+  // trend yield (t/ac), break-evens ($/t) and, per price month, price ($/t) and margins ($/ac)
+  const MG = D.margins;
+  const T_AC_PER_HA = 2.471054;
+  const mState = { year: String(MG.meta.last_year), month: "apr", col: "rovc", dir: -1 };
+  const latestLbl = (() => { const [y, m] = MG.meta.latest_price_month.split("-"); return { mon: MONTHS[+m - 1], year: y }; })();
+  const monthName = (m) => m === "apr" ? "April" : m === "aug" ? "August" : latestLbl.mon;
+  const mLabel = (m, y) => `${monthName(m)} ${y}`;
+  const money = (v) => v == null || !isFinite(v) ? "–" : (v < 0 ? "−" : "") + Math.round(Math.abs(v)).toLocaleString();
+  const moneyChg = (v) => v == null || !isFinite(v) ? "–" : (Math.round(v) > 0 ? "+" : Math.round(v) < 0 ? "−" : "±") + Math.round(Math.abs(v)).toLocaleString();
+  const pctCell = (v) => v == null || !isFinite(v) ? "–" : fmtPct(v);
+  const mRec = (k, y) => MG.rows[k]?.[y] || null;
+  const mPt = (k, y, m) => mRec(k, y)?.[m] || null;
+  const yrShift = (y, n) => String(+y + n);
+
+  // share of the crop delivered (this week for the current crop year, full year otherwise) vs the 5 years before
+  function deliveryCtx(g, y) {
+    const cy = `${y}-${+y + 1}`, i = years.indexOf(cy), prod = prodOf(g, cy);
+    const prior = years.slice(Math.max(0, i - 5), Math.max(0, i)).filter((r) => prodOf(g, r) > 0);
+    if (i < 0 || !(prod > 0) || prior.length < 3) return { dShare: null, dVs: null };
+    const val = (yr) => cy === cur ? at(cum(g, yr), W_NOW) : finalOf(cum(g, yr));
+    const share = val(cy) / prod, normal = mean(prior.map((r) => val(r) / prodOf(g, r)));
+    return { dShare: share, dVs: share / normal - 1 };
+  }
+
+  function marginRows(y, m) {
+    const rows = MG.crops.map((c) => {
+      const r = mRec(c.key, y), p = mPt(c.key, y, m), q = mPt(c.key, yrShift(y, -1), m);
+      if (!r || !p) return null;
+      const five = [1, 2, 3, 4, 5].map((i) => mPt(c.key, yrShift(y, -i), m)?.rovc).filter((v) => v != null);
+      return {
+        c, g: c.grain,
+        price: p.price, priceYy: q ? p.price / q.price - 1 : null,
+        rovc: p.rovc, rovcYy: q ? p.rovc - q.rovc : null, rovc5: five.length === 5 ? p.rovc - mean(five) : null,
+        rotc: p.rotc, rotcYy: q ? p.rotc - q.rotc : null,
+        beVar: r.be_var, beTot: r.be_total, vsBe: p.price / r.be_total - 1,
+        area: r.area_ha != null ? r.area_ha * T_AC_PER_HA / 1e6 : null,
+        areaYy: r.area_ha && r.area_prev_ha ? r.area_ha / r.area_prev_ha - 1 : null,
+        ...deliveryCtx(c.grain, y),
+      };
+    }).filter(Boolean);
+    [...rows].sort((a, b) => b.rovc - a.rovc).forEach((r, i) => { r.rank = i + 1; });
+    return rows;
+  }
+
+  function marginCols(y, m) {
+    const V = "Operating margin, $/ac", T = "Margin over total costs, $/ac", B = "Break-even, $/t";
+    const cols = [
+      ["Price, $/t", "Level", "price", money], ["Price, $/t", "y/y", "priceYy", pctCell],
+      [V, "Margin", "rovc", money], [V, "y/y", "rovcYy", moneyChg], [V, "vs 5-yr", "rovc5", moneyChg], [V, "Rank", "rank", (v) => v == null ? "–" : String(v)],
+      [T, "Margin", "rotc", money], [T, "y/y", "rotcYy", moneyChg],
+      [B, "Variable", "beVar", money], [B, "Total", "beTot", money], [B, "Price vs total", "vsBe", pctCell],
+    ];
+    if (m === "apr") {
+      cols.push(["SK seeded area", "M ac", "area", (v) => v == null ? "–" : v.toFixed(2)], ["SK seeded area", "y/y", "areaYy", pctCell]);
+    } else {
+      const grp = `${y}-${+y + 1}` === cur ? `Deliveries to week ${W_NOW}` : `${short(`${y}-${+y + 1}`)} deliveries`;
+      cols.push([grp, "% of crop", "dShare", (v) => v == null ? "–" : (100 * v).toFixed(1) + "%"], [grp, "vs normal", "dVs", pctCell]);
+    }
+    return cols;
+  }
+
+  function renderMarginTable() {
+    const { year: y, month: m } = mState;
+    const cols = marginCols(y, m);
+    let rows = marginRows(y, m);
+    const col = mState.col;
+    rows.sort((a, b) => ((a[col] ?? -Infinity) - (b[col] ?? -Infinity)) * mState.dir);
+    $("mrg-eyebrow").textContent = `Saskatchewan · ${mLabel(m, y)} prices · ${MG.meta.zone} zone budget`;
+    const t = $("mrg-table");
+    t.replaceChildren();
+    const thead = t.createTHead();
+    const gr = thead.insertRow();
+    gr.className = "grp";
+    gr.appendChild(document.createElement("th"));
+    const groups = [];
+    for (const c of cols) { if (!groups.length || groups[groups.length - 1][0] !== c[0]) groups.push([c[0], 0]); groups[groups.length - 1][1]++; }
+    for (const [name, span] of groups) { const th = document.createElement("th"); th.colSpan = span; th.textContent = name; th.className = "sep"; gr.appendChild(th); }
+    const hr = thead.insertRow();
+    const h0 = document.createElement("th"); h0.textContent = "Crop"; h0.scope = "col"; hr.appendChild(h0);
+    cols.forEach(([grp, label, key], i) => {
+      const th = document.createElement("th");
+      th.scope = "col"; th.textContent = label; th.dataset.col = key; th.tabIndex = 0;
+      th.title = `Sort by ${grp.toLowerCase()} ${label}`;
+      if (i === 0 || cols[i - 1][0] !== grp) th.className = "sep";
+      if (col === key) th.setAttribute("aria-sort", mState.dir < 0 ? "descending" : "ascending");
+      const sort = () => { mState.dir = mState.col === key ? -mState.dir : (key === "rank" ? 1 : -1); mState.col = key; renderMarginTable(); };
+      th.addEventListener("click", sort);
+      th.addEventListener("keydown", (e) => { if (e.key === "Enter") sort(); });
+      hr.appendChild(th);
+    });
+    const body = t.createTBody();
+    if (!rows.length) {
+      const td = body.insertRow().insertCell();
+      td.colSpan = cols.length + 1;
+      td.style.cssText = "text-align:left;white-space:normal;color:var(--muted)";
+      td.textContent = `StatCan has not published ${mLabel(m, y)} farm prices yet. They follow about eight weeks after the month ends; the latest is ${latestLbl.mon} ${latestLbl.year}.`;
+    }
+    for (const r of rows) {
+      const tr = body.insertRow();
+      tr.tabIndex = 0;
+      tr.addEventListener("click", () => pickGrain(r.g, true));
+      tr.addEventListener("keydown", (e) => { if (e.key === "Enter") pickGrain(r.g, true); });
+      tr.insertCell().textContent = r.c.label;
+      cols.forEach(([grp, , key, fmt], i) => {
+        const td = tr.insertCell();
+        const v = fmt(r[key]);
+        td.textContent = v;
+        if (v.startsWith("−")) td.className = "neg";
+        if (i === 0 || cols[i - 1][0] !== grp) td.classList.add("sep");
+      });
+    }
+    const ctx = m === "apr"
+      ? "SK seeded area is StatCan's estimate for that harvest (the current year is the latest in-season estimate)."
+      : `Deliveries: share of StatCan's western production delivered ${`${y}-${+y + 1}` === cur ? `by week ${W_NOW}` : "over the crop year"}, against the usual share in the five crop years before. Barley rows share one delivery figure.`;
+    $("mrg-note").textContent = `Revenue = ${monthName(m)} Saskatchewan farm price × trend yield (average Saskatchewan yield of the five previous harvests). Costs are the Saskatchewan Crop Planning Guide budget for that year (${MG.meta.zone} soil zone, published in January). Variable costs are seed, fertilizer, chemicals, fuel, repairs, custom work, insurance and operating interest; total costs add depreciation, taxes and a charge for the land, machinery and buildings. Break-even = costs ÷ trend yield. y/y and vs 5-yr compare the same month, each year with its own costs. Peas use the yellow pea budget and lentils the red lentil budget, against StatCan's all-class prices. ${ctx} Click a column to sort, or a crop to open its delivery detail below.`;
+  }
+
+  // April margin vs the later month, per crop, for the chosen harvest
+  function renderMarginPath() {
+    const y = mState.year;
+    const hasAug = MG.crops.some((c) => mPt(c.key, y, "aug"));
+    const later = hasAug ? "aug" : y === MG.meta.latest_year ? "latest" : null;
+    $("path-h").textContent = later ? `Seeding to harvest, ${y}` : `At seeding, ${y}`;
+    $("path-p").textContent = later
+      ? `Operating margin, $/ac, at April prices (blue) and ${monthName(later)} prices (orange). Costs and yield are the same for both, so the gap is purely the price move since seeding: a long line to the left means the crop lost value after it was planted.`
+      : "Operating margin, $/ac, at April prices.";
+    legend($("leg-path"), [{ label: "April", color: "--s1", kind: "rect" }, ...(later ? [{ label: monthName(later), color: "--s2", kind: "rect" }] : [])]);
+    const rows = MG.crops.map((c) => ({ c, a: mPt(c.key, y, "apr"), b: later ? mPt(c.key, y, later) : null })).filter((r) => r.a).sort((p, q) => q.a.rovc - p.a.rovc);
+    const host = $("ch-path");
+    host.replaceChildren();
+    const W = host.clientWidth;
+    if (!W) return;
+    const rowH = 26, mg = { l: 92, r: 16, t: 4, b: 22 };
+    const H = mg.t + mg.b + rows.length * rowH;
+    host.style.height = H + "px";
+    const vals = rows.flatMap((r) => [r.a.rovc, r.b?.rovc]).filter((v) => v != null);
+    const step = niceStep(Math.max(...vals, 0) - Math.min(...vals, 0), 4);
+    const lo = Math.floor(Math.min(0, ...vals) / step) * step, hi = Math.ceil(Math.max(0, ...vals) / step) * step;
+    const x = (v) => mg.l + ((v - lo) / (hi - lo)) * (W - mg.l - mg.r);
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `Operating margin at April and ${later ? monthName(later) : ""} prices by crop` });
+    svg.style.display = "block";
+    host.appendChild(svg);
+    for (let v = lo; v <= hi + 1e-9; v += step) {
+      el("line", { x1: x(v), x2: x(v), y1: mg.t, y2: H - mg.b, stroke: v === 0 ? css("--axis") : css("--grid") }, svg);
+      svgText(svg, { x: x(v), y: H - 6, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, (v < 0 ? "−$" : "$") + Math.abs(v));
+    }
+    rows.forEach((r, i) => {
+      const yc = mg.t + i * rowH + rowH / 2;
+      svgText(svg, { x: mg.l - 10, y: yc + 4, "text-anchor": "end", "font-size": 12, fill: css("--ink") }, r.c.label);
+      if (r.b) el("line", { x1: x(r.a.rovc), x2: x(r.b.rovc), y1: yc, y2: yc, stroke: css("--axis"), "stroke-width": 2 }, svg);
+      el("circle", { cx: x(r.a.rovc), cy: yc, r: 5, fill: css("--s1"), stroke: css("--surface"), "stroke-width": 2 }, svg);
+      if (r.b) el("circle", { cx: x(r.b.rovc), cy: yc, r: 5, fill: css("--s2"), stroke: css("--surface"), "stroke-width": 2 }, svg);
+      const tipRows = [
+        { value: "$" + money(r.a.rovc), label: `April margin (price $${money(r.a.price)}/t)`, color: css("--s1"), kind: "rect" },
+        ...(r.b ? [
+          { value: "$" + money(r.b.rovc), label: `${monthName(later)} margin (price $${money(r.b.price)}/t)`, color: css("--s2"), kind: "rect" },
+          { value: moneyChg(r.b.rovc - r.a.rovc), label: `$/ac change, price ${fmtPct(r.b.price / r.a.price - 1)}`, em: true },
+        ] : []),
+        { value: "$" + money(mRec(r.c.key, y).var_cost), label: "variable costs, $/ac" },
+      ];
+      const hit = el("rect", { x: 0, y: yc - rowH / 2, width: W, height: rowH, fill: "transparent", tabindex: 0, "aria-label": `${r.c.label}: April $${money(r.a.rovc)} per acre${r.b ? `, ${monthName(later)} $${money(r.b.rovc)}` : ""}` }, svg);
+      hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, `${r.c.label} · ${y}`, tipRows));
+      hit.addEventListener("pointerleave", hideTip);
+      hit.addEventListener("focus", () => { const b = hit.getBoundingClientRect(); showTip(b.left + x(r.a.rovc), b.bottom, `${r.c.label} · ${y}`, tipRows); });
+      hit.addEventListener("blur", hideTip);
+      hit.addEventListener("click", () => pickGrain(r.c.grain, true));
+    });
+  }
+
+  // relative change in April margin (vs the average change across crops) against the change in SK seeded area.
+  // Malt and feed barley share one seeded area, so barley uses the mean of the two margins.
+  function acrePoints() {
+    const groups = {};
+    for (const c of MG.crops) (groups[c.grain] = groups[c.grain] || []).push(c);
+    const pts = [];
+    for (const y of MG.years.slice(1)) {
+      const py = yrShift(y, -1);
+      const rows = Object.values(groups).map((cs) => {
+        const now = cs.map((c) => mPt(c.key, y, "apr")?.rovc), prev = cs.map((c) => mPt(c.key, py, "apr")?.rovc);
+        const r = mRec(cs[0].key, y);
+        if (now.concat(prev).some((v) => v == null) || !r?.area_ha || !r?.area_prev_ha) return null;
+        return { label: cs.length > 1 ? "Barley" : cs[0].label, grain: cs[0].grain, y, d: mean(now) - mean(prev), area: r.area_ha / r.area_prev_ha - 1, now: mean(now) };
+      }).filter(Boolean);
+      const avg = mean(rows.map((r) => r.d));
+      for (const r of rows) pts.push({ ...r, rel: r.d - avg });
+    }
+    return pts;
+  }
+  function pearson(xs, ys) {
+    const mx = mean(xs), my = mean(ys);
+    let sxy = 0, sxx = 0, syy = 0;
+    xs.forEach((x, i) => { sxy += (x - mx) * (ys[i] - my); sxx += (x - mx) ** 2; syy += (ys[i] - my) ** 2; });
+    return sxy / Math.sqrt(sxx * syy);
+  }
+  function renderAcres() {
+    const pts = acrePoints(), y = mState.year;
+    const r = pearson(pts.map((p) => p.rel), pts.map((p) => p.area));
+    const yrs = [...new Set(pts.map((p) => p.y))];
+    $("acres-p").textContent = `Each dot is a crop in one year, ${yrs[0]}–${yrs[yrs.length - 1]}. Across: change in the April operating margin from the year before, relative to the average change across these crops. Up: change in Saskatchewan seeded area. Dots up and to the right are crops whose margins improved against the others and that gained acres; a cloud rising left to right means acres follow margins. Correlation r = ${r.toFixed(2)} (n = ${pts.length}).`;
+    legend($("leg-acres"), [{ label: y, color: "--s1", kind: "rect" }, { label: "Other years", color: "--other", kind: "rect" }]);
+    const host = $("ch-acres");
+    host.replaceChildren();
+    const W = host.clientWidth, H = host.clientHeight;
+    if (!W) return;
+    const mg = { l: 44, r: 24, t: 22, b: 34 };
+    const xs = pts.map((p) => p.rel), ys = pts.map((p) => p.area);
+    const xStep = niceStep(2 * Math.max(...xs.map(Math.abs)), 4), yStep = niceStep(Math.max(...ys) - Math.min(...ys), 4);
+    const xMax = Math.ceil(Math.max(...xs.map(Math.abs)) / xStep) * xStep;
+    const yLo = Math.floor(Math.min(0, ...ys) / yStep) * yStep, yHi = Math.ceil(Math.max(0, ...ys) / yStep) * yStep;
+    const x = (v) => mg.l + ((v + xMax) / (2 * xMax)) * (W - mg.l - mg.r);
+    const yy = (v) => mg.t + ((yHi - v) / (yHi - yLo)) * (H - mg.t - mg.b);
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Change in April margin against change in seeded area, by crop and year" });
+    svg.style.display = "block";
+    host.appendChild(svg);
+    for (let v = -xMax; v <= xMax + 1e-9; v += xStep) {
+      el("line", { x1: x(v), x2: x(v), y1: mg.t, y2: H - mg.b, stroke: Math.abs(v) < 1e-9 ? css("--axis") : css("--grid") }, svg);
+      svgText(svg, { x: x(v), y: H - mg.b + 14, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, (v > 0 ? "+" : v < 0 ? "−" : "") + "$" + Math.abs(v));
+    }
+    for (let v = yLo; v <= yHi + 1e-9; v += yStep) {
+      el("line", { x1: mg.l, x2: W - mg.r, y1: yy(v), y2: yy(v), stroke: Math.abs(v) < 1e-9 ? css("--axis") : css("--grid") }, svg);
+      svgText(svg, { x: mg.l - 6, y: yy(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, fmtPct(v));
+    }
+    svgText(svg, { x: W - mg.r, y: H - 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, "Relative change in April margin, $/ac →");
+    svgText(svg, { x: mg.l, y: 12, "font-size": 11, fill: css("--muted") }, "↑ SK seeded area, y/y");
+    const sorted = [...pts].sort((a, b) => (a.y === y) - (b.y === y));   // highlighted year drawn on top
+    // label the highlighted year's dots, right of the dot or else left, skipping any that would collide
+    const placed = pts.filter((p) => p.y === y).map((p) => ({ x: x(p.rel) - 6, y: yy(p.area) - 6, w: 12, h: 12 }));
+    const hits = (b) => placed.some((q) => b.x < q.x + q.w && q.x < b.x + b.w && b.y < q.y + q.h && q.y < b.y + b.h);
+    const labels = [];
+    for (const p of pts.filter((q) => q.y === y).sort((a, b) => Math.abs(b.rel) - Math.abs(a.rel))) {
+      const w = p.label.length * 6.2, cx = x(p.rel), cy = yy(p.area);
+      const box = [{ x: cx + 8, anchor: "start" }, { x: cx - 8 - w, anchor: "end" }]
+        .map((o) => ({ ...o, b: { x: o.x, y: cy - 7, w, h: 13 } }))
+        .find((o) => o.b.x >= mg.l && o.b.x + w <= W - mg.r && !hits(o.b));
+      if (!box) continue;
+      placed.push(box.b);
+      labels.push([box.anchor === "start" ? cx + 8 : cx - 8, cy + 4, box.anchor, p.label]);
+    }
+    for (const p of sorted) {
+      const on = p.y === y;
+      const c = el("circle", { cx: x(p.rel), cy: yy(p.area), r: on ? 5 : 4, fill: on ? css("--s1") : css("--other"), stroke: css("--surface"), "stroke-width": on ? 2 : 1, tabindex: 0, "aria-label": `${p.label} ${p.y}: April margin ${moneyChg(p.rel)} vs other crops, area ${fmtPct(p.area)}` }, svg);
+      const rows = [
+        { value: moneyChg(p.rel), label: "April margin change vs other crops, $/ac", color: on ? css("--s1") : css("--other"), kind: "rect" },
+        { value: moneyChg(p.d), label: `April margin change, $/ac (now $${money(p.now)})` },
+        { value: fmtPct(p.area), label: "SK seeded area y/y", em: true },
+      ];
+      c.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, `${p.label} · ${p.y}`, rows));
+      c.addEventListener("pointerleave", hideTip);
+      c.addEventListener("focus", () => { const b = c.getBoundingClientRect(); showTip(b.right, b.bottom, `${p.label} · ${p.y}`, rows); });
+      c.addEventListener("blur", hideTip);
+    }
+    for (const [lx, ly, anchor, text] of labels) svgText(svg, { x: lx, y: ly, "text-anchor": anchor, "font-size": 11, fill: css("--ink-2"), "pointer-events": "none" }, text);
+  }
+
+  // crops x years, operating margin for the chosen month; click a year to select it
+  function renderMarginHeat() {
+    const m = mState.month;
+    $("mheat-h").textContent = `Operating margin, every year: ${monthName(m)} prices`;
+    $("mheat-p").textContent = `$/ac, revenue minus variable costs. Blue cells covered variable costs, red cells did not; darker is further from zero. Compare down a column to rank crops in a year, or across a row to see a crop's cycle. Pick a year to load it into the table and charts above.`;
+    const table = document.createElement("table");
+    table.className = "heat";
+    const head = table.createTHead().insertRow();
+    const corner = document.createElement("th"); corner.scope = "col"; corner.textContent = "Crop"; corner.style.textAlign = "left"; head.appendChild(corner);
+    for (const y of MG.years) {
+      const th = document.createElement("th"); th.scope = "col"; th.textContent = y;
+      if (y === mState.year) { th.style.color = "var(--ink)"; th.style.textDecoration = "underline"; }
+      head.appendChild(th);
+    }
+    const avgTh = document.createElement("th"); avgTh.scope = "col"; avgTh.textContent = "Average"; head.appendChild(avgTh);
+    const body = table.createTBody();
+    for (const c of MG.crops) {
+      const tr = body.insertRow();
+      const th = document.createElement("th"); th.scope = "row"; th.textContent = c.label; th.style.cursor = "default"; tr.appendChild(th);
+      const vals = [];
+      for (const y of MG.years) {
+        const p = mPt(c.key, y, m), td = tr.insertCell();
+        if (!p) { td.textContent = "–"; td.style.cursor = "default"; continue; }
+        vals.push(p.rovc);
+        const t = Math.min(1, Math.abs(p.rovc) / 300);
+        td.style.background = `color-mix(in oklab, var(${p.rovc >= 0 ? "--div-pos" : "--div-neg"}) ${Math.round(t * 100)}%, var(--div-mid))`;
+        td.style.color = t > 0.55 ? "#ffffff" : "var(--ink)";
+        if (y === mState.year) td.style.boxShadow = "inset 0 0 0 2px var(--ink)";
+        td.textContent = money(p.rovc);
+        td.tabIndex = 0;
+        const rec = mRec(c.key, y);
+        const rows = [
+          { value: "$" + money(p.rovc), label: "operating margin, $/ac", em: true },
+          { value: "$" + money(p.rotc), label: "margin over total costs, $/ac" },
+          { value: "$" + money(p.price), label: `${mLabel(m, y)} price, $/t` },
+          { value: "$" + money(rec.be_var) + " / $" + money(rec.be_total), label: "break-even, variable / total, $/t" },
+        ];
+        const pick = () => { mState.year = y; renderMargins(); };
+        td.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, `${c.label} · ${y}`, rows));
+        td.addEventListener("pointerleave", hideTip);
+        td.addEventListener("focus", () => { const b = td.getBoundingClientRect(); showTip(b.right, b.bottom, `${c.label} · ${y}`, rows); });
+        td.addEventListener("blur", hideTip);
+        td.addEventListener("click", pick);
+        td.addEventListener("keydown", (e) => { if (e.key === "Enter") pick(); });
+      }
+      const avgTd = tr.insertCell();
+      avgTd.textContent = money(mean(vals));
+      avgTd.style.cssText = "width:auto;padding:0 8px;text-align:right;color:var(--ink-2);background:none;cursor:default";
+    }
+    $("mheat").replaceChildren(table);
+  }
+
+  function renderMargins() {
+    const sel = $("mrg-year");
+    if (!sel.options.length) {
+      for (const y of [...MG.years].reverse()) sel.add(new Option(y, y));
+      sel.addEventListener("change", () => { mState.year = sel.value; renderMargins(); });
+      for (const b of document.querySelectorAll("[data-month]")) b.addEventListener("click", () => { mState.month = b.dataset.month; renderMargins(); });
+    }
+    sel.value = mState.year;
+    const latestBtn = $("mrg-latest");
+    latestBtn.textContent = `${latestLbl.mon} ${latestLbl.year} · latest`;
+    // the latest month is offered only for the year it belongs to (it is not April or August)
+    latestBtn.hidden = mState.year !== MG.meta.latest_year || ["Apr", "Aug"].includes(latestLbl.mon);
+    if (latestBtn.hidden && mState.month === "latest") mState.month = "apr";
+    for (const b of document.querySelectorAll("[data-month]")) b.setAttribute("aria-pressed", b.dataset.month === mState.month);
+    renderMarginTable();
+    renderMarginPath();
+    renderAcres();
+    renderMarginHeat();
+  }
+
   // copy a table as tab-separated text (paste into a spreadsheet)
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-copy]");
@@ -1576,10 +1994,11 @@
   renderCards();
   renderPaceTable();
   renderHeat();
+  renderMargins();
   renderGrain();
 
   // re-render charts on resize and theme change (they read colors from tokens)
-  const rerender = () => { renderInsights(); if (state.view === "cards") renderCards(); renderGrain(); };
+  const rerender = () => { renderInsights(); renderMargins(); if (state.view === "cards") renderCards(); renderGrain(); };
   let rt;
   new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(rerender, 120); }).observe(document.querySelector(".wrap"));
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerender);
