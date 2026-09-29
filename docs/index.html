@@ -169,10 +169,6 @@
   .seg { display: inline-flex; overflow: hidden; }
   .seg button { font: inherit; color: var(--ink-2); background: none; border: 0; padding: 6px 12px; cursor: pointer; }
   .seg button[aria-pressed="true"] { background: var(--chip); color: var(--ink); }
-  .seg button[hidden] { display: none; }
-  .ctrls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-  .sel { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
-  .sel select { padding: 5px 8px; }
 
   /* summary */
   .summary {
@@ -307,12 +303,12 @@
   @media (prefers-reduced-motion: no-preference) { .card, .btn, .pick { transition: border-color 0.12s, background 0.12s, color 0.12s; } }
 </style>
 
-<nav class="site-nav" aria-label="Dashboards"><div class="site-nav-inner"><span class="site-name">CGC grain dashboards</span><ul><li><a href="./" aria-current="page">Overview</a></li><li><a href="canola/">Canola</a></li><li><a href="wheat/">Wheat</a></li><li><a href="durum/">Durum</a></li><li><a href="barley/">Barley</a></li><li><a href="feed/">Feed grains</a></li></ul></div></nav>
+<nav class="site-nav" aria-label="Dashboards"><div class="site-nav-inner"><span class="site-name">CGC grain dashboards</span><ul><li><a href="./" aria-current="page">Overview</a></li><li><a href="margins/">Margins</a></li><li><a href="canola/">Canola</a></li><li><a href="wheat/">Wheat</a></li><li><a href="durum/">Durum</a></li><li><a href="barley/">Barley</a></li><li><a href="feed/">Feed grains</a></li></ul></div></nav>
 <div class="wrap">
   <header>
     <div class="eyebrow">CGC Grain Statistics Weekly · Producer deliveries</div>
     <h1>Prairie Delivery Pace</h1>
-    <p class="sub" id="lede">Producer deliveries, exports, licensed processing and commercial stocks for 15 Western Canadian crops, with selling pace measured against StatCan crop estimates, and producer margins at seeding and harvest.</p>
+    <p class="sub" id="lede">Producer deliveries, exports, licensed processing and commercial stocks for 15 Western Canadian crops, with selling pace measured against StatCan crop estimates.</p>
     <p class="asof" id="asof"></p>
   </header>
 
@@ -351,44 +347,6 @@
         <div class="panel-head"><h3>What farmers deliver: the crop mix</h3><p>Percent of each completed crop year's producer deliveries, by crop group</p></div>
         <div class="legend" id="leg-mix"></div>
         <div class="chart" id="ch-mix" style="height:300px"></div>
-      </div>
-    </div>
-  </section>
-
-  <section aria-labelledby="mrg-h" id="margins">
-    <div class="section-head">
-      <div>
-        <div class="eyebrow" id="mrg-eyebrow"></div>
-        <h2 id="mrg-h">Producer margins</h2>
-        <p class="sub">What an acre of each crop earns at Saskatchewan farm prices, net of the province's crop budget. April prices show the economics at seeding; August prices show them at harvest, when the crop is marketed.</p>
-      </div>
-      <div class="ctrls">
-        <label class="sel"><span class="muted">Harvest</span> <select id="mrg-year" class="btn"></select></label>
-        <div class="seg" role="group" aria-label="Price month">
-          <button type="button" data-month="apr" aria-pressed="true">April · seeding</button>
-          <button type="button" data-month="aug" aria-pressed="false">August · harvest</button>
-          <button type="button" data-month="latest" aria-pressed="false" id="mrg-latest"></button>
-        </div>
-        <button type="button" class="btn" data-copy="mrg-table">Copy table</button>
-      </div>
-    </div>
-    <div class="flash-wrap"><table class="flash" id="mrg-table"></table></div>
-    <p class="flash-note" id="mrg-note"></p>
-    <div class="two">
-      <div class="panel">
-        <div class="panel-head"><h3 id="path-h">Seeding to harvest</h3><p id="path-p"></p></div>
-        <div class="legend" id="leg-path"></div>
-        <div class="chart" id="ch-path"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3>Do acres follow April margins?</h3><p id="acres-p"></p></div>
-        <div class="legend" id="leg-acres"></div>
-        <div class="chart" id="ch-acres" style="height:300px"></div>
-      </div>
-      <div class="panel wide">
-        <div class="panel-head"><h3 id="mheat-h">Margin over variable costs, every year</h3><p id="mheat-p"></p></div>
-        <div class="table-wrap" style="padding:10px;border:0" id="mheat"></div>
-        <div class="scale"><span>−$300/ac</span><span class="scale-bar"></span><span>+$300/ac</span><span class="muted">· $0 is the midpoint</span></div>
       </div>
     </div>
   </section>
@@ -517,7 +475,6 @@
       <li>Figures cover Western Canadian grain. Wheat and corn graded Canada Eastern (CE grades, grown in Ontario and Quebec) are left out of exports and terminal stocks, so totals are lower than CGC's all-Canada figures. Soybean grades do not show origin, so soybean exports and stocks at eastern terminals may include Ontario and Quebec beans.</li>
       <li>The 5-year average and range use the five crop years before this one, compared week for week.</li>
       <li>Crop sizes are StatCan's production estimates for Manitoba, Saskatchewan, Alberta and British Columbia (table 32-10-0359), the region CGC's weekly data covers. The current year uses StatCan's latest in-season estimate, which will be revised. Wheat excludes durum.</li>
-      <li>Producer margins: revenue is the Saskatchewan monthly farm price (StatCan table 32-10-0077, published about eight weeks after the month) times a trend yield, the average Saskatchewan yield of the five previous harvests (table 32-10-0359). Costs are the <a href="https://www.saskatchewan.ca/business/agriculture-natural-resources-and-industry/agribusiness-farmers-and-ranchers/farm-business-management/crop-planning-guide-and-crop-planner" target="_blank" rel="noopener">Saskatchewan Crop Planning Guide</a> budgets for the Dark Brown soil zone (stubble seeded), published each January; the parsed budgets for every zone are in <code>reference/sk_crop_planning_guide.csv</code>. The series starts in 2017, when the guide moved to a higher-input system; earlier budgets are not comparable. Total costs include imputed interest on land and machinery, which moves with interest rates and land values (it doubled in the 2023 guide), so the variable-cost margin is the steadier comparison across crops. These are budget margins for a typical grower, not farm survey results. Over 2017–2025, August margins were only weakly related to early-season delivery pace (correlation about 0.2).</li>
       <li>The full-year projection scales deliveries so far by the share of the year's deliveries that usually arrive by this week (5-year average). It is a simple pace estimate, not a forecast.</li>
       <li id="gen"></li>
     </ul>
@@ -1640,334 +1597,6 @@
     $("mflash-note").textContent = `Wk = week ${W_NOW} (week-over-week change in CGC crop-year totals); Chg = change from week ${W_NOW - 1}. y/y vs ${short(lastYr)} and vs 5-yr (${short(ref[0])} to ${short(lastYr)}) compare crop year to date at the same week; stock comparisons are levels. Exports = port terminals plus direct shipments. Licensed processing covers CGC-licensed process elevators only. Sized to crop = share of StatCan's ${harvest} western production estimate delivered, against the usual share by this week. Click a column to sort, or a crop to open it below.`;
   }
 
-  // ---------- producer margins ----------
-  // D.margins (src/margins.py): per crop and harvest year, Crop Planning Guide costs ($/ac),
-  // trend yield (t/ac), break-evens ($/t) and, per price month, price ($/t) and margins ($/ac)
-  const MG = D.margins;
-  const T_AC_PER_HA = 2.471054;
-  const mState = { year: String(MG.meta.last_year), month: "apr", col: "rovc", dir: -1 };
-  const latestLbl = (() => { const [y, m] = MG.meta.latest_price_month.split("-"); return { mon: MONTHS[+m - 1], year: y }; })();
-  const monthName = (m) => m === "apr" ? "April" : m === "aug" ? "August" : latestLbl.mon;
-  const mLabel = (m, y) => `${monthName(m)} ${y}`;
-  const money = (v) => v == null || !isFinite(v) ? "–" : (v < 0 ? "−" : "") + Math.round(Math.abs(v)).toLocaleString();
-  const moneyChg = (v) => v == null || !isFinite(v) ? "–" : (Math.round(v) > 0 ? "+" : Math.round(v) < 0 ? "−" : "±") + Math.round(Math.abs(v)).toLocaleString();
-  const pctCell = (v) => v == null || !isFinite(v) ? "–" : fmtPct(v);
-  const mRec = (k, y) => MG.rows[k]?.[y] || null;
-  const mPt = (k, y, m) => mRec(k, y)?.[m] || null;
-  const yrShift = (y, n) => String(+y + n);
-
-  // share of the crop delivered (this week for the current crop year, full year otherwise) vs the 5 years before
-  function deliveryCtx(g, y) {
-    const cy = `${y}-${+y + 1}`, i = years.indexOf(cy), prod = prodOf(g, cy);
-    const prior = years.slice(Math.max(0, i - 5), Math.max(0, i)).filter((r) => prodOf(g, r) > 0);
-    if (i < 0 || !(prod > 0) || prior.length < 3) return { dShare: null, dVs: null };
-    const val = (yr) => cy === cur ? at(cum(g, yr), W_NOW) : finalOf(cum(g, yr));
-    const share = val(cy) / prod, normal = mean(prior.map((r) => val(r) / prodOf(g, r)));
-    return { dShare: share, dVs: share / normal - 1 };
-  }
-
-  function marginRows(y, m) {
-    const rows = MG.crops.map((c) => {
-      const r = mRec(c.key, y), p = mPt(c.key, y, m), q = mPt(c.key, yrShift(y, -1), m);
-      if (!r || !p) return null;
-      const five = [1, 2, 3, 4, 5].map((i) => mPt(c.key, yrShift(y, -i), m)?.rovc).filter((v) => v != null);
-      return {
-        c, g: c.grain,
-        price: p.price, priceYy: q ? p.price / q.price - 1 : null,
-        rovc: p.rovc, rovcYy: q ? p.rovc - q.rovc : null, rovc5: five.length === 5 ? p.rovc - mean(five) : null,
-        rotc: p.rotc, rotcYy: q ? p.rotc - q.rotc : null,
-        beVar: r.be_var, beTot: r.be_total, vsBe: p.price / r.be_total - 1,
-        area: r.area_ha != null ? r.area_ha * T_AC_PER_HA / 1e6 : null,
-        areaYy: r.area_ha && r.area_prev_ha ? r.area_ha / r.area_prev_ha - 1 : null,
-        ...deliveryCtx(c.grain, y),
-      };
-    }).filter(Boolean);
-    [...rows].sort((a, b) => b.rovc - a.rovc).forEach((r, i) => { r.rank = i + 1; });
-    return rows;
-  }
-
-  function marginCols(y, m) {
-    const V = "Margin over variable costs, $/ac", T = "Margin over total costs, $/ac", B = "Break-even, $/t";
-    const cols = [
-      ["Price, $/t", "Level", "price", money], ["Price, $/t", "y/y", "priceYy", pctCell],
-      [V, "Margin", "rovc", money], [V, "y/y", "rovcYy", moneyChg], [V, "vs 5-yr", "rovc5", moneyChg], [V, "Rank", "rank", (v) => v == null ? "–" : String(v)],
-      [T, "Margin", "rotc", money], [T, "y/y", "rotcYy", moneyChg],
-      [B, "Variable", "beVar", money], [B, "Total", "beTot", money], [B, "Price vs total", "vsBe", pctCell],
-    ];
-    if (m === "apr") {
-      cols.push(["SK seeded area", "M ac", "area", (v) => v == null ? "–" : v.toFixed(2)], ["SK seeded area", "y/y", "areaYy", pctCell]);
-    } else {
-      const grp = `${y}-${+y + 1}` === cur ? `Deliveries to week ${W_NOW}` : `${short(`${y}-${+y + 1}`)} deliveries`;
-      cols.push([grp, "% of crop", "dShare", (v) => v == null ? "–" : (100 * v).toFixed(1) + "%"], [grp, "vs normal", "dVs", pctCell]);
-    }
-    return cols;
-  }
-
-  function renderMarginTable() {
-    const { year: y, month: m } = mState;
-    const cols = marginCols(y, m);
-    let rows = marginRows(y, m);
-    const col = mState.col;
-    rows.sort((a, b) => ((a[col] ?? -Infinity) - (b[col] ?? -Infinity)) * mState.dir);
-    $("mrg-eyebrow").textContent = `Saskatchewan · ${mLabel(m, y)} prices · ${MG.meta.zone} zone budget`;
-    const t = $("mrg-table");
-    t.replaceChildren();
-    const thead = t.createTHead();
-    const gr = thead.insertRow();
-    gr.className = "grp";
-    gr.appendChild(document.createElement("th"));
-    const groups = [];
-    for (const c of cols) { if (!groups.length || groups[groups.length - 1][0] !== c[0]) groups.push([c[0], 0]); groups[groups.length - 1][1]++; }
-    for (const [name, span] of groups) { const th = document.createElement("th"); th.colSpan = span; th.textContent = name; th.className = "sep"; gr.appendChild(th); }
-    const hr = thead.insertRow();
-    const h0 = document.createElement("th"); h0.textContent = "Crop"; h0.scope = "col"; hr.appendChild(h0);
-    cols.forEach(([grp, label, key], i) => {
-      const th = document.createElement("th");
-      th.scope = "col"; th.textContent = label; th.dataset.col = key; th.tabIndex = 0;
-      th.title = `Sort by ${grp.toLowerCase()} ${label}`;
-      if (i === 0 || cols[i - 1][0] !== grp) th.className = "sep";
-      if (col === key) th.setAttribute("aria-sort", mState.dir < 0 ? "descending" : "ascending");
-      const sort = () => { mState.dir = mState.col === key ? -mState.dir : (key === "rank" ? 1 : -1); mState.col = key; renderMarginTable(); };
-      th.addEventListener("click", sort);
-      th.addEventListener("keydown", (e) => { if (e.key === "Enter") sort(); });
-      hr.appendChild(th);
-    });
-    const body = t.createTBody();
-    if (!rows.length) {
-      const td = body.insertRow().insertCell();
-      td.colSpan = cols.length + 1;
-      td.style.cssText = "text-align:left;white-space:normal;color:var(--muted)";
-      td.textContent = `StatCan has not published ${mLabel(m, y)} farm prices yet. They follow about eight weeks after the month ends; the latest is ${latestLbl.mon} ${latestLbl.year}.`;
-    }
-    for (const r of rows) {
-      const tr = body.insertRow();
-      tr.tabIndex = 0;
-      tr.addEventListener("click", () => pickGrain(r.g, true));
-      tr.addEventListener("keydown", (e) => { if (e.key === "Enter") pickGrain(r.g, true); });
-      tr.insertCell().textContent = r.c.label;
-      cols.forEach(([grp, , key, fmt], i) => {
-        const td = tr.insertCell();
-        const v = fmt(r[key]);
-        td.textContent = v;
-        if (v.startsWith("−")) td.className = "neg";
-        if (i === 0 || cols[i - 1][0] !== grp) td.classList.add("sep");
-      });
-    }
-    const ctx = m === "apr"
-      ? "SK seeded area is StatCan's estimate for that harvest (the current year is the latest in-season estimate)."
-      : `Deliveries: share of StatCan's western production delivered ${`${y}-${+y + 1}` === cur ? `by week ${W_NOW}` : "over the crop year"}, against the usual share in the five crop years before. Barley rows share one delivery figure.`;
-    $("mrg-note").textContent = `Revenue = ${monthName(m)} Saskatchewan farm price × trend yield (average Saskatchewan yield of the five previous harvests). Costs are the Saskatchewan Crop Planning Guide budget for that year (${MG.meta.zone} soil zone, published in January). Variable costs are seed, fertilizer, chemicals, fuel, repairs, custom work, insurance and operating interest; total costs add depreciation, taxes and a charge for the land, machinery and buildings. Break-even = costs ÷ trend yield. y/y and vs 5-yr compare the same month, each year with its own costs. Peas use the yellow pea budget and lentils the red lentil budget, against StatCan's all-class prices. ${ctx} Click a column to sort, or a crop to open its delivery detail below.`;
-  }
-
-  // April margin vs the later month, per crop, for the chosen harvest
-  function renderMarginPath() {
-    const y = mState.year;
-    const hasAug = MG.crops.some((c) => mPt(c.key, y, "aug"));
-    const later = hasAug ? "aug" : y === MG.meta.latest_year ? "latest" : null;
-    $("path-h").textContent = later ? `Seeding to harvest, ${y}` : `At seeding, ${y}`;
-    $("path-p").textContent = later
-      ? `Margin over variable costs, $/ac, at April prices and at ${monthName(later)} prices. The same costs and yield apply to both, so the gap is the price move.`
-      : "Margin over variable costs, $/ac, at April prices.";
-    legend($("leg-path"), [{ label: "April", color: "--s1", kind: "rect" }, ...(later ? [{ label: monthName(later), color: "--s2", kind: "rect" }] : [])]);
-    const rows = MG.crops.map((c) => ({ c, a: mPt(c.key, y, "apr"), b: later ? mPt(c.key, y, later) : null })).filter((r) => r.a).sort((p, q) => q.a.rovc - p.a.rovc);
-    const host = $("ch-path");
-    host.replaceChildren();
-    const W = host.clientWidth;
-    if (!W) return;
-    const rowH = 26, mg = { l: 92, r: 16, t: 4, b: 22 };
-    const H = mg.t + mg.b + rows.length * rowH;
-    host.style.height = H + "px";
-    const vals = rows.flatMap((r) => [r.a.rovc, r.b?.rovc]).filter((v) => v != null);
-    const step = niceStep(Math.max(...vals, 0) - Math.min(...vals, 0), 4);
-    const lo = Math.floor(Math.min(0, ...vals) / step) * step, hi = Math.ceil(Math.max(0, ...vals) / step) * step;
-    const x = (v) => mg.l + ((v - lo) / (hi - lo)) * (W - mg.l - mg.r);
-    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `Margin over variable costs at April and ${later ? monthName(later) : ""} prices by crop` });
-    svg.style.display = "block";
-    host.appendChild(svg);
-    for (let v = lo; v <= hi + 1e-9; v += step) {
-      el("line", { x1: x(v), x2: x(v), y1: mg.t, y2: H - mg.b, stroke: v === 0 ? css("--axis") : css("--grid") }, svg);
-      svgText(svg, { x: x(v), y: H - 6, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, (v < 0 ? "−$" : "$") + Math.abs(v));
-    }
-    rows.forEach((r, i) => {
-      const yc = mg.t + i * rowH + rowH / 2;
-      svgText(svg, { x: mg.l - 10, y: yc + 4, "text-anchor": "end", "font-size": 12, fill: css("--ink") }, r.c.label);
-      if (r.b) el("line", { x1: x(r.a.rovc), x2: x(r.b.rovc), y1: yc, y2: yc, stroke: css("--axis"), "stroke-width": 2 }, svg);
-      el("circle", { cx: x(r.a.rovc), cy: yc, r: 5, fill: css("--s1"), stroke: css("--surface"), "stroke-width": 2 }, svg);
-      if (r.b) el("circle", { cx: x(r.b.rovc), cy: yc, r: 5, fill: css("--s2"), stroke: css("--surface"), "stroke-width": 2 }, svg);
-      const tipRows = [
-        { value: "$" + money(r.a.rovc), label: `April margin (price $${money(r.a.price)}/t)`, color: css("--s1"), kind: "rect" },
-        ...(r.b ? [
-          { value: "$" + money(r.b.rovc), label: `${monthName(later)} margin (price $${money(r.b.price)}/t)`, color: css("--s2"), kind: "rect" },
-          { value: moneyChg(r.b.rovc - r.a.rovc), label: `$/ac change, price ${fmtPct(r.b.price / r.a.price - 1)}`, em: true },
-        ] : []),
-        { value: "$" + money(mRec(r.c.key, y).var_cost), label: "variable costs, $/ac" },
-      ];
-      const hit = el("rect", { x: 0, y: yc - rowH / 2, width: W, height: rowH, fill: "transparent", tabindex: 0, "aria-label": `${r.c.label}: April $${money(r.a.rovc)} per acre${r.b ? `, ${monthName(later)} $${money(r.b.rovc)}` : ""}` }, svg);
-      hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, `${r.c.label} · ${y}`, tipRows));
-      hit.addEventListener("pointerleave", hideTip);
-      hit.addEventListener("focus", () => { const b = hit.getBoundingClientRect(); showTip(b.left + x(r.a.rovc), b.bottom, `${r.c.label} · ${y}`, tipRows); });
-      hit.addEventListener("blur", hideTip);
-      hit.addEventListener("click", () => pickGrain(r.c.grain, true));
-    });
-  }
-
-  // relative change in April margin (vs the average change across crops) against the change in SK seeded area.
-  // Malt and feed barley share one seeded area, so barley uses the mean of the two margins.
-  function acrePoints() {
-    const groups = {};
-    for (const c of MG.crops) (groups[c.grain] = groups[c.grain] || []).push(c);
-    const pts = [];
-    for (const y of MG.years.slice(1)) {
-      const py = yrShift(y, -1);
-      const rows = Object.values(groups).map((cs) => {
-        const now = cs.map((c) => mPt(c.key, y, "apr")?.rovc), prev = cs.map((c) => mPt(c.key, py, "apr")?.rovc);
-        const r = mRec(cs[0].key, y);
-        if (now.concat(prev).some((v) => v == null) || !r?.area_ha || !r?.area_prev_ha) return null;
-        return { label: cs.length > 1 ? "Barley" : cs[0].label, grain: cs[0].grain, y, d: mean(now) - mean(prev), area: r.area_ha / r.area_prev_ha - 1, now: mean(now) };
-      }).filter(Boolean);
-      const avg = mean(rows.map((r) => r.d));
-      for (const r of rows) pts.push({ ...r, rel: r.d - avg });
-    }
-    return pts;
-  }
-  function pearson(xs, ys) {
-    const mx = mean(xs), my = mean(ys);
-    let sxy = 0, sxx = 0, syy = 0;
-    xs.forEach((x, i) => { sxy += (x - mx) * (ys[i] - my); sxx += (x - mx) ** 2; syy += (ys[i] - my) ** 2; });
-    return sxy / Math.sqrt(sxx * syy);
-  }
-  function renderAcres() {
-    const pts = acrePoints(), y = mState.year;
-    const r = pearson(pts.map((p) => p.rel), pts.map((p) => p.area));
-    const yrs = [...new Set(pts.map((p) => p.y))];
-    $("acres-p").textContent = `Each dot is a crop in one year, ${yrs[0]}–${yrs[yrs.length - 1]}. Across: change in April margin over variable costs from the year before, relative to the average change across these crops. Up: change in Saskatchewan seeded area. Correlation r = ${r.toFixed(2)} (n = ${pts.length}).`;
-    legend($("leg-acres"), [{ label: y, color: "--s1", kind: "rect" }, { label: "Other years", color: "--other", kind: "rect" }]);
-    const host = $("ch-acres");
-    host.replaceChildren();
-    const W = host.clientWidth, H = host.clientHeight;
-    if (!W) return;
-    const mg = { l: 44, r: 24, t: 22, b: 34 };
-    const xs = pts.map((p) => p.rel), ys = pts.map((p) => p.area);
-    const xStep = niceStep(2 * Math.max(...xs.map(Math.abs)), 4), yStep = niceStep(Math.max(...ys) - Math.min(...ys), 4);
-    const xMax = Math.ceil(Math.max(...xs.map(Math.abs)) / xStep) * xStep;
-    const yLo = Math.floor(Math.min(0, ...ys) / yStep) * yStep, yHi = Math.ceil(Math.max(0, ...ys) / yStep) * yStep;
-    const x = (v) => mg.l + ((v + xMax) / (2 * xMax)) * (W - mg.l - mg.r);
-    const yy = (v) => mg.t + ((yHi - v) / (yHi - yLo)) * (H - mg.t - mg.b);
-    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Change in April margin against change in seeded area, by crop and year" });
-    svg.style.display = "block";
-    host.appendChild(svg);
-    for (let v = -xMax; v <= xMax + 1e-9; v += xStep) {
-      el("line", { x1: x(v), x2: x(v), y1: mg.t, y2: H - mg.b, stroke: Math.abs(v) < 1e-9 ? css("--axis") : css("--grid") }, svg);
-      svgText(svg, { x: x(v), y: H - mg.b + 14, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, (v > 0 ? "+" : v < 0 ? "−" : "") + "$" + Math.abs(v));
-    }
-    for (let v = yLo; v <= yHi + 1e-9; v += yStep) {
-      el("line", { x1: mg.l, x2: W - mg.r, y1: yy(v), y2: yy(v), stroke: Math.abs(v) < 1e-9 ? css("--axis") : css("--grid") }, svg);
-      svgText(svg, { x: mg.l - 6, y: yy(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, fmtPct(v));
-    }
-    svgText(svg, { x: W - mg.r, y: H - 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, "Relative change in April margin, $/ac →");
-    svgText(svg, { x: mg.l, y: 12, "font-size": 11, fill: css("--muted") }, "↑ SK seeded area, y/y");
-    const sorted = [...pts].sort((a, b) => (a.y === y) - (b.y === y));   // highlighted year drawn on top
-    // label the highlighted year's dots, right of the dot or else left, skipping any that would collide
-    const placed = pts.filter((p) => p.y === y).map((p) => ({ x: x(p.rel) - 6, y: yy(p.area) - 6, w: 12, h: 12 }));
-    const hits = (b) => placed.some((q) => b.x < q.x + q.w && q.x < b.x + b.w && b.y < q.y + q.h && q.y < b.y + b.h);
-    const labels = [];
-    for (const p of pts.filter((q) => q.y === y).sort((a, b) => Math.abs(b.rel) - Math.abs(a.rel))) {
-      const w = p.label.length * 6.2, cx = x(p.rel), cy = yy(p.area);
-      const box = [{ x: cx + 8, anchor: "start" }, { x: cx - 8 - w, anchor: "end" }]
-        .map((o) => ({ ...o, b: { x: o.x, y: cy - 7, w, h: 13 } }))
-        .find((o) => o.b.x >= mg.l && o.b.x + w <= W - mg.r && !hits(o.b));
-      if (!box) continue;
-      placed.push(box.b);
-      labels.push([box.anchor === "start" ? cx + 8 : cx - 8, cy + 4, box.anchor, p.label]);
-    }
-    for (const p of sorted) {
-      const on = p.y === y;
-      const c = el("circle", { cx: x(p.rel), cy: yy(p.area), r: on ? 5 : 4, fill: on ? css("--s1") : css("--other"), stroke: css("--surface"), "stroke-width": on ? 2 : 1, tabindex: 0, "aria-label": `${p.label} ${p.y}: April margin ${moneyChg(p.rel)} vs other crops, area ${fmtPct(p.area)}` }, svg);
-      const rows = [
-        { value: moneyChg(p.rel), label: "April margin change vs other crops, $/ac", color: on ? css("--s1") : css("--other"), kind: "rect" },
-        { value: moneyChg(p.d), label: `April margin change, $/ac (now $${money(p.now)})` },
-        { value: fmtPct(p.area), label: "SK seeded area y/y", em: true },
-      ];
-      c.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, `${p.label} · ${p.y}`, rows));
-      c.addEventListener("pointerleave", hideTip);
-      c.addEventListener("focus", () => { const b = c.getBoundingClientRect(); showTip(b.right, b.bottom, `${p.label} · ${p.y}`, rows); });
-      c.addEventListener("blur", hideTip);
-    }
-    for (const [lx, ly, anchor, text] of labels) svgText(svg, { x: lx, y: ly, "text-anchor": anchor, "font-size": 11, fill: css("--ink-2"), "pointer-events": "none" }, text);
-  }
-
-  // crops x years, margin over variable costs for the chosen month; click a year to select it
-  function renderMarginHeat() {
-    const m = mState.month;
-    $("mheat-h").textContent = `Margin over variable costs, every year: ${monthName(m)} prices`;
-    $("mheat-p").textContent = `$/ac. Red cells did not cover variable costs at ${monthName(m)} prices. Pick a year to load it into the table and charts above.`;
-    const table = document.createElement("table");
-    table.className = "heat";
-    const head = table.createTHead().insertRow();
-    const corner = document.createElement("th"); corner.scope = "col"; corner.textContent = "Crop"; corner.style.textAlign = "left"; head.appendChild(corner);
-    for (const y of MG.years) {
-      const th = document.createElement("th"); th.scope = "col"; th.textContent = y;
-      if (y === mState.year) { th.style.color = "var(--ink)"; th.style.textDecoration = "underline"; }
-      head.appendChild(th);
-    }
-    const avgTh = document.createElement("th"); avgTh.scope = "col"; avgTh.textContent = "Average"; head.appendChild(avgTh);
-    const body = table.createTBody();
-    for (const c of MG.crops) {
-      const tr = body.insertRow();
-      const th = document.createElement("th"); th.scope = "row"; th.textContent = c.label; th.style.cursor = "default"; tr.appendChild(th);
-      const vals = [];
-      for (const y of MG.years) {
-        const p = mPt(c.key, y, m), td = tr.insertCell();
-        if (!p) { td.textContent = "–"; td.style.cursor = "default"; continue; }
-        vals.push(p.rovc);
-        const t = Math.min(1, Math.abs(p.rovc) / 300);
-        td.style.background = `color-mix(in oklab, var(${p.rovc >= 0 ? "--div-pos" : "--div-neg"}) ${Math.round(t * 100)}%, var(--div-mid))`;
-        td.style.color = t > 0.55 ? "#ffffff" : "var(--ink)";
-        if (y === mState.year) td.style.boxShadow = "inset 0 0 0 2px var(--ink)";
-        td.textContent = money(p.rovc);
-        td.tabIndex = 0;
-        const rec = mRec(c.key, y);
-        const rows = [
-          { value: "$" + money(p.rovc), label: "margin over variable costs, $/ac", em: true },
-          { value: "$" + money(p.rotc), label: "margin over total costs, $/ac" },
-          { value: "$" + money(p.price), label: `${mLabel(m, y)} price, $/t` },
-          { value: "$" + money(rec.be_var) + " / $" + money(rec.be_total), label: "break-even, variable / total, $/t" },
-        ];
-        const pick = () => { mState.year = y; renderMargins(); };
-        td.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, `${c.label} · ${y}`, rows));
-        td.addEventListener("pointerleave", hideTip);
-        td.addEventListener("focus", () => { const b = td.getBoundingClientRect(); showTip(b.right, b.bottom, `${c.label} · ${y}`, rows); });
-        td.addEventListener("blur", hideTip);
-        td.addEventListener("click", pick);
-        td.addEventListener("keydown", (e) => { if (e.key === "Enter") pick(); });
-      }
-      const avgTd = tr.insertCell();
-      avgTd.textContent = money(mean(vals));
-      avgTd.style.cssText = "width:auto;padding:0 8px;text-align:right;color:var(--ink-2);background:none;cursor:default";
-    }
-    $("mheat").replaceChildren(table);
-  }
-
-  function renderMargins() {
-    const sel = $("mrg-year");
-    if (!sel.options.length) {
-      for (const y of [...MG.years].reverse()) sel.add(new Option(y, y));
-      sel.addEventListener("change", () => { mState.year = sel.value; renderMargins(); });
-      for (const b of document.querySelectorAll("[data-month]")) b.addEventListener("click", () => { mState.month = b.dataset.month; renderMargins(); });
-    }
-    sel.value = mState.year;
-    const latestBtn = $("mrg-latest");
-    latestBtn.textContent = `${latestLbl.mon} ${latestLbl.year} · latest`;
-    // the latest month is offered only for the year it belongs to (it is not April or August)
-    latestBtn.hidden = mState.year !== MG.meta.latest_year || ["Apr", "Aug"].includes(latestLbl.mon);
-    if (latestBtn.hidden && mState.month === "latest") mState.month = "apr";
-    for (const b of document.querySelectorAll("[data-month]")) b.setAttribute("aria-pressed", b.dataset.month === mState.month);
-    renderMarginTable();
-    renderMarginPath();
-    renderAcres();
-    renderMarginHeat();
-  }
-
   // copy a table as tab-separated text (paste into a spreadsheet)
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-copy]");
@@ -1988,11 +1617,10 @@
   renderCards();
   renderPaceTable();
   renderHeat();
-  renderMargins();
   renderGrain();
 
   // re-render charts on resize and theme change (they read colors from tokens)
-  const rerender = () => { renderInsights(); renderMargins(); if (state.view === "cards") renderCards(); renderGrain(); };
+  const rerender = () => { renderInsights(); if (state.view === "cards") renderCards(); renderGrain(); };
   let rt;
   new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(rerender, 120); }).observe(document.querySelector(".wrap"));
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerender);

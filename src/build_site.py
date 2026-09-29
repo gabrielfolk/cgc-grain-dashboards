@@ -20,13 +20,13 @@ SRC = ROOT / "dashboard"
 OUT = ROOT / "docs"
 
 # page folders, relative to dashboard/ and docs/ ("" is the all-crops page), with their nav labels
-NAV = {"": "Overview", "canola": "Canola", "wheat": "Wheat", "durum": "Durum", "barley": "Barley", "feed": "Feed grains"}
+NAV = {"": "Overview", "margins": "Margins", "canola": "Canola", "wheat": "Wheat", "durum": "Durum", "barley": "Barley", "feed": "Feed grains"}
 PAGES = list(NAV)
 DATA_FILES = ["data.json", "forecast.json"]
 
 # Bar-chart favicons, embedded so every page has one without a separate file
 # The all-crops page uses multicoloured bars on dark; each crop page gets its own colour.
-CROP_COLORS = {"canola": "#f2c200", "wheat": "#c89b3c", "durum": "#e0662a", "barley": "#4e9a3a", "feed": "#7c5cc4"}
+CROP_COLORS = {"canola": "#f2c200", "wheat": "#c89b3c", "durum": "#e0662a", "barley": "#4e9a3a", "feed": "#7c5cc4", "margins": "#2a78d6"}
 
 
 def favicon(page: str) -> str:

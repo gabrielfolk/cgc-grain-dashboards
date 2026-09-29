@@ -11,7 +11,8 @@ with Statistics Canada crop, livestock and price data and CBOT futures. Crop yea
 
 | Page | Path | What it answers |
 |---|---|---|
-| **Prairie Delivery Pace** (overview) | `/` | How fast are farmers selling each of 15 crops, compared with crop size and the last five years? Includes an all-crops weekly flash, supply against uses, crop mix and commercial stocks, plus producer margins by crop at April (seeding) and August (harvest) prices. |
+| **Prairie Delivery Pace** (overview) | `/` | How fast are farmers selling each of 15 crops, compared with crop size and the last five years? Includes an all-crops weekly flash, supply against uses, crop mix and commercial stocks. |
+| **Producer Margins** | `/margins/` | What does an acre of each crop earn after variable costs, at seeding (April) and harvest (August) prices, and how does that compare with what farmers have actually delivered? Saskatchewan budgets, 9 crops, 2017 on. |
 | **Canola Pipeline** | `/canola/` | Crush, exports by port, terminal receipts and stocks, with a backtested crush and export forecast. |
 | **Wheat Pipeline** | `/wheat/` | Wheat (ex-durum) exports by port, licensed milling, domestic feed shipments and stocks. Western grain only. |
 | **Durum Pipeline** | `/durum/` | Durum exports: Pacific, Thunder Bay, St. Lawrence and direct to the US. |
@@ -39,7 +40,7 @@ CGC quality pages ──> src/external.py│                                    
 
 SK Crop Planning Guide PDFs ──> src/crop_guide.py ──> reference/sk_crop_planning_guide.csv
                                                              │
-                              src/margins.py (+ StatCan prices, yields) ──> dashboard/data.json (overview margins)
+                              src/margins.py (+ StatCan prices, yields) ──> src/margins_data.py ──> dashboard/margins/data.json
 ```
 
 - **Pages are static HTML** that load their own `data.json`, with no server or build framework.
@@ -68,6 +69,7 @@ CGC publishes on Thursdays.
 .venv/bin/python src/grain_data.py
 .venv/bin/python src/canola_forecast.py
 .venv/bin/python src/feed_data.py
+.venv/bin/python src/margins_data.py
 .venv/bin/python src/build_site.py
 git add -A && git commit -m "Weekly refresh: week N" && git push
 ```
@@ -93,7 +95,8 @@ src/
   db.py              DuckDB views over the cleaned data, plus the Canada Eastern grade filter
   external.py        StatCan tables, Yahoo futures, CGC harvest-quality pages (cached in data/raw/external/)
   crop_guide.py      parse the Saskatchewan Crop Planning Guide PDFs into per-acre budgets
-  margins.py         producer margins by crop (price x trend yield - guide costs), for the overview page
+  margins.py         producer margins by crop (price x trend yield - guide costs)
+  margins_data.py    data for the Producer Margins page (margins plus deliveries of the same crops)
   dashboard_data.py  data for the overview page
   grain_data.py      data for the crop pages, plus crop settings (GRAINS) and page links (LINKS)
   canola_forecast.py canola crush and export forecast, with backtest
@@ -104,6 +107,7 @@ dashboard/
   pipeline.html      crop deep-dive template: edit this, not dashboard/<crop>/index.html
   <crop>/            generated page copy plus data.json per crop
   feed/index.html    feed page (edited directly)
+  margins/index.html Producer Margins page (edited directly)
 reports/             forecast and estimate write-ups (canola_forecast.md, feed_estimate.md)
 reference/           hand-curated inputs (StatCan in-season canola estimates, with sources) and the parsed
                      Crop Planning Guide budgets (sk_crop_planning_guide.csv)

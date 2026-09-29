@@ -79,7 +79,10 @@ def _guide_price_per_t(price: float, lb_per_bu: int | None) -> float:
     return price * LB_PER_T if lb_per_bu is None else price * LB_PER_T / lb_per_bu
 
 
-def build() -> dict:
+def build(now_harvest: int | None = None) -> dict:
+    """Margins by crop and harvest year. With `now_harvest`, also a "now" snapshot per crop:
+    that harvest's budget and trend yield at the latest published price, against the harvest
+    before at the same month a year earlier (for pairing with the current crop year's deliveries)."""
     guide = pd.read_csv(GUIDE)
     guide = guide[guide["zone"] == ZONE].set_index(["crop", "year"])
     prices = _prices()
@@ -90,6 +93,7 @@ def build() -> dict:
 
     r2 = lambda v: None if v is None or not np.isfinite(v) else round(float(v), 2)
     rows: dict = {}
+    basis: dict = {}   # (crop, year) -> (trend yield t/ac, variable cost, total cost), unrounded
     for key, (label, gcrop, *_rest, lb_bu) in CROPS.items():
         for year in years:
             if (gcrop, year) not in guide.index:
@@ -99,8 +103,9 @@ def build() -> dict:
             if len(prior) < 5:
                 continue
             ty = prior.mean()                             # trend yield, t/ac
+            basis[(key, year)] = (ty, g["var_cost"], g["total_cost"])
             rec = {
-                "yield_t_ac": r2(ty),
+                "yield_t_ac": round(float(ty), 4),
                 "var_cost": r2(g["var_cost"]), "total_cost": r2(g["total_cost"]),
                 "be_var": r2(g["var_cost"] / ty), "be_total": r2(g["total_cost"] / ty),
                 "guide_price": r2(_guide_price_per_t(g["price"], lb_bu)),
@@ -118,6 +123,22 @@ def build() -> dict:
                           "rovc": r2(rev - g["var_cost"]), "rotc": r2(rev - g["total_cost"])}
             rows.setdefault(key, {})[str(year)] = rec
 
+    def snap(key: str, year: int, when: pd.Timestamp) -> dict | None:
+        price = prices[key].get(when)
+        if (key, year) not in basis or price is None or not np.isfinite(price):
+            return None
+        ty, var, tot = basis[(key, year)]
+        return {"harvest": str(year), "month": when.strftime("%Y-%m"), "price": r2(price),
+                "rovc": r2(price * ty - var), "rotc": r2(price * ty - tot),
+                "be_var": r2(var / ty), "be_total": r2(tot / ty)}
+
+    now = {}
+    if now_harvest:
+        for key in CROPS:
+            cur = snap(key, now_harvest, latest_month)
+            if cur:
+                now[key] = {**cur, "prev": snap(key, now_harvest - 1, latest_month - pd.DateOffset(years=1))}
+
     return {
         "meta": {
             "zone": ZONE,
@@ -129,6 +150,7 @@ def build() -> dict:
         "crops": [{"key": k, "label": c[0], "grain": c[4]} for k, c in CROPS.items()],
         "years": [str(y) for y in years],
         "rows": rows,
+        "now": now,
     }
 
 

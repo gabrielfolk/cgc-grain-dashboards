@@ -12,7 +12,6 @@ import math
 from pathlib import Path
 
 import external
-import margins
 from grain_data import flows_sql
 from db import connect
 
@@ -77,7 +76,8 @@ def weekly_series(rows: list[tuple], cumulative: bool) -> dict:
     return out
 
 
-def main() -> None:
+def build() -> dict:
+    """Everything the overview page needs; the Producer Margins page reuses the delivery parts."""
     con = connect()
 
     grains = [
@@ -189,13 +189,17 @@ def main() -> None:
         "process": uses["process"],
         "production": production,
         "groups": GROUPS,
-        "margins": margins.build(),
     }
 
+    return data
+
+
+def main() -> None:
+    data = build()
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     text = json.dumps(data, separators=(",", ":"), allow_nan=False)
     OUT_PATH.write_text(text)
-    print(f"Wrote {OUT_PATH.relative_to(ROOT)} ({len(text) / 1e3:.0f} KB, {len(grains)} grains, {len(years)} crop years)")
+    print(f"Wrote {OUT_PATH.relative_to(ROOT)} ({len(text) / 1e3:.0f} KB, {len(data['grains']) - 1} grains, {len(data['years'])} crop years)")
 
 
 if __name__ == "__main__":
