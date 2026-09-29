@@ -119,10 +119,9 @@ TODO.md              next steps
 
 ## Definitions
 
-- **Producer margins:** revenue is the Saskatchewan monthly farm price times trend yield (average of the five
-  previous Saskatchewan harvests). **Operating margin** subtracts the Crop Planning Guide's variable costs per acre;
-  the margin over total costs also subtracts depreciation, taxes and imputed land, machinery and building costs
-  (Dark Brown zone, stubble seeded). From 2017, when the guide moved to a higher-input system.
+- **Producer margins:** Saskatchewan monthly farm price times trend yield (average of the five previous
+  Saskatchewan harvests), less the Crop Planning Guide's variable or total costs per acre (Dark Brown zone,
+  stubble seeded). From 2017, when the guide moved to a higher-input system.
 - **Crop year:** Aug 1 to Jul 31. "CYTD" is crop year to date. "5-yr" is the average of the previous five crop years
   at the same week.
 - **Weekly values** are week-over-week changes in CGC's crop-year totals. CGC applies revisions only to the totals,

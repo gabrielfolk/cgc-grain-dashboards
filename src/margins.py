@@ -2,7 +2,7 @@
 
 For each crop and harvest year:
     revenue  = Saskatchewan farm price that month ($/t)  x  trend yield (t/ac)
-    operating margin           = revenue - the Crop Planning Guide's variable expenses ($/ac)
+    margin over variable costs = revenue - the Crop Planning Guide's variable expenses ($/ac)
     margin over total costs    = revenue - the guide's total expenses ($/ac)
     break-even price           = costs / trend yield ($/t)
 
@@ -137,5 +137,5 @@ if __name__ == "__main__":
     print(d["meta"])
     for m in ("apr", "aug", "latest"):
         tab = {c["label"]: {y: (v.get(m) or {}).get("rovc") for y, v in d["rows"][c["key"]].items()} for c in d["crops"]}
-        print(f"\noperating margin, $/ac, {m}")
+        print(f"\nmargin over variable costs, $/ac, {m}")
         print(pd.DataFrame(tab).T.to_string())

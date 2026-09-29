@@ -133,11 +133,6 @@
   .ctrls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
   .sel { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
   .sel select { padding: 5px 8px; }
-  .explain { display: grid; gap: 3px; margin-top: 6px; padding: 2px 0 2px 12px; border-left: 2px solid var(--axis); font-size: 13px; color: var(--ink-2); max-width: 88ch; }
-  .explain b { font-weight: 600; color: var(--ink); }
-  .explain .src { color: var(--muted); }
-  .sources { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
-  .notes code { font: 12px var(--mono); }
 
   /* summary */
   .summary {
@@ -285,11 +280,6 @@
       <div>
         <div class="eyebrow" id="mflash-eyebrow"></div>
         <h2 id="mflash-h">Weekly flash: all crops</h2>
-        <div class="explain">
-          <p><b>What it shows:</b> The latest CGC week for all 15 crops at once: producer deliveries, exports, licensed processing and commercial stocks, each against last year and the 5-year average.</p>
-          <p><b>How to read it:</b> Compare the latest week (Wk) with the crop-year-to-date columns to see whether the newest data confirms or breaks the trend. <i>Sized to crop</i> adjusts delivery pace for crop size, so a big crop selling at a normal rate does not look fast.</p>
-          <p class="src"><b>Source:</b> <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">CGC Grain Statistics Weekly</a>; crop sizes from <a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210035901" target="_blank" rel="noopener">StatCan 32-10-0359</a>.</p>
-        </div>
       </div>
       <button type="button" class="btn" data-copy="mflash-table">Copy table</button>
     </div>
@@ -302,11 +292,7 @@
       <div>
         <div class="eyebrow" id="ins-eyebrow">All crops</div>
         <h2 id="ins-h">What farmers are doing</h2>
-<div class="explain">
-          <p><b>What it shows:</b> How much of each crop farmers have sold so far, measured against the crop they grew, plus how much of each crop normally reaches the licensed system and how the delivery mix has shifted.</p>
-          <p><b>How to read it:</b> In the pace chart, a blue dot right of its grey band means farmers are selling that crop faster than in any of the last five years, relative to its size; left of the band means they are holding back. The cards summarize the biggest moves.</p>
-          <p class="src"><b>Source:</b> <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">CGC Grain Statistics Weekly</a>; western production from <a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210035901" target="_blank" rel="noopener">StatCan 32-10-0359</a>.</p>
-        </div>
+        <p class="sub">Delivery pace sized to StatCan's western production estimates, plus the structural picture.</p>
       </div>
     </div>
     <div class="insights" id="insights"></div>
@@ -333,11 +319,7 @@
       <div>
         <div class="eyebrow" id="mrg-eyebrow"></div>
         <h2 id="mrg-h">Producer margins</h2>
-<div class="explain">
-          <p><b>What it shows:</b> Estimated profit per acre for a typical Saskatchewan grower, by crop. <i>Operating margin</i> is revenue minus variable (cash) costs: seed, fertilizer, chemicals, fuel, repairs, custom work, insurance and operating interest. It is the best guide to crop choice because land and machinery costs are much the same whichever crop is grown. <i>Margin over total costs</i> also charges for depreciation, taxes, land, machinery and buildings.</p>
-          <p><b>How to read it:</b> April prices show the economics when seeding decisions are made; August prices show them at harvest, when the crop is priced and sold. Rank and the y/y columns show which crops gained or lost ground. <i>Price vs total</i> shows how far the price is above or below the price needed to cover all costs. Pick another harvest year to compare.</p>
-          <p class="src"><b>Source:</b> costs from the <a href="https://www.saskatchewan.ca/business/agriculture-natural-resources-and-industry/agribusiness-farmers-and-ranchers/farm-business-management/crop-planning-guide-and-crop-planner" target="_blank" rel="noopener">Saskatchewan Crop Planning Guide</a> (Dark Brown soil zone); prices from <a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210007701" target="_blank" rel="noopener">StatCan 32-10-0077</a> (Saskatchewan monthly farm prices); yields and seeded area from <a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210035901" target="_blank" rel="noopener">StatCan 32-10-0359</a>.</p>
-        </div>
+        <p class="sub">What an acre of each crop earns at Saskatchewan farm prices, net of the province's crop budget. April prices show the economics at seeding; August prices show them at harvest, when the crop is marketed.</p>
       </div>
       <div class="ctrls">
         <label class="sel"><span class="muted">Harvest</span> <select id="mrg-year" class="btn"></select></label>
@@ -363,7 +345,7 @@
         <div class="chart" id="ch-acres" style="height:300px"></div>
       </div>
       <div class="panel wide">
-        <div class="panel-head"><h3 id="mheat-h">Operating margin, every year</h3><p id="mheat-p"></p></div>
+        <div class="panel-head"><h3 id="mheat-h">Margin over variable costs, every year</h3><p id="mheat-p"></p></div>
         <div class="table-wrap" style="padding:10px;border:0" id="mheat"></div>
         <div class="scale"><span>−$300/ac</span><span class="scale-bar"></span><span>+$300/ac</span><span class="muted">· $0 is the midpoint</span></div>
       </div>
@@ -375,11 +357,7 @@
       <div>
         <div class="eyebrow">All commodities</div>
         <h2 id="pace-h">Pace across crops</h2>
-<div class="explain">
-          <p><b>What it shows:</b> Cumulative deliveries of each crop this crop year, against last year and the range of the previous five years.</p>
-          <p><b>How to read it:</b> A blue line above the grey band means deliveries are running ahead of all of the last five years; below means behind. The badge gives the gap to the 5-year average. Pick a crop to open it in crop detail below, or switch to the table.</p>
-          <p class="src"><b>Source:</b> <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">CGC Grain Statistics Weekly</a>.</p>
-        </div>
+        <p class="sub">Each crop's deliveries this crop year against its own 5-year pattern. Pick one to open it in crop detail below.</p>
       </div>
       <div class="seg" role="group" aria-label="Pace view">
         <button type="button" id="view-cards" aria-pressed="true">Charts</button>
@@ -395,11 +373,7 @@
     <div class="section-head">
       <div>
         <h2 id="heat-h">Thirteen crop years at a glance</h2>
-        <div class="explain">
-          <p><b>What it shows:</b> <span id="heat-sub"></span></p>
-          <p><b>How to read it:</b> Blue is above that crop's average, red is below; darker means further from average. Use it to spot unusually big or small marketing years, and years when grain was left in the system at year end.</p>
-          <p class="src"><b>Source:</b> <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">CGC Grain Statistics Weekly</a>.</p>
-        </div>
+        <p class="sub" id="heat-sub"></p>
       </div>
       <div class="controls" style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center">
         <div class="seg" role="group" aria-label="Heatmap measure">
@@ -417,11 +391,7 @@
       <div>
         <div class="eyebrow">One crop at a time</div>
         <h2 id="crop-h">Crop detail</h2>
-<div class="explain">
-          <p><b>What it shows:</b> A drill-down into one crop: summary tiles, this crop year week by week, and every crop year since 2013-14.</p>
-          <p><b>How to read it:</b> Pick a crop (or All grains, the total of the 15 crops). The tiles and every chart below update to that crop.</p>
-          <p class="src"><b>Source:</b> <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">CGC Grain Statistics Weekly</a>; crop sizes from <a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210035901" target="_blank" rel="noopener">StatCan 32-10-0359</a>.</p>
-        </div>
+        <p class="sub">Pick a crop to see its delivery pace, stocks and history. All grains is the total of the 15 crops.</p>
       </div>
     </div>
     <div class="picker" id="picker" role="group" aria-label="Commodity"></div>
@@ -434,11 +404,6 @@
       <div>
         <div class="eyebrow" id="year-eyebrow"></div>
         <h2 id="year-h">This crop year</h2>
-        <div class="explain">
-          <p><b>What it shows:</b> The selected crop's deliveries and commercial stocks since Aug 1, week by week, against the previous five crop years.</p>
-          <p><b>How to read it:</b> The blue line is this year; the grey band is the 5-year range and the white line its average. Commercial stocks building faster than usual mean deliveries are outpacing what is being shipped or processed.</p>
-          <p class="src"><b>Source:</b> <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">CGC Grain Statistics Weekly</a>.</p>
-        </div>
       </div>
     </div>
     <div class="two">
@@ -465,11 +430,6 @@
       <div>
         <div class="eyebrow">Since 2013-14</div>
         <h2 id="hist-h">Past crop years</h2>
-        <div class="explain">
-          <p><b>What it shows:</b> Every crop year since 2013-14 for the selected crop: delivery curves, where this year ranks, stocks, and how deliveries split between processors and provinces.</p>
-          <p><b>How to read it:</b> Hover a chart to compare all years at the same week. The ranking shows where this year's deliveries stand against every past year at this point in the season. Show data table gives the numbers.</p>
-          <p class="src"><b>Source:</b> <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">CGC Grain Statistics Weekly</a>.</p>
-        </div>
       </div>
       <button type="button" class="btn" id="toggle-table" aria-expanded="false">Show data table</button>
     </div>
@@ -507,13 +467,6 @@
   </section>
 
   <footer class="notes">
-    <h3 style="color:var(--ink)">Sources</h3>
-    <ul class="sources">
-      <li><a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">CGC Grain Statistics Weekly</a>: producer deliveries, exports, licensed processing and commercial stocks, weekly, crop years 2013-14 onward.</li>
-      <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210035901" target="_blank" rel="noopener">StatCan 32-10-0359</a>, <i>Estimated areas, yield, production, average farm price and total farm value of principal field crops</i>: western production, Saskatchewan yields and seeded area.</li>
-      <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210007701" target="_blank" rel="noopener">StatCan 32-10-0077</a>, <i>Farm product prices, crops and livestock</i>: Saskatchewan monthly farm prices, $/t.</li>
-      <li><a href="https://www.saskatchewan.ca/business/agriculture-natural-resources-and-industry/agribusiness-farmers-and-ranchers/farm-business-management/crop-planning-guide-and-crop-planner" target="_blank" rel="noopener">Saskatchewan Crop Planning Guide</a> (Saskatchewan Ministry of Agriculture), 2017–2026 editions: per-acre crop budgets. Past editions: <a href="https://publications.saskatchewan.ca/#/products/122661" target="_blank" rel="noopener">Publications Centre archive</a>.</li>
-    </ul>
     <h3 style="color:var(--ink)">About the data</h3>
     <ul>
       <li>Source: Canadian Grain Commission, <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">Grain Statistics Weekly</a>, crop years 2013-14 onward. Crop deep dives (uses, exports by port, stocks): <a href="canola/">Canola</a>, <a href="wheat/">Wheat</a>, <a href="durum/">Durum</a>, <a href="barley/">Barley</a>. Feed use, livestock and feed prices: <a href="feed/">Western Feed Grains</a>.</li>
@@ -523,7 +476,7 @@
       <li>Figures cover Western Canadian grain. Wheat and corn graded Canada Eastern (CE grades, grown in Ontario and Quebec) are left out of exports and terminal stocks, so totals are lower than CGC's all-Canada figures. Soybean grades do not show origin, so soybean exports and stocks at eastern terminals may include Ontario and Quebec beans.</li>
       <li>The 5-year average and range use the five crop years before this one, compared week for week.</li>
       <li>Crop sizes are StatCan's production estimates for Manitoba, Saskatchewan, Alberta and British Columbia (table 32-10-0359), the region CGC's weekly data covers. The current year uses StatCan's latest in-season estimate, which will be revised. Wheat excludes durum.</li>
-      <li>Producer margins: operating margin is revenue minus variable costs; revenue is the Saskatchewan monthly farm price (StatCan table 32-10-0077, published about eight weeks after the month) times a trend yield, the average Saskatchewan yield of the five previous harvests (table 32-10-0359). Costs are the <a href="https://www.saskatchewan.ca/business/agriculture-natural-resources-and-industry/agribusiness-farmers-and-ranchers/farm-business-management/crop-planning-guide-and-crop-planner" target="_blank" rel="noopener">Saskatchewan Crop Planning Guide</a> budgets for the Dark Brown soil zone (stubble seeded), published each January; the parsed budgets for every zone are in <code>reference/sk_crop_planning_guide.csv</code>. The series starts in 2017, when the guide moved to a higher-input system; earlier budgets are not comparable. Total costs include imputed interest on land and machinery, which moves with interest rates and land values (it doubled in the 2023 guide), so the operating margin (over variable costs) is the steadier comparison across crops. These are budget margins for a typical grower, not farm survey results. Over 2017–2025, August margins were only weakly related to early-season delivery pace (correlation about 0.2).</li>
+      <li>Producer margins: revenue is the Saskatchewan monthly farm price (StatCan table 32-10-0077, published about eight weeks after the month) times a trend yield, the average Saskatchewan yield of the five previous harvests (table 32-10-0359). Costs are the <a href="https://www.saskatchewan.ca/business/agriculture-natural-resources-and-industry/agribusiness-farmers-and-ranchers/farm-business-management/crop-planning-guide-and-crop-planner" target="_blank" rel="noopener">Saskatchewan Crop Planning Guide</a> budgets for the Dark Brown soil zone (stubble seeded), published each January; the parsed budgets for every zone are in <code>reference/sk_crop_planning_guide.csv</code>. The series starts in 2017, when the guide moved to a higher-input system; earlier budgets are not comparable. Total costs include imputed interest on land and machinery, which moves with interest rates and land values (it doubled in the 2023 guide), so the variable-cost margin is the steadier comparison across crops. These are budget margins for a typical grower, not farm survey results. Over 2017–2025, August margins were only weakly related to early-season delivery pace (correlation about 0.2).</li>
       <li>The full-year projection scales deliveries so far by the share of the year's deliveries that usually arrive by this week (5-year average). It is a simple pace estimate, not a forecast.</li>
       <li id="gen"></li>
     </ul>
@@ -1693,7 +1646,7 @@
   }
 
   function marginCols(y, m) {
-    const V = "Operating margin, $/ac", T = "Margin over total costs, $/ac", B = "Break-even, $/t";
+    const V = "Margin over variable costs, $/ac", T = "Margin over total costs, $/ac", B = "Break-even, $/t";
     const cols = [
       ["Price, $/t", "Level", "price", money], ["Price, $/t", "y/y", "priceYy", pctCell],
       [V, "Margin", "rovc", money], [V, "y/y", "rovcYy", moneyChg], [V, "vs 5-yr", "rovc5", moneyChg], [V, "Rank", "rank", (v) => v == null ? "–" : String(v)],
@@ -1772,8 +1725,8 @@
     const later = hasAug ? "aug" : y === MG.meta.latest_year ? "latest" : null;
     $("path-h").textContent = later ? `Seeding to harvest, ${y}` : `At seeding, ${y}`;
     $("path-p").textContent = later
-      ? `Operating margin, $/ac, at April prices (blue) and ${monthName(later)} prices (orange). Costs and yield are the same for both, so the gap is purely the price move since seeding: a long line to the left means the crop lost value after it was planted.`
-      : "Operating margin, $/ac, at April prices.";
+      ? `Margin over variable costs, $/ac, at April prices and at ${monthName(later)} prices. The same costs and yield apply to both, so the gap is the price move.`
+      : "Margin over variable costs, $/ac, at April prices.";
     legend($("leg-path"), [{ label: "April", color: "--s1", kind: "rect" }, ...(later ? [{ label: monthName(later), color: "--s2", kind: "rect" }] : [])]);
     const rows = MG.crops.map((c) => ({ c, a: mPt(c.key, y, "apr"), b: later ? mPt(c.key, y, later) : null })).filter((r) => r.a).sort((p, q) => q.a.rovc - p.a.rovc);
     const host = $("ch-path");
@@ -1787,7 +1740,7 @@
     const step = niceStep(Math.max(...vals, 0) - Math.min(...vals, 0), 4);
     const lo = Math.floor(Math.min(0, ...vals) / step) * step, hi = Math.ceil(Math.max(0, ...vals) / step) * step;
     const x = (v) => mg.l + ((v - lo) / (hi - lo)) * (W - mg.l - mg.r);
-    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `Operating margin at April and ${later ? monthName(later) : ""} prices by crop` });
+    const svg = el("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `Margin over variable costs at April and ${later ? monthName(later) : ""} prices by crop` });
     svg.style.display = "block";
     host.appendChild(svg);
     for (let v = lo; v <= hi + 1e-9; v += step) {
@@ -1846,7 +1799,7 @@
     const pts = acrePoints(), y = mState.year;
     const r = pearson(pts.map((p) => p.rel), pts.map((p) => p.area));
     const yrs = [...new Set(pts.map((p) => p.y))];
-    $("acres-p").textContent = `Each dot is a crop in one year, ${yrs[0]}–${yrs[yrs.length - 1]}. Across: change in the April operating margin from the year before, relative to the average change across these crops. Up: change in Saskatchewan seeded area. Dots up and to the right are crops whose margins improved against the others and that gained acres; a cloud rising left to right means acres follow margins. Correlation r = ${r.toFixed(2)} (n = ${pts.length}).`;
+    $("acres-p").textContent = `Each dot is a crop in one year, ${yrs[0]}–${yrs[yrs.length - 1]}. Across: change in April margin over variable costs from the year before, relative to the average change across these crops. Up: change in Saskatchewan seeded area. Correlation r = ${r.toFixed(2)} (n = ${pts.length}).`;
     legend($("leg-acres"), [{ label: y, color: "--s1", kind: "rect" }, { label: "Other years", color: "--other", kind: "rect" }]);
     const host = $("ch-acres");
     host.replaceChildren();
@@ -1902,11 +1855,11 @@
     for (const [lx, ly, anchor, text] of labels) svgText(svg, { x: lx, y: ly, "text-anchor": anchor, "font-size": 11, fill: css("--ink-2"), "pointer-events": "none" }, text);
   }
 
-  // crops x years, operating margin for the chosen month; click a year to select it
+  // crops x years, margin over variable costs for the chosen month; click a year to select it
   function renderMarginHeat() {
     const m = mState.month;
-    $("mheat-h").textContent = `Operating margin, every year: ${monthName(m)} prices`;
-    $("mheat-p").textContent = `$/ac, revenue minus variable costs. Blue cells covered variable costs, red cells did not; darker is further from zero. Compare down a column to rank crops in a year, or across a row to see a crop's cycle. Pick a year to load it into the table and charts above.`;
+    $("mheat-h").textContent = `Margin over variable costs, every year: ${monthName(m)} prices`;
+    $("mheat-p").textContent = `$/ac. Red cells did not cover variable costs at ${monthName(m)} prices. Pick a year to load it into the table and charts above.`;
     const table = document.createElement("table");
     table.className = "heat";
     const head = table.createTHead().insertRow();
@@ -1934,7 +1887,7 @@
         td.tabIndex = 0;
         const rec = mRec(c.key, y);
         const rows = [
-          { value: "$" + money(p.rovc), label: "operating margin, $/ac", em: true },
+          { value: "$" + money(p.rovc), label: "margin over variable costs, $/ac", em: true },
           { value: "$" + money(p.rotc), label: "margin over total costs, $/ac" },
           { value: "$" + money(p.price), label: `${mLabel(m, y)} price, $/t` },
           { value: "$" + money(rec.be_var) + " / $" + money(rec.be_total), label: "break-even, variable / total, $/t" },
