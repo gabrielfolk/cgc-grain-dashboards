@@ -1,5 +1,13 @@
 # TODO
 
+- [ ] **Late October 2026: add August farm prices to the margins.** StatCan publishes August prices about eight
+  weeks after the month ends (table 32-10-0077). Once they are out, run `.venv/bin/python src/external.py --refresh`,
+  then `src/margins_data.py` and `src/build_site.py`. This fills in the 2026 harvest-price (August) margins on the
+  Producer Margins page, which show "not published yet" until then.
+- [ ] **January 2027: add the 2027 Crop Planning Guide.** When Saskatchewan Agriculture publishes it, add its format
+  id to `FORMAT_IDS` in `src/crop_guide.py` (Publications Centre archive, product 122661), run
+  `.venv/bin/python src/crop_guide.py`, then `src/margins_data.py` and `src/build_site.py`.
+
 - [ ] **Automate the weekly refresh.** CGC publishes on Thursdays. Add a scheduled GitHub Action that runs the refresh
   scripts and `src/build_site.py`, then commits `docs/`. The site updates on push. Pushing workflow files first
   needs the `workflow` token scope: run `gh auth refresh -s workflow`.
