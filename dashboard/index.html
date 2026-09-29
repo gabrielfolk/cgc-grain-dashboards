@@ -246,6 +246,9 @@
   #tip .tip-row.em span:last-child { color: var(--ink); font-weight: 500; }
 
   svg text { font-family: var(--sans); }
+  .explain { font-size: 13px; color: var(--ink-2); max-width: 90ch; }
+  .explain summary { cursor: pointer; color: var(--ink); font-weight: 500; width: max-content; }
+  .explain ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; }
   .notes { display: grid; gap: 8px; font-size: 13px; color: var(--ink-2); max-width: 80ch; }
   .notes ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
   @media (prefers-reduced-motion: no-preference) { .card, .btn { transition: border-color 0.12s, background 0.12s, color 0.12s; } }
@@ -257,6 +260,17 @@
     <h1>Overview</h1>
     <p class="sub" id="lede">Producer deliveries, exports, licensed processing and commercial stocks for 15 Western Canadian crops, with selling pace measured against StatCan crop estimates.</p>
     <p class="asof" id="asof"></p>
+    <details class="explain">
+      <summary>How to read these numbers</summary>
+      <ul>
+        <li>Producer deliveries are what farmers deliver into the licensed system: country elevators, straight to processors, and producer cars. Grain fed on the farm or sold farm-to-farm or to feedlots is not counted, so deliveries run below production, far below for oats, barley and corn.</li>
+        <li>Figures are Western Canadian grain. Exports and terminal stocks leave out grain graded Canada Eastern, so they will not match the all-Canada totals in CGC's weekly report. Soybean and corn exports through eastern ports still include grain grown outside Western Canada, because those grades do not record origin.</li>
+        <li>"Sized to the crop" divides deliveries by StatCan's latest western production estimate. For the current crop year that estimate is still in-season, so the share moves when StatCan revises the crop, not only when farmers deliver.</li>
+        <li>The full-year pace projection is simple arithmetic: deliveries so far divided by the share that usually arrives by this week. It assumes a normal seasonal pattern and is not a forecast. Canola's page has a separate, backtested forecast.</li>
+        <li>Weekly numbers are the change in CGC's crop-year totals, which CGC revises. A single week can be lumpy or even negative after a revision; weeks 21 and 22 are one combined holiday report.</li>
+        <li>Each crop's page adds exports by port, processing, stocks, country elevator throughput and the full history.</li>
+      </ul>
+    </details>
   </header>
 
   <section aria-labelledby="ins-h">

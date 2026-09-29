@@ -9,6 +9,10 @@ and commercial stocks. Flows are crop-year-to-date (cumulative) series; stocks a
 week-end levels.
     deliveries      producer deliveries (elevators + direct to processors + producer cars)
     process         processed at licensed facilities (Process worksheet, "Milled/Mfg Grain")
+    primary_deliveries / primary_shipments
+                    grain delivered into and shipped out of licensed country (primary)
+                    elevators, all destinations; with country stocks this shows whether
+                    elevators are filling up (shipments lagging) or being drawn down
     feed            CGC's domestic feed grain table ("Feed Grains"): primary elevator shipments
                     of grain for domestic feed. A subset of the all-grains figures, so feed
                     grain delivered to elevators is already inside producer deliveries.
@@ -250,6 +254,10 @@ from producer_deliveries where grain = '{grain}' group by all
 union all
 select 'process', crop_year, grain_week, sum(ktonnes) from gsw
 where grain = '{grain}' and worksheet = 'Process' and metric = 'Milled/Mfg Grain' and period = 'Crop Year'
+group by all
+union all
+select 'primary_' || lower(metric), crop_year, grain_week, sum(ktonnes) from gsw
+where grain = '{grain}' and worksheet = 'Primary' and metric in ('Deliveries', 'Shipments') and period = 'Crop Year'
 group by all
 union all
 select 'feed', crop_year, grain_week, sum(ktonnes) from gsw

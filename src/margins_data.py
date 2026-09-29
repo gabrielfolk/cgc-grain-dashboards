@@ -29,8 +29,6 @@ def main() -> None:
         "years": d["years"],
         "deliveries": pick(d["deliveries"]),
         "production": pick(d["production"]),
-        "province": pick(d["province"]),
-        "channel": pick(d["channel"]),
         "margins": m,
     }
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
