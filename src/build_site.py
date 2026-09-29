@@ -21,14 +21,14 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "dashboard"
 OUT = ROOT / "docs"
 
-# page folders, relative to dashboard/ and docs/ ("" is the all-crops page), with their nav labels
-NAV = {"": "Overview", "feed": "Feed grains", "margins": "Margins"}
-# one page per crop, in the nav's second row, largest deliveries first
-CROP_ORDER = ["wheat", "canola", "durum", "barley", "peas", "oats", "lentils", "soybeans", "corn",
-              "flaxseed", "rye", "beans", "canaryseed", "chickpeas", "mustard"]
-CROP_NAV = {slug: GRAINS[slug]["title"].removesuffix(" Pipeline") for slug in CROP_ORDER}
-assert set(CROP_NAV) == set(GRAINS), "every crop page needs a place in CROP_ORDER"
-PAGES = [*NAV, *CROP_NAV]
+# Page folders, relative to dashboard/ and docs/ ("" is the all-crops page), in nav order.
+# A list entry is a dropdown menu: (menu label, [page folders]).
+NAV = ["", "margins", "canola", "wheat", "durum", "barley", "peas", "oats", "lentils", "soybeans", "corn",
+       ("Special crops", ["flaxseed", "rye", "beans", "canaryseed", "chickpeas", "mustard"]), "feed"]
+LABELS = {"": "Overview", "margins": "Margins", "feed": "Feed grains",
+          **{slug: cfg["title"].removesuffix(" Pipeline") for slug, cfg in GRAINS.items()}}
+PAGES = [p for entry in NAV for p in (entry[1] if isinstance(entry, tuple) else [entry])]
+assert set(GRAINS) <= set(PAGES), "every crop page needs a place in NAV"
 DATA_FILES = ["data.json", "forecast.json"]
 
 # Bar-chart favicons, embedded so every page has one without a separate file
@@ -95,29 +95,66 @@ HEAD = """<!doctype html>
   .site-nav a:hover { color: var(--ink); }
   .site-nav a[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
   .site-nav a:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
-  .site-nav .crops { border-top: 1px solid var(--border); gap: 4px 12px; }
-  .site-nav .crops .site-name { margin-right: 0; padding: 10px 0; }
-  .site-nav .crops a { padding: 9px 7px 7px; font-size: 12px; }
-  @media (max-width: 640px) { .site-nav .site-name { display: none; } }
+
+  /* dropdown: opens below on wide screens; on narrow screens the bar scrolls, so its links open inline */
+  .site-nav details { display: flex; }
+  .site-nav summary {
+    list-style: none; cursor: pointer; padding: 13px 10px 11px; white-space: nowrap;
+    font: 500 13px/1 var(--sans, system-ui, sans-serif); color: var(--ink-2); border-bottom: 2px solid transparent;
+  }
+  .site-nav summary::-webkit-details-marker { display: none; }
+  .site-nav summary::after { content: " ▾"; font-size: 10px; }
+  .site-nav details[open] summary::after { content: " ▴"; }
+  .site-nav summary:hover { color: var(--ink); }
+  .site-nav summary:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+  .site-nav summary.current { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+  .site-nav .menu { display: flex; gap: 2px; }
+  @media (min-width: 1180px) {
+    .site-nav-inner { overflow: visible; }
+    .site-nav details { position: relative; }
+    .site-nav .menu {
+      position: absolute; top: 100%; left: 0; z-index: 6; flex-direction: column; min-width: 150px; padding: 4px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+    }
+    .site-nav .menu a { padding: 9px 10px; border-bottom: 0; border-radius: 4px; }
+    .site-nav .menu a:hover { background: var(--hover); }
+    .site-nav .menu a[aria-current="page"] { background: var(--chip); }
+  }
+  @media (max-width: 1320px) { .site-nav .site-name { display: none; } }
 </style>
 """
 
 
+# closes an open dropdown on an outside click or Escape
+NAV_SCRIPT = """<script>
+(function () {
+  const menus = document.querySelectorAll(".site-nav details");
+  document.addEventListener("click", (e) => { for (const d of menus) if (!d.contains(e.target)) d.open = false; });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") for (const d of menus) if (d.open) { d.open = false; d.querySelector("summary").focus(); } });
+})();
+</script>
+"""
+
+
 def nav(page: str) -> str:
-    """Navigation bar for `page`, with links relative to its folder: the cross-crop pages, then every crop."""
+    """Navigation bar for `page`, with links relative to its folder."""
     up = "../" if page else ""
 
-    def items(pages: dict) -> str:
-        return "".join(
-            f'<li><a href="{up + (target + "/" if target else "") or "./"}"'
-            + (' aria-current="page"' if target == page else "")
-            + f">{label}</a></li>"
-            for target, label in pages.items()
-        )
+    def link(target: str) -> str:
+        return (f'<a href="{up + (target + "/" if target else "") or "./"}"'
+                + (' aria-current="page"' if target == page else "") + f">{LABELS[target]}</a>")
 
-    return (f'<nav class="site-nav" aria-label="Dashboards">'
-            f'<div class="site-nav-inner"><span class="site-name">CGC grain dashboards</span><ul>{items(NAV)}</ul></div>'
-            f'<div class="site-nav-inner crops"><span class="site-name">Crops</span><ul>{items(CROP_NAV)}</ul></div></nav>\n')
+    items = []
+    for entry in NAV:
+        if isinstance(entry, tuple):
+            label, targets = entry
+            current = ' class="current"' if page in targets else ""
+            items.append(f"<li><details><summary{current}>{label}</summary>"
+                         f'<div class="menu">{"".join(link(t) for t in targets)}</div></details></li>')
+        else:
+            items.append(f"<li>{link(entry)}</li>")
+    return (f'<nav class="site-nav" aria-label="Dashboards"><div class="site-nav-inner">'
+            f'<span class="site-name">CGC grain dashboards</span><ul>{"".join(items)}</ul></div></nav>\n' + NAV_SCRIPT)
 
 
 def main() -> None:

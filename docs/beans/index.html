@@ -36,10 +36,32 @@
   .site-nav a:hover { color: var(--ink); }
   .site-nav a[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
   .site-nav a:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
-  .site-nav .crops { border-top: 1px solid var(--border); gap: 4px 12px; }
-  .site-nav .crops .site-name { margin-right: 0; padding: 10px 0; }
-  .site-nav .crops a { padding: 9px 7px 7px; font-size: 12px; }
-  @media (max-width: 640px) { .site-nav .site-name { display: none; } }
+
+  /* dropdown: opens below on wide screens; on narrow screens the bar scrolls, so its links open inline */
+  .site-nav details { display: flex; }
+  .site-nav summary {
+    list-style: none; cursor: pointer; padding: 13px 10px 11px; white-space: nowrap;
+    font: 500 13px/1 var(--sans, system-ui, sans-serif); color: var(--ink-2); border-bottom: 2px solid transparent;
+  }
+  .site-nav summary::-webkit-details-marker { display: none; }
+  .site-nav summary::after { content: " ▾"; font-size: 10px; }
+  .site-nav details[open] summary::after { content: " ▴"; }
+  .site-nav summary:hover { color: var(--ink); }
+  .site-nav summary:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+  .site-nav summary.current { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+  .site-nav .menu { display: flex; gap: 2px; }
+  @media (min-width: 1180px) {
+    .site-nav-inner { overflow: visible; }
+    .site-nav details { position: relative; }
+    .site-nav .menu {
+      position: absolute; top: 100%; left: 0; z-index: 6; flex-direction: column; min-width: 150px; padding: 4px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+    }
+    .site-nav .menu a { padding: 9px 10px; border-bottom: 0; border-radius: 4px; }
+    .site-nav .menu a:hover { background: var(--hover); }
+    .site-nav .menu a[aria-current="page"] { background: var(--chip); }
+  }
+  @media (max-width: 1320px) { .site-nav .site-name { display: none; } }
 </style>
 <title>Beans Pipeline</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -217,7 +239,14 @@
   @media (prefers-reduced-motion: no-preference) { .btn { transition: background 0.12s; } }
 </style>
 
-<nav class="site-nav" aria-label="Dashboards"><div class="site-nav-inner"><span class="site-name">CGC grain dashboards</span><ul><li><a href="../">Overview</a></li><li><a href="../feed/">Feed grains</a></li><li><a href="../margins/">Margins</a></li></ul></div><div class="site-nav-inner crops"><span class="site-name">Crops</span><ul><li><a href="../wheat/">Wheat</a></li><li><a href="../canola/">Canola</a></li><li><a href="../durum/">Durum</a></li><li><a href="../barley/">Barley</a></li><li><a href="../peas/">Peas</a></li><li><a href="../oats/">Oats</a></li><li><a href="../lentils/">Lentils</a></li><li><a href="../soybeans/">Soybeans</a></li><li><a href="../corn/">Corn</a></li><li><a href="../flaxseed/">Flaxseed</a></li><li><a href="../rye/">Rye</a></li><li><a href="../beans/" aria-current="page">Beans</a></li><li><a href="../canaryseed/">Canaryseed</a></li><li><a href="../chickpeas/">Chickpeas</a></li><li><a href="../mustard/">Mustard</a></li></ul></div></nav>
+<nav class="site-nav" aria-label="Dashboards"><div class="site-nav-inner"><span class="site-name">CGC grain dashboards</span><ul><li><a href="../">Overview</a></li><li><a href="../margins/">Margins</a></li><li><a href="../canola/">Canola</a></li><li><a href="../wheat/">Wheat</a></li><li><a href="../durum/">Durum</a></li><li><a href="../barley/">Barley</a></li><li><a href="../peas/">Peas</a></li><li><a href="../oats/">Oats</a></li><li><a href="../lentils/">Lentils</a></li><li><a href="../soybeans/">Soybeans</a></li><li><a href="../corn/">Corn</a></li><li><details><summary class="current">Special crops</summary><div class="menu"><a href="../flaxseed/">Flaxseed</a><a href="../rye/">Rye</a><a href="../beans/" aria-current="page">Beans</a><a href="../canaryseed/">Canaryseed</a><a href="../chickpeas/">Chickpeas</a><a href="../mustard/">Mustard</a></div></details></li><li><a href="../feed/">Feed grains</a></li></ul></div></nav>
+<script>
+(function () {
+  const menus = document.querySelectorAll(".site-nav details");
+  document.addEventListener("click", (e) => { for (const d of menus) if (!d.contains(e.target)) d.open = false; });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") for (const d of menus) if (d.open) { d.open = false; d.querySelector("summary").focus(); } });
+})();
+</script>
 <div class="wrap">
   <header>
     <div class="eyebrow">CGC Grain Statistics Weekly · Beans</div>

@@ -114,7 +114,7 @@ TODO.md              next steps
 
 **Common changes:**
 - **Add a crop page:** add an entry to `GRAINS` (and its StatCan name to `STATCAN_CROPS`) in `src/grain_data.py`,
-  then add its slug to `CROP_ORDER` (and optionally `CROP_COLORS`) in `src/build_site.py`. The overview links to it
+  then add its slug to `NAV` (top level or in the Special crops menu; optionally `CROP_COLORS`) in `src/build_site.py`. The overview links to it
   automatically.
 - **Add a new analysis page:** create `dashboard/<name>/index.html` and its data script, and add it to `NAV` in
   `src/build_site.py`.
