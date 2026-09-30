@@ -9,6 +9,13 @@ and commercial stocks. Flows are crop-year-to-date (cumulative) series; stocks a
 week-end levels.
     deliveries      producer deliveries (elevators + direct to processors + producer cars)
     process         processed at licensed facilities (Process worksheet, "Milled/Mfg Grain")
+    prov_<sk|ab|mb|bc|other>
+                    producer deliveries by province, elevators and producer cars only (CGC rarely
+                    gives a province for direct-to-processor deliveries); AB includes BC before 2017-18
+    tbay_<export|domestic|transfer>
+                    where Thunder Bay terminals send grain (CGC "Terminal Disposition"): straight to
+                    export, to Canadian domestic users, or by lake to other terminals (Bay & Lakes,
+                    St. Lawrence). Thunder Bay only receives western grain, so there is no origin issue.
     primary_deliveries / primary_shipments
                     grain delivered into and shipped out of licensed country (primary)
                     elevators, all destinations; with country stocks this shows whether
@@ -257,6 +264,16 @@ select 'process', crop_year, grain_week, sum(ktonnes) from gsw
 where grain = '{grain}' and worksheet = 'Process' and metric = 'Milled/Mfg Grain' and period = 'Crop Year'
 group by all
 union all
+select 'prov_' || case province when 'Saskatchewan' then 'sk' when 'Manitoba' then 'mb' when 'British Columbia' then 'bc'
+                                when 'Alberta' then 'ab' when 'Alberta & B.C.' then 'ab' else 'other' end,
+       crop_year, grain_week, sum(cumulative_kt)
+from producer_deliveries where grain = '{grain}' and channel <> 'process' group by all
+union all
+select 'tbay_' || case metric when 'Export Destinations' then 'export' when 'Canadian Domestic' then 'domestic' else 'transfer' end,
+       crop_year, grain_week, sum(ktonnes) from gsw
+where grain = '{grain}' and worksheet = 'Terminal Disposition' and period = 'Crop Year' and region = 'Thunder Bay'
+group by all
+union all
 select 'primary_' || lower(metric), crop_year, grain_week, sum(ktonnes) from gsw
 where grain = '{grain}' and worksheet = 'Primary' and metric in ('Deliveries', 'Shipments') and period = 'Crop Year'
 group by all
@@ -352,6 +369,22 @@ def export_grades(con, grain: str, years: list[str]) -> dict:
     return {"grades": order, "series": series}
 
 
+def tbay_close_week(con, years: list[str]) -> int | None:
+    """Usual last week of lake shipping at Thunder Bay: over the last five completed crop years, the first
+    week from week 15 when all-grain Thunder Bay shipments fall under 10% of that year's average week (median)."""
+    weeks = []
+    for y in years[-6:-1]:
+        wk = dict(con.execute(
+            """select grain_week, sum(ktonnes) from gsw where worksheet = 'Terminal Disposition'
+               and period = 'Current Week' and region = 'Thunder Bay' and crop_year = ? group by 1""", [y]
+        ).fetchall())
+        avg = sum(wk.values()) / WEEKS
+        w = next((w for w in range(15, WEEKS + 1) if w in wk and wk[w] < 0.1 * avg), None)
+        if w:
+            weeks.append(w - 1)  # the last week that still shipped
+    return sorted(weeks)[len(weeks) // 2] if weeks else None
+
+
 def stocks_sql(grain: str) -> str:
     return f"""
 select 'stocks_' || case location when 'country' then 'country' when 'process' then 'process' else 'terminals' end,
@@ -377,7 +410,7 @@ def to_series(rows, cumulative: bool, add: bool = False) -> dict:
     return out
 
 
-def build(con, slug: str) -> None:
+def build(con, slug: str, tbay_close: int | None = None) -> None:
     cfg = GRAINS[slug]
     years = [y for (y,) in con.execute("select distinct crop_year from gsw order by 1").fetchall()]
     flows = to_series(con.execute(flows_sql(cfg["grain"])).fetchall(), cumulative=True)
@@ -404,6 +437,7 @@ def build(con, slug: str) -> None:
             "latest_week": latest_week,
             "week_ending": week_ending.date().isoformat(),
             "generated": dt.date.today().isoformat(),
+            "tbay_close_week": tbay_close,
         },
         "years": years,
         "flows": flows,
@@ -426,8 +460,10 @@ def build(con, slug: str) -> None:
 
 def main() -> None:
     con = connect()
+    years = [y for (y,) in con.execute("select distinct crop_year from gsw order by 1").fetchall()]
+    close = tbay_close_week(con, years)
     for slug in sys.argv[1:] or GRAINS:
-        build(con, slug)
+        build(con, slug, close)
 
 
 if __name__ == "__main__":

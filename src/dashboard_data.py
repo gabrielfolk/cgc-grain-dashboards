@@ -92,6 +92,16 @@ def build() -> dict:
     # Crop-year totals (to date, for the current year) by province and channel.
     province, channel = delivery_splits(con, grains, total=ALL)
 
+    # All-crops deliveries by province, cumulative by week (elevators and producer cars, as in the split above)
+    province_weekly = weekly_series(con.execute(
+        f"""
+        select case province when 'Saskatchewan' then 'SK' when 'Manitoba' then 'MB' when 'British Columbia' then 'BC'
+                             when 'Alberta' then 'AB' when 'Alberta & B.C.' then 'AB' else 'Other' end,
+               crop_year, grain_week, sum(cumulative_kt)
+        from producer_deliveries where grain in ({grain_list}) and channel <> 'process' group by all
+        """
+    ).fetchall(), cumulative=True)
+
     # Exports (terminal + direct) and licensed processing per grain, cumulative, for the flash table
     use_rows = []
     for g in grains:
@@ -134,6 +144,7 @@ def build() -> dict:
         "stocks": stocks,
         "province": province,
         "channel": channel,
+        "province_weekly": province_weekly,
         "exports": uses["exports"],
         "process": uses["process"],
         "production": production,

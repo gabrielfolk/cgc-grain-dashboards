@@ -274,6 +274,12 @@
         <div class="legend" id="leg-prov"></div>
         <div class="chart" id="ch-prov" style="height:220px"></div>
       </div>
+      <div class="panel wide">
+        <div class="panel-head"><h3>Where this year's deliveries are coming from</h3><p id="provwk-p"></p></div>
+        <div class="flash-wrap" style="border:0"><table class="flash" id="provwk-table"></table></div>
+        <div class="legend" id="leg-provwk"></div>
+        <div class="chart" id="ch-provwk" style="height:220px"></div>
+      </div>
     </div>
   </section>
 
@@ -319,6 +325,11 @@
         <div class="panel-head"><h3>Weeks of cover at port terminals</h3><p>Terminal stocks, all ports, divided by the 4-week average of terminal exports</p></div>
         <div class="legend" id="leg-tcover"></div>
         <div class="chart" id="ch-tcover" style="height:260px"></div>
+      </div>
+      <div class="panel wide" id="tbay-panel">
+        <div class="panel-head"><h3>Thunder Bay shipments before freeze-up</h3><p id="tbay-p"></p></div>
+        <div class="legend" id="leg-tbay"></div>
+        <div class="chart" id="ch-tbay" style="height:260px"></div>
       </div>
       <div class="panel wide" id="grade-panel">
         <div class="panel-head"><h3>Export grade mix</h3><p id="grade-p"></p></div>
@@ -1349,6 +1360,35 @@
     });
   }
 
+  // ---------- deliveries by province, this crop year ----------
+  const PROV_KEYS = PROV.map(([k, label, color]) => ({ key: k, flow: "prov_" + k.toLowerCase(), label, color }));
+  function provStats() {
+    const w = W_NOW, tot = (y) => sumOf(PROV_KEYS.map((p) => at(flow(p.flow, y), w) || 0));
+    const totNow = tot(cur), tot5 = ref.map(tot);
+    return PROV_KEYS.map((p) => {
+      const c = flow(p.flow, cur), now = at(c, w) || 0;
+      const avg = mean(ref.map((r) => at(flow(p.flow, r), w) || 0));
+      return {
+        ...p, now, avg, vs5: pct(now, avg), wk: wkOf(c, w), a4: mean(diff(c).slice(Math.max(0, w - 4), w)),
+        share: totNow > 0 ? now / totNow : null, share5: mean(ref.map((r, i) => tot5[i] > 0 ? (at(flow(p.flow, r), w) || 0) / tot5[i] : null)),
+      };
+    }).filter((r) => r.avg > 0 || r.now > 0);
+  }
+  function renderProvWeek() {
+    const rows = provStats();
+    $("provwk-p").textContent = `Elevator and producer-car deliveries by province to week ${W_NOW}, against the same week of ${short(ref[0])} to ${short(lastYr)}. Direct-to-processor deliveries rarely have a province, so they are left out.`;
+    const pct1 = (v) => v == null ? "–" : (100 * v).toFixed(1) + "%";
+    buildTable($("provwk-table"), ["Province", `Wk ${W_NOW}`, "4-wk avg", "CYTD", "5-yr CYTD", "vs 5-yr", "Share", "5-yr share"],
+      [[null, rows.map((r) => ({ label: r.label, cells: [n1(r.wk), n1(r.a4), n1(r.now), n1(r.avg), fmtPct(r.vs5), pct1(r.share), pct1(r.share5)] }))]], [3, 6]);
+    legend($("leg-provwk"), [...rows.map((r) => ({ label: r.label, color: r.color, kind: "rect" })), { label: "5-yr average, all provinces", color: "var(--avg)" }]);
+    const totWk = (y) => diff(sumArr(PROV_KEYS.map((p) => flow(p.flow, y))));
+    weekChart($("ch-provwk"), {
+      aria: `${NAME} weekly deliveries by province, ${short(cur)}`,
+      stack: rows.map((r) => ({ label: r.label, color: r.color, values: upTo(diff(flow(r.flow, cur)), W_NOW) })),
+      series: [{ label: "5-yr average", color: "var(--avg)", values: stat(ref.map(totWk)).avg, width: 1.5 }],
+    });
+  }
+
   // ---------- country elevators ----------
   const netBuild = (y) => { const d = series.pdel(y), sh = series.pship(y); return d.map((v, i) => v == null || sh[i] == null ? null : v - sh[i]); };
   // stocks over the 4-week average of weekly outflow; left blank when the outflow is under a quarter of
@@ -1459,6 +1499,23 @@
     return GR.grades.map((g) => ({ g, now: now.pct[g], avg: mean(prior.map((m) => m.pct[g])), tot: now.tot }));
   }
 
+  // Thunder Bay: everything shipped out (lake transfers east, domestic, direct export), cumulative
+  const TBAY = [
+    { key: "tbay_transfer", label: "By lake to eastern terminals", color: "var(--process)" },
+    { key: "tbay_domestic", label: "Canadian domestic", color: "var(--feed)" },
+    { key: "tbay_export", label: "Direct export", color: "var(--exports)" },
+  ];
+  const tbayOut = (y) => sumArr(TBAY.map((t) => flow(t.key, y)));
+  const hasTbay = () => (mean(ref.map((r) => finalOf(tbayOut(r)))) || 0) >= 30;
+  // usual last week of lake shipping, worked out from all grains in src/grain_data.py
+  const tbayClose = () => META.tbay_close_week ?? null;
+  function tbayStats() {
+    const now = at(tbayOut(cur), W_NOW), avg = mean(ref.map((r) => at(tbayOut(r), W_NOW)));
+    const close = tbayClose();
+    return { now, avg, vs5: pct(now, avg), close, left: close && W_NOW < close ? close - W_NOW : null,
+      split: TBAY.map((t) => ({ ...t, now: at(flow(t.key, cur), W_NOW) || 0 })) };
+  }
+
   function renderPorts() {
     const show = hasTerminal();
     $("port-section").hidden = !show;
@@ -1515,6 +1572,24 @@
         { label: short(cur), color: "var(--process)", values: upTo(termCover(cur), W_NOW), dot: true, em: true },
       ],
     });
+
+    $("tbay-panel").hidden = !hasTbay();
+    if (hasTbay()) {
+      const T = tbayStats();
+      $("tbay-p").textContent = `Thousand tonnes shipped out of Thunder Bay terminals since Aug 1, by where it went. Lake shipping usually stops after week ${T.close ?? "–"} (~${T.close ? weekDate(cur, T.close) : "–"}) and restarts in spring, so what moves before freeze-up sets eastern supply for the winter.` +
+        (T.left != null ? ` ${T.left} weeks of the usual season are left.` : "");
+      const band = stat(ref.map(tbayOut));
+      legend($("leg-tbay"), [...TBAY.map((t) => ({ label: t.label, color: t.color, kind: "rect" })), { label: "5-yr average, total", color: "var(--avg)" }, { label: "5-yr range", kind: "band" }]);
+      weekChart($("ch-tbay"), {
+        aria: `${NAME} Thunder Bay shipments by destination, ${short(cur)}`,
+        band: { lo: band.lo, hi: band.hi, label: "5-yr range" },
+        stack: TBAY.map((t) => ({ label: t.label, color: t.color, values: upTo(flow(t.key, cur), W_NOW) })),
+        series: [
+          { label: "5-yr average", color: "var(--avg)", values: band.avg, width: 1.5 },
+          { label: short(lastYr) + " total", values: tbayOut(lastYr), hidden: true },
+        ],
+      });
+    }
 
     $("grade-panel").hidden = !GR;
     if (GR) {
@@ -1610,6 +1685,27 @@
         const d = P.pac.now - P.pac.avg;
         add(Math.abs(d) * 3, "Export routes", d > 0 ? "More is going west than usual" : "More is going east than usual",
           `Pacific ports have handled ${pc(P.pac.now)} of terminal exports so far, against ${pc(P.pac.avg)} at this week over the last five years.`);
+      }
+    }
+
+    // province driving (or dragging) the pace
+    const PR = provStats().filter((r) => r.share5 >= 0.1 && r.avg >= 20);
+    const totVs = pct(sumOf(PR.map((r) => r.now)), sumOf(PR.map((r) => r.avg)));
+    const outlier = PR.map((r) => ({ ...r, gap: (r.vs5 ?? 0) - (totVs ?? 0) })).sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap))[0];
+    if (outlier && totVs != null && Math.abs(outlier.vs5) >= 0.2 && Math.abs(outlier.gap) >= 0.15) {
+      const others = PR.filter((r) => r !== outlier && r.key !== outlier.key).map((r) => `${r.label} ${fmtPct(r.vs5)}`).join(", ");
+      add(Math.abs(outlier.gap) * 1.5, "Provinces",
+        `${outlier.label} is ${outlier.vs5 > 0 ? "driving" : "dragging on"} the pace`,
+        `${outlier.label} elevator deliveries are ${fmtPct(outlier.vs5)} against the 5-yr average at week ${W_NOW} (${others}). ${outlier.label} is ${pc(outlier.share)} of deliveries so far, against ${pc(outlier.share5)} normally.`);
+    }
+
+    // Thunder Bay ahead of freeze-up
+    if (hasTbay()) {
+      const T = tbayStats();
+      if (T.vs5 != null && Math.abs(T.vs5) >= 0.2 && T.avg >= 20 && T.left != null) {
+        add(Math.abs(T.vs5) * 1.5, "Thunder Bay",
+          `Lakehead shipments ${absPct(T.vs5)} ${T.vs5 > 0 ? "ahead of" : "behind"} pace before freeze-up`,
+          `${fmtKt(T.now)} has left Thunder Bay since Aug 1, against ${fmtKt(T.avg)} on average by week ${W_NOW}, with about ${T.left} weeks of the usual lake season left. ${T.split[0].label}: ${fmtKt(T.split[0].now)}.`);
       }
     }
 
@@ -1870,6 +1966,7 @@
     li("Producer deliveries cover licensed elevators, direct deliveries to processors and producer cars. Grain fed on farms or sold directly to feedlots is not tracked by CGC.");
     li("Weekly values are week-over-week changes in CGC's crop-year totals, so revisions are included. Weeks 21–22 are one combined holiday report.");
     li("Port terminal receipts are unloads at licensed terminals, mostly by rail. Pacific receipts minus exports does not reconcile exactly with Pacific terminal stocks (the gap drifts by up to about 5% of a year's exports), so read it against its own 5-year range rather than as a stock level. Thunder Bay and St. Lawrence are left out of that gap because grain moved on from Thunder Bay is received again downstream. Export grades are CGC's terminal export grades, Western grain only; grades CGC now reports as OTHER are grouped for every year.");
+    li("Thunder Bay shipments are CGC's terminal disposition figures for Thunder Bay: grain sent by lake to other terminals, to Canadian domestic users, or straight to export. The usual last shipping week is the median over the last five crop years of the week before all-grain Thunder Bay shipments drop under 10% of their average.");
     li("Things to watch is generated from the data: each measure is compared with its 5-year average at the same week, and the ones furthest from normal are shown. Early in the crop year, small volumes can make changes look large.");
     li("Country elevator deliveries and shipments are CGC's primary elevator figures: grain delivered into licensed country elevators and shipped out to every destination (port terminals, processors, domestic users and containers). Net build is deliveries minus shipments; grade transfers and shrink mean it will not match the change in stocks exactly.");
     const gen = document.createElement("li");
@@ -1882,12 +1979,13 @@
   renderPace();
   setMode(state.mode);
   renderFarm();
+  renderProvWeek();
   renderElev();
   renderPorts();
   renderWatch();
   renderHistory();
 
-  const rerender = () => { renderYear(); renderFarm(); renderElev(); renderPorts(); renderHistory(); if (FORECAST) renderForecast(FORECAST); };
+  const rerender = () => { renderYear(); renderFarm(); renderProvWeek(); renderElev(); renderPorts(); renderHistory(); if (FORECAST) renderForecast(FORECAST); };
   let rt;
   new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(rerender, 120); }).observe(document.querySelector(".wrap"));
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerender);
