@@ -11,6 +11,16 @@
 - [ ] **Automate the weekly refresh.** CGC publishes on Thursdays. Add a scheduled GitHub Action that runs the refresh
   scripts and `src/build_site.py`, then commits `docs/`. The site updates on push. Pushing workflow files first
   needs the `workflow` token scope: run `gh auth refresh -s workflow`.
+- [ ] **Add a render check to the refresh.** Load every page in headless Chrome after `src/build_site.py` and fail
+  if a page errors or a section comes up empty (the "Things to watch" cards, charts, flash tables). Run it in the
+  scheduled refresh so unattended updates can't publish a broken page.
+- [ ] **Check the site at phone width.** The province and Thunder Bay tables, the "Things to watch" cards and the
+  Special Crops menu have only been checked at desktop widths.
+- [ ] **Share the chart code between pages.** The overview, margins and crop template each carry their own copy of
+  the chart helpers; move them into one shared script if more pages are added.
+- [ ] **Find a rail data source.** CGC's weekly CSVs have no current rail or in-transit data (Western Rail stops in
+  2013-14, In-Transit partway through 2024-25). Candidates: the railways' weekly performance reports or the Grain
+  Monitoring Program.
 - [ ] **Re-test the canola forecast with real prices.** Get ICE canola futures and canola oil and meal prices
   (for example from Barchart), then re-test the price features in `src/canola_forecast.py`. The free soybean-complex
   proxies made forecasts worse.
