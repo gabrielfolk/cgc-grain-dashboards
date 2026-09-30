@@ -69,6 +69,10 @@ HEAD = """<!doctype html>
   img { max-width: 100%; }
   [hidden] { display: none !important; }
 
+  /* titles in title case: page, section and chart titles, the reading guide and the notes heading
+     (generated card headlines such as Things To Watch cards are sentences and stay as written) */
+  h1, h2, .panel-head h3, .notes > h3, .explain summary { text-transform: capitalize; }
+
   /* site navigation: sticks to the top, full width, uses each page's own theme tokens */
   .site-nav {
     position: sticky; top: 0; z-index: 5;

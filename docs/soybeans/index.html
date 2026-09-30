@@ -10,6 +10,10 @@
   img { max-width: 100%; }
   [hidden] { display: none !important; }
 
+  /* titles in title case: page, section and chart titles, the reading guide and the notes heading
+     (generated card headlines such as Things To Watch cards are sentences and stay as written) */
+  h1, h2, .panel-head h3, .notes > h3, .explain summary { text-transform: capitalize; }
+
   /* site navigation: sticks to the top, full width, uses each page's own theme tokens */
   .site-nav {
     position: sticky; top: 0; z-index: 5;
@@ -400,7 +404,7 @@
         <div class="chart" id="ch-tcover" style="height:260px"></div>
       </div>
       <div class="panel wide" id="tbay-panel">
-        <div class="panel-head"><h3>Thunder Bay shipments before freeze-up</h3><p id="tbay-p"></p></div>
+        <div class="panel-head"><h3>Thunder Bay shipments before freeze-Up</h3><p id="tbay-p"></p></div>
         <div class="legend" id="leg-tbay"></div>
         <div class="chart" id="ch-tbay" style="height:260px"></div>
       </div>
@@ -460,7 +464,7 @@
         <div class="chart" id="ch-stkall" style="height:280px"></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><h3>Crop-year ending stocks</h3><p>Thousand tonnes in commercial storage on Jul 31, by location. The label is ending stocks as a share of that year's <span id="use-words"></span>.</p></div>
+        <div class="panel-head"><h3>Crop-Year ending stocks</h3><p>Thousand tonnes in commercial storage on Jul 31, by location. The label is ending stocks as a share of that year's <span id="use-words"></span>.</p></div>
         <div class="legend" id="leg-end"></div>
         <div class="chart" id="ch-end" style="height:280px"></div>
       </div>
@@ -1708,7 +1712,7 @@
       if (Math.abs(dev) >= 0.12 || Math.abs(cov) >= 0.25) {
         let text = `Elevators have shipped ${pc(E.rNow)} of what farmers delivered since Aug 1, against a 5-yr average of ${pc(E.r5)} at this week. Stocks are ${E.bNow < 0 ? "down" : "up"} ${fmtKt(Math.abs(E.bNow))}, when they normally ${E.b5 >= 0 ? "build" : "draw down"} about ${fmtKt(Math.abs(E.b5))} by now` +
           (Math.abs(cov) >= 0.05 ? `, and weeks of cover are ${absPct(cov)} ${cov < 0 ? "below" : "above"} average.` : ".");
-        if (dev > 0 && sz && sz.sized < -0.03) text += ` That fits the Farmer selling tiles, which show deliveries ${absPct(sz.sized)} behind the usual share of the crop.`;
+        if (dev > 0 && sz && sz.sized < -0.03) text += ` That fits the Farmer Selling tiles, which show deliveries ${absPct(sz.sized)} behind the usual share of the crop.`;
         if (dev < 0) text += sz && sz.sized > 0.03 ? ` Farmers are also selling ${absPct(sz.sized)} ahead of the usual share, adding to the build.` : " Shipments not keeping up usually points to rail or port congestion and weaker basis.";
         const title = dev > 0
           ? (E.rNow > 1 ? "Rail is moving grain faster than farmers are bringing it in" : "Elevators are shipping out more of what comes in than usual")

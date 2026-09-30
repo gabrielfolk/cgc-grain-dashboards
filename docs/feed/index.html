@@ -10,6 +10,10 @@
   img { max-width: 100%; }
   [hidden] { display: none !important; }
 
+  /* titles in title case: page, section and chart titles, the reading guide and the notes heading
+     (generated card headlines such as Things To Watch cards are sentences and stay as written) */
+  h1, h2, .panel-head h3, .notes > h3, .explain summary { text-transform: capitalize; }
+
   /* site navigation: sticks to the top, full width, uses each page's own theme tokens */
   .site-nav {
     position: sticky; top: 0; z-index: 5;
@@ -297,7 +301,7 @@
         <div class="flash-wrap" style="border:0"><table class="flash" id="acc-table"></table></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><h3>Estimate vs last crop year</h3><p>Thousand tonnes fed, by grain</p></div>
+        <div class="panel-head"><h3>Estimate versus last crop year</h3><p>Thousand tonnes fed, by grain</p></div>
         <div class="legend" id="leg-estbar"></div>
         <div class="chart" id="ch-estbar"></div>
       </div>
@@ -322,7 +326,7 @@
         <p class="flash-note" id="corn-note"></p>
       </div>
       <div class="panel wide">
-        <div class="panel-head"><h3>Energy-adjusted feed prices</h3><p>C$ per tonne of barley-equivalent, monthly. Alberta farm prices (StatCan); US corn = CBOT + basis and freight, converted at the monthly USD/CAD.</p></div>
+        <div class="panel-head"><h3>Energy-Adjusted feed prices</h3><p>C$ per tonne of barley-equivalent, monthly. Alberta farm prices (StatCan); US corn = CBOT + basis and freight, converted at the monthly USD/CAD.</p></div>
         <div class="legend" id="leg-eprice"></div>
         <div class="chart" id="ch-eprice" style="height:300px"></div>
       </div>
@@ -358,7 +362,7 @@
         <div class="chart" id="ch-fedshare" style="height:240px"></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><h3>Feed-grade share of elevator deliveries</h3><p>CGC domestic feed grain deliveries as a percent of all primary elevator deliveries, by crop year</p></div>
+        <div class="panel-head"><h3>Feed-Grade share of elevator deliveries</h3><p>CGC domestic feed grain deliveries as a percent of all primary elevator deliveries, by crop year</p></div>
         <div class="legend" id="leg-quality"></div>
         <div class="chart" id="ch-quality" style="height:240px"></div>
       </div>
