@@ -18,9 +18,11 @@
   Special Crops menu have only been checked at desktop widths.
 - [ ] **Share the chart code between pages.** The overview, margins and crop template each carry their own copy of
   the chart helpers; move them into one shared script if more pages are added.
-- [ ] **Find a rail data source.** CGC's weekly CSVs have no current rail or in-transit data (Western Rail stops in
-  2013-14, In-Transit partway through 2024-25). Candidates: the railways' weekly performance reports or the Grain
-  Monitoring Program.
+- [ ] **Ports & Logistics dashboard (deferred).** Sources: Quorum's weekly Grain Monitoring Program PDF (Vancouver and
+  Prince Rupert vessel lineup, arrivals, clearances, inbound; rail car unloads by port; out-of-car time; terminal
+  capacity used), Quorum's monthly data tables (vessel time in port, rail volumes, car cycles and transit times since
+  2013-14), and USDA's Gulf and PNW vessel lineups for US context. Check Quorum's terms before republishing. Only the
+  current crop year's weekly PDFs stay online, so start archiving them early if weekly history is wanted.
 - [ ] **Re-test the canola forecast with real prices.** Get ICE canola futures and canola oil and meal prices
   (for example from Barchart), then re-test the price features in `src/canola_forecast.py`. The free soybean-complex
   proxies made forecasts worse.
