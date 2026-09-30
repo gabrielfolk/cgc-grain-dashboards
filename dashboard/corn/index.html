@@ -277,8 +277,6 @@
       <div class="panel wide">
         <div class="panel-head"><h3>Where this year's deliveries are coming from</h3><p id="provwk-p"></p></div>
         <div class="flash-wrap" style="border:0"><table class="flash" id="provwk-table"></table></div>
-        <div class="legend" id="leg-provwk"></div>
-        <div class="chart" id="ch-provwk" style="height:220px"></div>
       </div>
     </div>
   </section>
@@ -1380,13 +1378,6 @@
     const pct1 = (v) => v == null ? "–" : (100 * v).toFixed(1) + "%";
     buildTable($("provwk-table"), ["Province", `Wk ${W_NOW}`, "4-wk avg", "CYTD", "5-yr CYTD", "vs 5-yr", "Share", "5-yr share"],
       [[null, rows.map((r) => ({ label: r.label, cells: [n1(r.wk), n1(r.a4), n1(r.now), n1(r.avg), fmtPct(r.vs5), pct1(r.share), pct1(r.share5)] }))]], [3, 6]);
-    legend($("leg-provwk"), [...rows.map((r) => ({ label: r.label, color: r.color, kind: "rect" })), { label: "5-yr average, all provinces", color: "var(--avg)" }]);
-    const totWk = (y) => diff(sumArr(PROV_KEYS.map((p) => flow(p.flow, y))));
-    weekChart($("ch-provwk"), {
-      aria: `${NAME} weekly deliveries by province, ${short(cur)}`,
-      stack: rows.map((r) => ({ label: r.label, color: r.color, values: upTo(diff(flow(r.flow, cur)), W_NOW) })),
-      series: [{ label: "5-yr average", color: "var(--avg)", values: stat(ref.map(totWk)).avg, width: 1.5 }],
-    });
   }
 
   // ---------- country elevators ----------

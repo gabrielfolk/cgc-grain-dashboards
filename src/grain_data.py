@@ -116,7 +116,7 @@ GRAINS = {
     },
     "durum": {
         "grain": "Amber Durum", "title": "Durum Pipeline", "name": "durum",
-        "lede": "Western Canadian amber durum from CGC weekly data: producer deliveries, exports by port (Pacific, Thunder Bay, St. Lawrence) and direct to the US, terminal receipts and commercial stocks.",
+        "lede": "Western Canadian amber durum from CGC weekly data: producer deliveries, exports by port (Pacific, Thunder Bay, St. Lawrence) and direct from country elevators, terminal receipts and commercial stocks.",
         "process": None, "feed": False, "hero": "exports",
         "notes": ["CGC reports almost no durum processing at licensed facilities (and none before 2018-19), so this page leaves processing out."],
     },

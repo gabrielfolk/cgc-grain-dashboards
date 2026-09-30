@@ -501,8 +501,6 @@
       <div class="panel wide">
         <div class="panel-head"><h3>Where this year's deliveries are coming from</h3><p id="provwk-p"></p></div>
         <div class="flash-wrap" style="border:0"><table class="flash" id="provwk-table"></table></div>
-        <div class="legend" id="leg-provwk"></div>
-        <div class="chart" id="ch-provwk" style="height:220px"></div>
       </div>
       <div class="table-wrap wide" id="hist-table" hidden></div>
     </div>
@@ -1374,12 +1372,14 @@
     // 2. fastest and 3. slowest, relative to crop size, among crops over 1 Mt
     const major = rows.filter((r) => r.prod >= 1000);
     const ahead = major.filter((r) => r.sized > 0.03);
-    const c2 = card("Selling fastest for the crop size, crops over 1 Mt",
-      ahead.length ? `${listJoin(ahead.slice(0, 2).map((r) => r.g))} ${ahead.length > 1 ? "are" : "is"} ahead of the usual pace` : "No major crop is ahead of its usual pace");
-    list(c2, major.slice(0, 3).map((r) => ({ label: `${r.g}: ${pctTxt(r.share, 1)} delivered (normally ${pctTxt(r.normal, 1)})`, value: r.sized })));
+    // only when a major crop is actually ahead; near-normal crops are covered by the crop-size card below
+    if (ahead.length) {
+      const c2 = card("Selling fastest for the crop size, crops over 1 Mt", `${listJoin(ahead.slice(0, 2).map((r) => r.g))} ${ahead.length > 1 ? "are" : "is"} ahead of the usual pace`);
+      list(c2, ahead.slice(0, 3).map((r) => ({ label: `${r.g}: ${pctTxt(r.share, 1)} delivered (normally ${pctTxt(r.normal, 1)})`, value: r.sized })));
+    }
     const slow = major.slice(-3).reverse();
     const c3 = card("Holding back most, crops over 1 Mt", `${listJoin(slow.slice(0, 2).map((r) => r.g))} are furthest behind`);
-    list(c3, slow.map((r) => ({ label: `${r.g}: ${pctTxt(r.share, 1)} delivered (normally ${pctTxt(r.normal, 1)})`, value: r.sized })));
+    list(c3, slow.map((r) => ({ label: `${r.g}: ${pctTxt(r.share, 1)} delivered (normally ${pctTxt(r.normal, 1)}), crop ${fmtPct(r.size)}`, value: r.sized })));
     const late = slow.filter((r) => ["Soybeans", "Corn"].includes(r.g)).map((r) => r.g.toLowerCase());
     if (late.length && W_NOW < 13) para(c3, `${listJoin(late).replace(/^./, (x) => x.toUpperCase())} ${late.length > 1 ? "are" : "is"} harvested later, so early gaps can close quickly.`);
 
@@ -1391,7 +1391,8 @@
       list(c4, sizeDriven.slice(0, 3).map((r) => ({ label: `${r.g}: deliveries ${fmtPct(r.raw)}, crop ${fmtPct(r.size)}`, value: r.sized, suffix: " sized" })));
       para(c4, "Measured against the crop, these are selling at close to their usual pace.");
     }
-    if (held.length) {
+    // skip when the holding-back card above already shows the same crop
+    if (held.length && !slow.some((x) => x.g === held[0].g)) {
       const r = held[0];
       const c5 = card("Big crop, slow selling", `${r.g}: crop ${fmtPct(r.size)}, deliveries ${fmtPct(r.raw)}`);
       big(c5, pctTxt(r.share, 1), `delivered vs ${pctTxt(r.normal, 1)} normally`);
@@ -1624,13 +1625,6 @@
         totNow > 0 ? (100 * now / totNow).toFixed(1) + "%" : "–", share5 != null ? (100 * share5).toFixed(1) + "%" : "–"]
         .forEach((v, i) => { const td = tr.insertCell(); td.textContent = v; if (v.startsWith("−")) td.className = "neg"; if (i === 3 || i === 6) td.classList.add("sep"); });
     }
-    legend($("leg-provwk"), [...keys.map(([, label, color]) => ({ label, color, kind: "rect" })), { label: "5-yr average, all provinces", color: "--avg" }]);
-    const totWk = (y) => { const cumTot = new Array(WEEKS).fill(null).map((_, i) => keys.every(([k]) => series(k, y)[i] == null) ? null : sumOf(keys.map(([k]) => series(k, y)[i] || 0))); return diff(cumTot); };
-    weekChart($("ch-provwk"), {
-      aria: `All crops weekly deliveries by province, ${short(cur)}`,
-      stack: keys.map(([k, label, color]) => ({ label, color: css(color), values: upTo(diff(series(k, cur)), W_NOW) })),
-      series: [{ label: "5-yr average", color: css("--avg"), values: stat(ref.map(totWk)).avg, width: 1.5 }],
-    });
   }
 
   // ---------- things to watch across crops (handling, exports, stocks) ----------
