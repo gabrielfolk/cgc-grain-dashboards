@@ -386,7 +386,7 @@
       <div>
         <div class="eyebrow" id="port-eyebrow"></div>
         <h2 id="port-h">Port terminals</h2>
-        <p class="sub">Rail unloads at port against vessel loadings, how many weeks of exports terminal stocks cover, and which grades are being shipped.</p>
+        <p class="sub">Rail unloads at port against vessel loadings, how many weeks of exports terminal stocks cover, Thunder Bay shipments before the lakes freeze, and which grades are being shipped.</p>
       </div>
     </div>
     <div class="summary" id="port-tiles"></div>
@@ -1176,7 +1176,7 @@
       ? `${META.process.label} has overtaken exports since ${short(flip)}`
       : USES.length > 1 ? `Exports take ${Math.round(100 * avgExp)}% of tracked use on average` : "Exports by crop year";
     $("use-p").textContent = USES.length > 1
-      ? `Thousand tonnes in each completed crop year (${useWords}), with producer deliveries marked. The label is ${HERO.label.toLowerCase()}'s share of the total.`
+      ? `Thousand tonnes in each completed crop year (${useWords}), with producer deliveries marked. The label is the share that goes to ${HERO.label.toLowerCase()}.`
       : "Thousand tonnes exported in each completed crop year, with producer deliveries marked.";
     $("use-words").textContent = useWords;
 
@@ -2027,16 +2027,18 @@
       others.forEach(([t, u], i) => src.append(link(t, u), i < others.length - 1 ? ", " : "."));
     }
     for (const n of META.notes || []) li(n);
-    li("Exports are shipments from licensed port terminals, plus shipments from country elevators that go straight to export or to container loaders. Before 2018-19 CGC reports Vancouver and Prince Rupert together as Pacific.");
+    li("Producer deliveries cover licensed elevators, direct deliveries to processors and producer cars. Grain fed on farms or sold directly to feedlots is not tracked by CGC. The province tables cover elevator and producer-car deliveries only, because CGC rarely gives a province for deliveries straight to processors.");
+    li("Exports are shipments from licensed port terminals, plus shipments from country elevators that go straight to export or to container loaders." + (hasTerminal() ? " Before 2018-19 CGC reports Vancouver and Prince Rupert together as Pacific." : ""));
     if (META.feed) li("Domestic feed is CGC's domestic feed grain table: shipments of feed grain from primary elevators. It is a subset of the all-grains figures, so the feed grain farmers deliver to elevators is already in producer deliveries. CGC notes that the licensed elevator system handles only about 10–15% of feed grain use; most is fed on farms or sold farm-to-farm and farm-to-feedlot.");
     li(`Commercial stocks cover licensed country elevators, ${(META.process ? META.process.site : "processors").toLowerCase()} and port terminals. Grain stored on farms is not included. Ending stocks are the Jul 31 figure.`);
     if (hasEastern()) li(`Western Canadian ${NAME.toLowerCase()} only: exports, terminal receipts and terminal stocks leave out grain graded Canada Eastern (CE grades, grown in Ontario and Quebec and handled at eastern terminals). Eastern exports are shown as a memo line in the weekly flash; add them back to match CGC's all-Canada totals.`);
-    li("Producer deliveries cover licensed elevators, direct deliveries to processors and producer cars. Grain fed on farms or sold directly to feedlots is not tracked by CGC.");
     li("Weekly values are week-over-week changes in CGC's crop-year totals, so revisions are included. Weeks 21–22 are one combined holiday report.");
-    li("Port terminal receipts are unloads at licensed terminals, mostly by rail. Pacific receipts minus exports does not reconcile exactly with Pacific terminal stocks (the gap drifts by up to about 5% of a year's exports), so read it against its own 5-year range rather than as a stock level. Thunder Bay and St. Lawrence are left out of that gap because grain moved on from Thunder Bay is received again downstream. Export grades are CGC's terminal export grades, Western grain only; grades CGC now reports as OTHER are grouped for every year.");
-    li("Thunder Bay shipments are CGC's terminal disposition figures for Thunder Bay: grain sent by lake to other terminals, to Canadian domestic users, or straight to export. The usual last shipping week is the median over the last five crop years of the week before all-grain Thunder Bay shipments drop under 10% of their average.");
-    li("Things to watch is generated from the data: each measure is compared with its 5-year average at the same week, and the ones furthest from normal are shown. Early in the crop year, small volumes can make changes look large.");
     li("Country elevator deliveries and shipments are CGC's primary elevator figures: grain delivered into licensed country elevators and shipped out to every destination (port terminals, processors, domestic users and containers). Net build is deliveries minus shipments; grade transfers and shrink mean it will not match the change in stocks exactly.");
+    if (hasPacific()) li("Port terminal receipts are unloads at licensed terminals, mostly by rail. Pacific receipts minus exports does not reconcile exactly with Pacific terminal stocks (the gap drifts by up to about 5% of a year's exports), so read it against its own 5-year range rather than as a stock level. Thunder Bay and St. Lawrence are left out of that gap because grain moved on from Thunder Bay is received again downstream.");
+    if (hasTerminal()) li("Weeks of cover at port is terminal stocks at all ports divided by the 4-week average of terminal exports. Weeks when exports stall below a quarter of the year's average pace (holidays, freeze-up) are left blank.");
+    if (hasTbay()) li("Thunder Bay shipments are CGC's terminal disposition figures for Thunder Bay: grain sent by lake to other terminals, to Canadian domestic users, or straight to export. The usual last shipping week is the median over the last five crop years of the week before all-grain Thunder Bay shipments drop under 10% of their average.");
+    if (GR) li("Export grades are CGC's terminal export grades, Western grain only. CGC spells grades differently across years, so they are matched on letters and digits; grades it now reports only as OTHER are grouped in Other grades for every year.");
+    li("Things to watch is generated from the data each week: each measure is compared with its 5-year average at the same week, and the ones furthest from normal are shown. Early in the crop year, small volumes can make changes look large.");
     const gen = document.createElement("li");
     gen.id = "gen";
     ul.appendChild(gen);

@@ -270,7 +270,7 @@
         <li>"Sized to the crop" divides deliveries by StatCan's latest western production estimate. For the current crop year that estimate is still in-season, so the share moves when StatCan revises the crop, not only when farmers deliver.</li>
         <li>The full-year pace projection is simple arithmetic: deliveries so far divided by the share that usually arrives by this week. It assumes a normal seasonal pattern and is not a forecast. Canola's page has a separate, backtested forecast.</li>
         <li>Weekly numbers are the change in CGC's crop-year totals, which CGC revises. A single week can be lumpy or even negative after a revision; weeks 21 and 22 are one combined holiday report.</li>
-        <li>Each crop's page adds exports by port, processing, stocks, country elevator throughput and the full history.</li>
+        <li>Each crop's page adds its own Things To Watch, exports by port, processing, country elevator throughput, port terminals, Thunder Bay, export grades and the full history.</li>
       </ul>
     </details>
   </header>
@@ -280,7 +280,7 @@
       <div>
         <div class="eyebrow" id="ins-eyebrow">All crops</div>
         <h2 id="ins-h">What farmers are doing</h2>
-        <p class="sub">Delivery pace sized to StatCan's western production estimates, plus the structural picture.</p>
+        <p class="sub">How fast farmers are selling each crop against its size, how much of each crop reaches the licensed system, and the mix of crops they deliver.</p>
       </div>
     </div>
     <div class="insights" id="insights"></div>
@@ -345,7 +345,7 @@
   <section aria-labelledby="heat-h">
     <div class="section-head">
       <div>
-        <h2 id="heat-h">Thirteen crop years at a glance</h2>
+        <h2 id="heat-h">Every completed crop year at a glance</h2>
         <p class="sub" id="heat-sub"></p>
       </div>
       <div class="controls" style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center">
@@ -439,6 +439,7 @@
       <li>Figures cover Western Canadian grain. Wheat and corn graded Canada Eastern (CE grades, grown in Ontario and Quebec) are left out of exports and terminal stocks, so totals are lower than CGC's all-Canada figures. Soybean grades, and corn grades other than CE, do not record origin, so soybean and corn exports and stocks at eastern terminals include grain grown outside Western Canada.</li>
       <li>The 5-year average and range use the five crop years before this one, compared week for week.</li>
       <li>Crop sizes are StatCan's production estimates for Manitoba, Saskatchewan, Alberta and British Columbia (table 32-10-0359), the region CGC's weekly data covers. The current year uses StatCan's latest in-season estimate, which will be revised. Wheat excludes durum.</li>
+      <li>Things to watch across crops reads each crop page's data and lists the crops furthest from their own 5-year average at the same week: country elevator shipments per tonne delivered, exports, commercial stocks, weeks of cover at port and Thunder Bay shipments. It is generated from the data each week. Small crops are left out of each list, and soybean and corn exports are tagged because they include eastern-grown grain.</li>
       <li>The full-year projection scales deliveries so far by the share of the year's deliveries that usually arrive by this week (5-year average). It is a simple pace estimate, not a forecast.</li>
       <li id="gen"></li>
     </ul>
