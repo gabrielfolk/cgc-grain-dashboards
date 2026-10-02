@@ -1,21 +1,35 @@
-"""Build dashboard/feed/data.json: Western Canadian feed grain use, supply, quality, livestock and prices.
+"""Build dashboard/feed/data.json: Canadian feed grain use, supply, quality, livestock and prices,
+with a West (MB, SK, AB, BC) and East (Ontario + Quebec) breakdown.
 
 Run after src/ingest.py:
     python src/feed_data.py
 
 Feed use (StatCan "animal feed, waste and dockage") is estimated by StatCan as a residual of
 its supply and disposition balance. It is published three times per crop year, cumulative:
-December (Aug-Dec), March (Aug-Mar) and July (full crop year).
+December (Aug-Dec), March (Aug-Mar) and July (full crop year; corn: August, Sep-Aug).
 
-The page's estimate for the current crop year:
-    total   = average total feed use of the last five crop years
-    shares  = split across barley, wheat, durum, oats and imported corn by a model fitted on
-              past crop years: log(share_i / share_barley) = crop constant
+StatCan publishes feed use for Canada only, so the regional split is estimated:
+    barley, wheat, durum, oats  each region's on-farm feed (32-10-0015, published by region)
+                                plus a share of the rest of Canada's feed use (fed off the farm
+                                that grew it) in proportion to the region's production
+    corn                        West = domestic use in "other provinces" (32-10-0014) less seed
+                                and the Atlantic crop; Atlantic = its own crop; East = the rest
+                                of Canada's corn feed. Corn for industry (ethanol, starch) is
+                                almost all in Ontario and Quebec.
+The regions add up to StatCan's Canada total.
+
+The page's estimate for the current crop year (Canada):
+    total   = average total feed use (barley, wheat, durum, oats, western corn) of the last five crop years
+    shares  = split across those grains by a model fitted on past crop years:
+              log(share_i / share_barley) = crop constant
                   + a * log(availability ratio) + b * log(energy-adjusted price ratio)
     estimate for each grain = 50% model + 50% its own five-year average
-Backtested year by year on earlier years only (like the canola forecast), the 50/50 blend
-beat the five-year average, last year's use, and the model alone; scaling the total by
-the livestock demand index made it worse, so the index is shown as context only.
+    eastern corn (Ontario, Quebec, Atlantic) = its five-year average: it is fed from the local
+              crop and doesn't trade off against western barley on price, so it stays out of the model
+    regions = each small grain's estimate x the region's average share of it over the same five years
+Backtested year by year on earlier years only (like the canola forecast), against the
+five-year average and last year's use; scaling the total by the livestock demand index made
+it worse, so the index is shown as context only.
 """
 
 from __future__ import annotations
@@ -34,13 +48,20 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_PATH = ROOT / "dashboard" / "feed" / "data.json"
 WEEKS = 52
 WEST = ["Manitoba", "Saskatchewan", "Alberta", "British Columbia"]
+EAST = ["Ontario", "Quebec"]
+ATLANTIC = ["New Brunswick", "Nova Scotia", "Prince Edward Island", "Newfoundland and Labrador"]
+PROVINCES = {"west": WEST, "east": EAST, "atlantic": ATLANTIC}
+REGIONS = list(PROVINCES)
 
 # StatCan supply-and-disposition crop names -> page keys
 SD_CROPS = {"Barley": "barley", "Wheat, excluding durum": "wheat", "Durum wheat": "durum", "Oats": "oats"}
-GRAINS = ["barley", "wheat", "durum", "oats", "corn"]
-PROD_NAMES = {"barley": "Barley", "wheat": "Wheat, all excluding durum wheat", "durum": "Wheat, durum", "oats": "Oats"}
+SMALL = ["barley", "wheat", "durum", "oats"]
+GRAINS = SMALL + ["corn"]
+MODEL_GRAINS = SMALL + ["corn_west"]  # grains in the share model; eastern corn is estimated separately
+PROD_NAMES = {"barley": "Barley", "wheat": "Wheat, all excluding durum wheat", "durum": "Wheat, durum", "oats": "Oats",
+              "corn": "Corn for grain"}
 
-# Alberta monthly farm prices (C$/t) used as the feed price of each grain
+# Alberta monthly farm prices (C$/t): the feed price of each small grain, plus cattle and hogs
 PRICE_SERIES = {
     "barley": "Barley for animal feed",
     "wheat": "Wheat (except durum wheat), other",
@@ -52,6 +73,8 @@ PRICE_SERIES = {
     "steers_feeding": "Steers for feeding",
     "hogs": "Hogs",
 }
+# Ontario monthly farm prices (C$/t), the Eastern benchmark. Ontario corn is the corn price in the model.
+EAST_PRICE_SERIES = {"corn": "Corn for grain", "barley": "Barley", "wheat": "Ontario wheat excluding payments"}
 # Feeding value relative to barley (cattle energy basis). Editable on the page.
 ENERGY = {"barley": 1.00, "wheat": 1.08, "durum": 1.06, "oats": 0.85, "corn": 1.12}
 # US corn delivered to southern Alberta = CBOT + this basis and freight (US$/bu). Editable on the page.
@@ -69,10 +92,14 @@ def crop_year_of(date: pd.Timestamp) -> str:
     return f"{y}-{y + 1}"
 
 
+def num(v) -> float | None:
+    return None if v is None or pd.isna(v) else float(v)
+
+
 # ------------------------------------------------------------------ StatCan
 
 def supply_disposition() -> dict:
-    """Crop-year totals (July, cumulative) and in-year partials (Dec, Mar) by crop, kt."""
+    """Crop-year totals (July, cumulative) and in-year partials (Dec, Mar) by crop, kt. Canada only."""
     sd = external.statcan("32100013")
     sd = sd[sd["Type of crop"].isin(SD_CROPS)]
     items = {
@@ -93,29 +120,68 @@ def supply_disposition() -> dict:
     return out
 
 
-def western_farm_feed() -> dict:
+def farm_feed() -> dict:
+    """On-farm feed (kt, full crop year) by grain, crop year and region (StatCan 32-10-0015).
+
+    West uses StatCan's Western Canada total (or the sum of its provinces where that is
+    suppressed), East is Ontario + Quebec, Atlantic the Maritime provinces. Eastern and
+    Atlantic farms report only "All wheat"; no durum is grown there, so that is their wheat
+    (ex-durum) and their durum is zero."""
     fs = external.statcan("32100015")
-    fs = fs[(fs["GEO"] == "Western Canada") & fs["Type of crop"].isin(SD_CROPS)
-            & (fs["Farm supply and disposition of grains"] == "Animal feed, waste and dockage")]
+    fs = fs[(fs["Farm supply and disposition of grains"] == "Animal feed, waste and dockage") & fs["REF_DATE"].str.endswith("-07")]
+    val = fs.set_index(["GEO", "Type of crop", "REF_DATE"])["VALUE"]
+    get = lambda geo, crop, ref: num(val.get((geo, crop, ref)))
+
+    def total(region_geo, provs, crop, ref):
+        v = get(region_geo, crop, ref)
+        if v is not None:
+            return v
+        parts = [get(p, crop, ref) for p in provs]
+        return sum(x for x in parts if x is not None) if any(x is not None for x in parts) else None
+
     out: dict = {}
-    for crop, g in fs.groupby("Type of crop"):
-        for ref, v in zip(g["REF_DATE"], g["VALUE"]):
-            date = pd.Timestamp(ref + "-01")
-            if date.month == 7 and not pd.isna(v):
-                out.setdefault(SD_CROPS[crop], {})[crop_year_of(date)] = round(float(v), 1)
+    for ref in sorted(fs["REF_DATE"].unique()):
+        cy = crop_year_of(pd.Timestamp(ref + "-01"))
+        for crop, g in SD_CROPS.items():
+            east_crop = "All wheat" if g == "wheat" else crop
+            reg = {
+                "west": total("Western Canada", WEST, crop, ref),
+                "east": 0.0 if g == "durum" else total("", EAST, east_crop, ref),
+                "atlantic": 0.0 if g == "durum" else total("Maritime provinces", ATLANTIC, east_crop, ref),
+            }
+            if reg["west"] is None:
+                continue
+            out.setdefault(g, {})[cy] = {r: round(v or 0.0, 1) for r, v in reg.items()}
     return out
 
 
 def corn() -> dict:
-    """Corn (crop year Sep-Aug, cumulative at August): imports into provinces other than
-    Ontario and Quebec (mostly Western Canada), and Canada feed use."""
+    """Corn (crop year Sep-Aug, cumulative at Dec, Mar and Aug), kt: the Canada balance, the
+    Ontario and Quebec crops and exports, and the "other provinces" (West + Atlantic) balance."""
     c = external.statcan("32100014")
+    keys = {
+        ("Canada", "Animal feed, waste and dockage"): "feed_canada",
+        ("Canada", "Production"): "production_canada",
+        ("Canada", "Total supplies"): "supply_canada",
+        ("Canada", "Total beginning stocks"): "carry_in_canada",
+        ("Canada", "Total ending stocks"): "carry_out_canada",
+        ("Canada", "Total imports"): "imports_canada",
+        ("Canada", "Exports to other countries"): "exports_canada",
+        ("Canada", "Human food and industrial use"): "industrial_canada",
+        ("Ontario", "Production"): "production_on",
+        ("Quebec", "Production"): "production_qc",
+        ("Ontario", "Exports to other countries"): "exports_on",
+        ("Quebec", "Exports to other countries"): "exports_qc",
+        ("Ontario", "Imports from other countries"): "imports_on",
+        ("Quebec", "Imports from other countries"): "imports_qc",
+        ("Other provinces", "Imports from other countries"): "imports_west",
+        ("Other provinces", "Production"): "production_other",
+        ("Other provinces", "Total domestic disappearance"): "use_other",
+        ("Other provinces", "Seed requirements"): "seed_other",
+    }
     out: dict = {}
     for (geo, item), g in c.groupby(["GEO", "Supply and disposition of corn"]):
-        key = {("Other provinces", "Imports from other countries"): "imports_west",
-               ("Canada", "Imports from other countries"): "imports_canada",
-               ("Canada", "Animal feed, waste and dockage"): "feed_canada",
-               ("Canada", "Production"): "production_canada"}.get((geo, item))
+        key = keys.get((geo, item))
         if not key:
             continue
         for ref, v in zip(g["REF_DATE"], g["VALUE"]):
@@ -130,27 +196,88 @@ def corn() -> dict:
     return out
 
 
+def corn_full_year(cornd: dict, cy: str, key: str) -> tuple[float | None, bool]:
+    """A corn flow for the full Sep-Aug year. Where August isn't published yet, the March
+    figure (Sep-Mar) scaled by the average March-to-August ratio of the last five years.
+    Returns (value, estimated)."""
+    c = cornd.get(cy, {})
+    if key in c.get("aug", {}):
+        return c["aug"][key], False
+    if c.get("mar", {}).get(key) is not None:
+        prior = [k for k in sorted(cornd) if k < cy and key in cornd[k].get("aug", {}) and cornd[k].get("mar", {}).get(key)][-5:]
+        if prior:
+            return c["mar"][key] * float(np.mean([cornd[k]["aug"][key] / cornd[k]["mar"][key] for k in prior])), True
+    return None, False
+
+
 def production() -> dict:
-    wp = external.western_production()
-    return {k: {str(y): round(v / 1000, 1) for y, v in wp[name].dropna().items() if y >= 2010}
-            for k, name in PROD_NAMES.items() if name in wp.columns}
+    """Production (kt) by grain, region and harvest year. East and Atlantic are sums of their
+    provinces; West is Canada less those, so the regions add up to Canada (and suppressed
+    western provinces don't drop out)."""
+    p = external.statcan("32100359")
+    p = p[(p["Harvest disposition"] == "Production (metric tonnes)") & p["Type of crop"].isin(PROD_NAMES.values()) & (p["REF_DATE"] >= 2010)]
+    out: dict = {}
+    for k, name in PROD_NAMES.items():
+        g = p[p["Type of crop"] == name]
+        canada = g[g["GEO"] == "Canada"].set_index("REF_DATE")["VALUE"].dropna()
+        east = g[g["GEO"].isin(EAST)].groupby("REF_DATE")["VALUE"].sum()
+        atl = g[g["GEO"].isin(ATLANTIC)].groupby("REF_DATE")["VALUE"].sum()
+        out[k] = {"canada": {}, "west": {}, "east": {}, "atlantic": {}}
+        for y, v in canada.items():
+            e, a = float(east.get(y, 0.0)), float(atl.get(y, 0.0))
+            for r, x in (("canada", v), ("east", e), ("atlantic", a), ("west", v - e - a)):
+                out[k][r][str(y)] = round(x / 1000, 1)
+    return out
+
+
+def regional_feed(sd: dict, farm: dict, cornd: dict, prod: dict, years: list[str]) -> dict:
+    """Estimated feed use (kt) by crop year, grain and region; the regions add up to StatCan's
+    Canada total. See the module docstring for the method."""
+    out: dict = {}
+    for cy in years:
+        rec: dict = {}
+        for g in SMALL:
+            canada = sd.get(g, {}).get(cy, {}).get("jul", {}).get("feed")
+            f = farm.get(g, {}).get(cy)
+            p = {r: prod[g][r].get(cy[:4]) for r in REGIONS}
+            if canada is None or f is None or p["west"] is None:
+                continue
+            on = sum(f.values())
+            off = canada - on
+            if off < 0 or on <= 0 and off <= 0:
+                # on-farm feed exceeds the Canada total (StatCan's tables don't always reconcile): scale it down
+                split = {r: canada * f[r] / on if on > 0 else 0.0 for r in REGIONS}
+            else:
+                ptot = sum(v or 0.0 for v in p.values())
+                split = {r: f[r] + off * (p[r] or 0.0) / ptot for r in REGIONS}
+            rec[g] = {r: round(v, 1) for r, v in split.items()} | {"on_farm": f}
+        feed, est = corn_full_year(cornd, cy, "feed_canada")
+        use, _ = corn_full_year(cornd, cy, "use_other")
+        seed = cornd.get(cy, {}).get("aug", {}).get("seed_other", 0.0)
+        atl = prod["corn"]["atlantic"].get(cy[:4], 0.0)
+        if feed is not None and use is not None:
+            west = max(0.0, use - seed - atl)
+            rec["corn"] = {"west": round(west, 1), "east": round(feed - west - atl, 1), "atlantic": round(atl, 1), "estimated": est}
+        if rec:
+            out[cy] = rec
+    return out
 
 
 def prices() -> dict:
-    """Monthly Alberta farm prices (C$/t) and delivered US corn (C$/t, CBOT + basis/freight)."""
+    """Monthly Alberta and Ontario farm prices (C$/t) and delivered US corn (C$/t, CBOT + basis/freight)."""
     p = external.statcan("32100077")
-    p = p[p["GEO"] == "Alberta"]
-    out: dict = {}
-    for key, name in PRICE_SERIES.items():
-        g = p[p["Farm products"].str.startswith(name + " [") | (p["Farm products"] == name)]
+    def monthly(geo, name):
+        g = p[(p["GEO"] == geo) & (p["Farm products"].str.startswith(name + " [") | (p["Farm products"] == name))]
         uom = g["UOM"].iloc[0] if len(g) else ""
-        out[key] = {"uom": uom, "values": {r: round(float(v), 2) for r, v in zip(g["REF_DATE"], g["VALUE"]) if not pd.isna(v) and r >= "2012-01"}}
+        return {"uom": uom, "values": {r: round(float(v), 2) for r, v in zip(g["REF_DATE"], g["VALUE"]) if not pd.isna(v) and r >= "2012-01"}}
+    out: dict = {key: monthly("Alberta", name) for key, name in PRICE_SERIES.items()}
+    out["ontario"] = {key: monthly("Ontario", name) for key, name in EAST_PRICE_SERIES.items()}
     zc = external.yahoo_weekly("ZC=F")
     fx = external.yahoo_weekly("CAD=X")
     m = pd.DataFrame({"zc": zc, "fx": fx}).sort_index().ffill().dropna()
-    monthly = m.resample("MS").mean()
-    out["cbot_corn"] = {"uom": "US cents per bushel", "values": {d.strftime("%Y-%m"): round(v, 2) for d, v in monthly["zc"].items()}}
-    out["usdcad"] = {"uom": "CAD per USD", "values": {d.strftime("%Y-%m"): round(v, 4) for d, v in monthly["fx"].items()}}
+    monthly_m = m.resample("MS").mean()
+    out["cbot_corn"] = {"uom": "US cents per bushel", "values": {d.strftime("%Y-%m"): round(v, 2) for d, v in monthly_m["zc"].items()}}
+    out["usdcad"] = {"uom": "CAD per USD", "values": {d.strftime("%Y-%m"): round(v, 4) for d, v in monthly_m["fx"].items()}}
     last = m.iloc[-1]
     out["latest_market"] = {"date": m.index[-1].date().isoformat(), "cbot_corn": round(float(last["zc"]), 2), "usdcad": round(float(last["fx"]), 4)}
     return out
@@ -161,25 +288,30 @@ def corn_delivered(zc_cents: float, fx: float, basis_usd_bu: float = CORN_BASIS_
 
 
 def livestock() -> dict:
-    """Western Canada inventories (Jan 1 / Jul 1), Canada slaughter and meat production."""
+    """Inventories (Jan 1 / Jul 1) for the West and the East (Ontario + Quebec), Canada slaughter
+    and meat production, and poultry meat by region."""
     cat = external.statcan("32100130")
-    cat = cat[cat["GEO"] == "Western provinces"]
-    def cattle(livestock, farm_type):
-        g = cat[(cat["Livestock"] == livestock) & (cat["Farm type"] == farm_type)]
-        return {f"{r}-{'01' if s.startswith('At January') else '07'}": round(float(v), 1)
-                for r, s, v in zip(g["REF_DATE"], g["Survey date"], g["VALUE"]) if not pd.isna(v) and int(r) >= 2010}
-    inv = {
-        "total_cattle": cattle("Total cattle", "On all cattle operations"),
-        "beef_cows": cattle("Beef cows", "On all cattle operations"),
-        "dairy_cows": cattle("Dairy cows", "On all cattle operations"),
-        "feedlot_steers": cattle("Steers, 1 year and over", "On feeding operations"),
-        "feedlot_heifers": cattle("Heifers for slaughter", "On feeding operations"),
-        "feedlot_calves": cattle("Calves, under 1 year", "On feeding operations"),
-    }
     hogs = external.statcan("32100160")
-    hogs = hogs[(hogs["GEO"] == "Western provinces") & (hogs["Livestock"] == "Hogs, total")]
-    inv["hogs"] = {f"{r}-{'01' if s.startswith('At January') else '07'}": round(float(v), 1)
-                   for r, s, v in zip(hogs["REF_DATE"], hogs["Survey date"], hogs["VALUE"]) if not pd.isna(v)}
+    hogs = hogs[hogs["Livestock"] == "Hogs, total"]
+    key = lambda r, s: f"{r}-{'01' if s.startswith('At January') else '07'}"
+
+    def region_sum(t, geos):
+        g = t.groupby(["REF_DATE", "Survey date"])["VALUE"].agg(lambda v: v.sum() if v.notna().all() and len(v) == len(geos) else np.nan)
+        return {key(r, s): round(float(v), 1) for (r, s), v in g.items() if not pd.isna(v) and int(r) >= 2010}
+
+    inv: dict = {}
+    for region, geos in (("west", ["Western provinces"]), ("east", EAST)):
+        c = cat[cat["GEO"].isin(geos)]
+        cattle = lambda livestock, farm_type: region_sum(c[(c["Livestock"] == livestock) & (c["Farm type"] == farm_type)], geos)
+        inv[region] = {
+            "total_cattle": cattle("Total cattle", "On all cattle operations"),
+            "beef_cows": cattle("Beef cows", "On all cattle operations"),
+            "dairy_cows": cattle("Dairy cows", "On all cattle operations"),
+            "feedlot_steers": cattle("Steers, 1 year and over", "On feeding operations"),
+            "feedlot_heifers": cattle("Heifers for slaughter", "On feeding operations"),
+            "feedlot_calves": cattle("Calves, under 1 year", "On feeding operations"),
+            "hogs": region_sum(hogs[hogs["GEO"].isin(geos)], geos),
+        }
 
     def annual(table, livestock, estimate, scale=1.0):
         t = external.statcan(table)
@@ -200,14 +332,16 @@ def livestock() -> dict:
     poul = poul[(poul["Commodity"] == "Total poultry") & (poul["Production and disposition"] == "Production, total")
                 & (poul["Estimates"] == "Weight (kilograms)")]
     # poultry weight is in thousands of kg (= tonnes); convert to kt
-    meat["poultry"] = {str(r): round(float(v) / 1000, 1) for r, v in zip(poul[poul["GEO"] == "Canada"]["REF_DATE"], poul[poul["GEO"] == "Canada"]["VALUE"]) if int(r) >= 2005}
-    west_poultry = poul[poul["GEO"].isin(WEST)].groupby("REF_DATE")["VALUE"].sum() / 1000
-    meat["poultry_west"] = {str(r): round(float(v), 1) for r, v in west_poultry.items() if int(r) >= 2005}
+    canada = poul[poul["GEO"] == "Canada"]
+    meat["poultry"] = {str(r): round(float(v) / 1000, 1) for r, v in zip(canada["REF_DATE"], canada["VALUE"]) if int(r) >= 2005}
+    for region, geos in (("west", WEST), ("east", EAST)):
+        s = poul[poul["GEO"].isin(geos)].groupby("REF_DATE")["VALUE"].sum() / 1000
+        meat[f"poultry_{region}"] = {str(r): round(float(v), 1) for r, v in s.items() if int(r) >= 2005}
     return {"inventory": inv, "slaughter": slaughter, "meat": meat,
             "units": {"inventory": "thousand head", "slaughter": "thousand head", "meat": "kt"}}
 
 
-# ------------------------------------------------------------------ CGC weekly
+# ------------------------------------------------------------------ CGC weekly (Western Canada)
 
 def cgc_weekly(con, years: list[str]) -> dict:
     def series(sql):
@@ -243,10 +377,10 @@ def cgc_weekly(con, years: list[str]) -> dict:
 
 # ------------------------------------------------------------------ demand index + model
 
-def demand_index(liv: dict, years: list[str]) -> dict:
+def demand_index(liv: dict, years: list[str], region: str) -> dict:
     """Grain-consuming demand index (kt of grain per year) for each crop year, from the
     Jul 1 inventory at the start of the crop year and the Jan 1 inventory in it."""
-    inv = liv["inventory"]
+    inv = liv["inventory"][region]
     out = {}
     for cy in years:
         y0, y1 = cy[:4], cy[5:]
@@ -258,7 +392,7 @@ def demand_index(liv: dict, years: list[str]) -> dict:
         parts = {
             "feedlot": sum(feedlot) if all(x is not None for x in feedlot) else None,
             "beef_cows": avg("beef_cows"), "dairy_cows": avg("dairy_cows"), "hogs": avg("hogs"),
-            "poultry": liv["meat"]["poultry_west"].get(y0),
+            "poultry": liv["meat"][f"poultry_{region}"].get(y0),
         }
         if any(v is None for v in parts.values()):
             continue
@@ -274,43 +408,43 @@ def crop_year_price(series: dict, cy: str) -> float | None:
     return float(np.mean(v)) if v else None
 
 
-def model_panel(sd, cornd, prod, pr, years) -> pd.DataFrame:
+def model_panel(sd, cornd, pr, regional, years) -> pd.DataFrame:
+    """One row per crop year. Model grains: barley, wheat, durum and oats (Canada) and corn fed in
+    the West; eastern corn (Ontario, Quebec and the Atlantic crop) is kept separate."""
     rows = []
     for cy in years:
         rec = {"cy": cy}
-        for g in ["barley", "wheat", "durum", "oats"]:
+        for g in SMALL:
             full = sd.get(g, {}).get(cy, {}).get("jul")
             rec[f"feed_{g}"] = full.get("feed") if full else None
             rec[f"supply_{g}"] = full.get("supply") if full else None
             rec[f"price_{g}"] = crop_year_price(pr[g]["values"], cy)
-        c = cornd.get(cy, {}).get("aug")
-        rec["feed_corn"] = c.get("imports_west") if c else None
-        rec["corn_estimated"] = False
-        if rec["feed_corn"] is None and cornd.get(cy, {}).get("mar", {}).get("imports_west") is not None:
-            # August not published yet: scale March by the usual March-to-August ratio
-            prior = [k for k in sorted(cornd) if k < cy and "aug" in cornd[k] and "mar" in cornd[k]][-5:]
-            ratio = np.mean([cornd[k]["aug"]["imports_west"] / cornd[k]["mar"]["imports_west"] for k in prior if cornd[k]["mar"]["imports_west"]])
-            rec["feed_corn"] = cornd[cy]["mar"]["imports_west"] * ratio
-            rec["corn_estimated"] = True
-        rec["supply_corn"] = None
+        rc = regional.get(cy, {}).get("corn")
+        rec["feed_corn_west"] = rc["west"] if rc else None
+        rec["feed_corn_east"] = rc["east"] + rc["atlantic"] if rc else None
+        rec["feed_corn"], rec["corn_estimated"] = corn_full_year(cornd, cy, "feed_canada")
+        rec["imports_corn_west"], _ = corn_full_year(cornd, cy, "imports_west")
+        rec["supply_corn_west"] = None
         zc, fx = crop_year_price(pr["cbot_corn"]["values"], cy), crop_year_price(pr["usdcad"]["values"], cy)
-        rec["price_corn"] = corn_delivered(zc, fx) if zc and fx else None
+        rec["price_corn_west"] = corn_delivered(zc, fx) if zc and fx else None
+        rec["price_corn_ontario"] = crop_year_price(pr["ontario"]["corn"]["values"], cy)
         rows.append(rec)
     return pd.DataFrame(rows).set_index("cy")
 
 
 def fit_shares(panel: pd.DataFrame, train: list[str]):
     """Pooled least squares: log(s_i/s_b) = c_i + a log(avail_i/avail_b) + b log(price_i/price_b).
-    Availability is supply relative to the crop's own mean over the training years (corn: 1)."""
-    others = ["wheat", "durum", "oats", "corn"]
-    means = {g: panel.loc[train, f"supply_{g}"].mean() for g in ["barley", "wheat", "durum", "oats"]}
+    Availability is supply relative to the grain's own mean over the training years (western
+    corn: 1, freely available through imports)."""
+    others = ["wheat", "durum", "oats", "corn_west"]
+    means = {g: panel.loc[train, f"supply_{g}"].mean() for g in SMALL}
     X, y = [], []
     for cy in train:
         r = panel.loc[cy]
         for i, g in enumerate(others):
-            a_i = r[f"supply_{g}"] / means[g] if g != "corn" else 1.0
+            a_i = r[f"supply_{g}"] / means[g] if g != "corn_west" else 1.0
             a_b = r["supply_barley"] / means["barley"]
-            p_i = r[f"price_{g}"] / ENERGY[g]
+            p_i = r[f"price_{g}"] / ENERGY[g.removesuffix("_west")]
             p_b = r["price_barley"] / ENERGY["barley"]
             if min(r[f"feed_{g}"], r["feed_barley"]) <= 0:
                 continue
@@ -326,36 +460,72 @@ def predict_shares(fit, supply: dict, price: dict) -> dict:
     a_b = supply["barley"] / fit["means"]["barley"]
     p_b = price["barley"] / ENERGY["barley"]
     rel = {"barley": 1.0}
-    for g in ["wheat", "durum", "oats", "corn"]:
-        a_i = supply[g] / fit["means"][g] if g != "corn" else 1.0
-        rel[g] = float(np.exp(fit["const"][g] + fit["a"] * np.log(a_i / a_b) + fit["b"] * np.log((price[g] / ENERGY[g]) / p_b)))
+    for g in ["wheat", "durum", "oats", "corn_west"]:
+        a_i = supply[g] / fit["means"][g] if g != "corn_west" else 1.0
+        rel[g] = float(np.exp(fit["const"][g] + fit["a"] * np.log(a_i / a_b) + fit["b"] * np.log((price[g] / ENERGY[g.removesuffix("_west")]) / p_b)))
     tot = sum(rel.values())
     return {g: v / tot for g, v in rel.items()}
 
 
 def blend(shares: dict, total: float, avg: dict) -> dict:
-    """Estimate per grain: half the model's share of the total, half the grain's 5-yr average."""
-    return {g: 0.5 * shares[g] * total + 0.5 * avg[g] for g in GRAINS}
+    """Estimate per model grain: half the model's share of the total, half the grain's 5-yr average."""
+    return {g: 0.5 * shares[g] * total + 0.5 * avg[g] for g in MODEL_GRAINS}
 
 
-def run_model(panel: pd.DataFrame, cur: str) -> dict:
-    total = lambda cy: sum(panel.loc[cy, f"feed_{g}"] for g in GRAINS)
-    done = [cy for cy in panel.index if cy != cur and panel.loc[cy, [f"feed_{g}" for g in GRAINS] + [f"price_{g}" for g in GRAINS]].notna().all()]
+def region_shares(regional: dict, yrs: list[str]) -> dict:
+    """Each region's average share of each small grain's Canada feed use over the given crop
+    years, and the East's average share of eastern (East + Atlantic) corn."""
+    out = {}
+    for g in SMALL:
+        rows = [regional[y][g] for y in yrs if g in regional.get(y, {})]
+        out[g] = {k: float(np.mean([r[k] / sum(r[j] for j in REGIONS) for r in rows])) for k in REGIONS}
+    rows = [regional[y]["corn"] for y in yrs if "corn" in regional.get(y, {})]
+    east = float(np.mean([r["east"] / (r["east"] + r["atlantic"]) for r in rows]))
+    out["corn_east"] = {"east": east, "atlantic": 1 - east}
+    return out
+
+
+def by_region(est: dict, corn_east: float, shares: dict) -> dict:
+    """Split a Canada estimate (model grains) plus eastern corn into regions."""
+    out = {r: {g: est[g] * shares[g][r] for g in SMALL} for r in REGIONS}
+    out["west"]["corn"] = est["corn_west"]
+    out["east"]["corn"] = corn_east * shares["corn_east"]["east"]
+    out["atlantic"]["corn"] = corn_east * shares["corn_east"]["atlantic"]
+    return out
+
+
+def run_model(panel: pd.DataFrame, regional: dict, cur: str) -> dict:
+    total = lambda cy: sum(panel.loc[cy, f"feed_{g}"] for g in MODEL_GRAINS)
+    region_total = lambda cy, r: sum(regional[cy][g][r] for g in GRAINS)
+    need = [f"feed_{g}" for g in MODEL_GRAINS + ["corn_east"]] + [f"price_{g}" for g in MODEL_GRAINS] + [f"supply_{g}" for g in SMALL]
+    done = [cy for cy in panel.index if cy != cur and panel.loc[cy, need].notna().all()]
     back = []
     for i, cy in enumerate(done):
         train = done[:i]
         if len(train) < 6:
             continue
         fit = fit_shares(panel, train)
-        sh = predict_shares(fit, {g: panel.loc[cy, f"supply_{g}"] for g in ["barley", "wheat", "durum", "oats"]} | {"corn": None},
-                            {g: panel.loc[cy, f"price_{g}"] for g in GRAINS})
+        sh = predict_shares(fit, {g: panel.loc[cy, f"supply_{g}"] for g in SMALL}, {g: panel.loc[cy, f"price_{g}"] for g in MODEL_GRAINS})
         T = np.mean([total(t) for t in train[-5:]])
-        avg = {g: np.mean([panel.loc[t, f"feed_{g}"] for t in train[-5:]]) for g in GRAINS}
-        est = blend(sh, T, avg)
-        for g in GRAINS:
-            back.append({"cy": cy, "grain": g, "actual": panel.loc[cy, f"feed_{g}"], "estimate": est[g], "model_only": sh[g] * T,
-                         "avg_5yr": avg[g], "last_year": panel.loc[train[-1], f"feed_{g}"]})
-        back.append({"cy": cy, "grain": "total", "actual": total(cy), "estimate": T, "model_only": T, "avg_5yr": T, "last_year": total(train[-1])})
+        avg = {g: np.mean([panel.loc[t, f"feed_{g}"] for t in train[-5:]]) for g in MODEL_GRAINS + ["corn_east"]}
+        est, model_only = blend(sh, T, avg), {g: sh[g] * T for g in MODEL_GRAINS}
+        last = {g: panel.loc[train[-1], f"feed_{g}"] for g in MODEL_GRAINS + ["corn_east"]}
+        row = lambda g, actual, e, mo, a5, ly: {"cy": cy, "grain": g, "actual": actual, "estimate": e, "model_only": mo, "avg_5yr": a5, "last_year": ly}
+        for g in MODEL_GRAINS:
+            back.append(row(g, panel.loc[cy, f"feed_{g}"], est[g], model_only[g], avg[g], last[g]))
+        # eastern corn is its own 5-yr average in every method but last year's
+        ce = avg["corn_east"]
+        back.append(row("corn_east", panel.loc[cy, "feed_corn_east"], ce, ce, ce, last["corn_east"]))
+        back.append(row("corn", panel.loc[cy, "feed_corn_west"] + panel.loc[cy, "feed_corn_east"], est["corn_west"] + ce, model_only["corn_west"] + ce,
+                        avg["corn_west"] + ce, last["corn_west"] + last["corn_east"]))
+        back.append(row("total", total(cy) + panel.loc[cy, "feed_corn_east"], T + ce, T + ce, T + ce, total(train[-1]) + last["corn_east"]))
+        # regional totals: each method's estimate split by the regions' 5-yr average shares
+        if all(t in regional and all(g in regional[t] for g in GRAINS) for t in train[-5:] + [cy]):
+            rs = region_shares(regional, train[-5:])
+            split = {m: by_region(v, ce, rs) for m, v in (("estimate", est), ("model_only", model_only))}
+            for r in ("west", "east"):
+                back.append(row(r, region_total(cy, r), sum(split["estimate"][r].values()), sum(split["model_only"][r].values()),
+                                np.mean([region_total(t, r) for t in train[-5:]]), region_total(train[-1], r)))
     bt = pd.DataFrame(back)
     methods = ["estimate", "model_only", "avg_5yr", "last_year"]
     err = {g: {m: float(np.mean(np.abs(grp[m] - grp["actual"]))) for m in methods} for g, grp in bt.groupby("grain")}
@@ -365,36 +535,49 @@ def run_model(panel: pd.DataFrame, cur: str) -> dict:
             "backtest": bt.round(1).to_dict(orient="records"), "fitted": fit, "done": done}
 
 
-def current_estimate(model: dict, panel: pd.DataFrame, sd: dict, prod: dict, pr: dict, cur: str) -> dict:
+def current_estimate(model: dict, panel: pd.DataFrame, sd: dict, cornd: dict, prod: dict, pr: dict, regional: dict, cur: str) -> dict:
     """Current crop year: supply = carry-in (last July's ending stocks) + StatCan's latest
-    production estimate (+ imports assumed at last year's level); prices = the latest month."""
+    production estimate + last year's imports; prices = the latest month (western corn: this
+    week's CBOT close delivered to Alberta). Eastern corn = its 5-year average."""
     last = f"{int(cur[:4]) - 1}-{cur[:4]}"
     supply, basis = {}, {}
-    for g in ["barley", "wheat", "durum", "oats"]:
+    for g in SMALL:
         carry = sd[g][last]["jul"]["carry_out"]
-        prodn = prod[g].get(cur[:4])
+        prodn = prod[g]["canada"].get(cur[:4])
         imports = sd[g][last]["jul"].get("imports", 0)
         supply[g] = carry + (prodn or 0) + imports
         basis[g] = {"carry_in": carry, "production": prodn, "imports": imports}
-    latest = {g: list(pr[g]["values"].items())[-1] for g in ["barley", "wheat", "durum", "oats"]}
+    latest = {g: list(pr[g]["values"].items())[-1] for g in SMALL}
     lm = pr["latest_market"]
-    price = {g: latest[g][1] for g in latest} | {"corn": corn_delivered(lm["cbot_corn"], lm["usdcad"])}
+    price = {g: latest[g][1] for g in SMALL} | {"corn_west": corn_delivered(lm["cbot_corn"], lm["usdcad"])}
     fit = model["fitted"]
-    shares = predict_shares(fit, supply | {"corn": None}, price)
+    shares = predict_shares(fit, supply, price)
     recent = model["done"][-5:]
-    total = float(np.mean([sum(panel.loc[t, f"feed_{g}"] for g in GRAINS) for t in recent]))
-    avg = {g: float(np.mean([panel.loc[t, f"feed_{g}"] for t in recent])) for g in GRAINS}
+    total = float(np.mean([sum(panel.loc[t, f"feed_{g}"] for g in MODEL_GRAINS) for t in recent]))
+    avg = {g: float(np.mean([panel.loc[t, f"feed_{g}"] for t in recent])) for g in MODEL_GRAINS + ["corn_east"]}
     est = blend(shares, total, avg)
+    model_only = {g: shares[g] * total for g in MODEL_GRAINS}
+    corn_east = avg["corn_east"]
+    rs = region_shares(regional, recent)
+    regions = by_region(est, corn_east, rs)
+    canada = lambda d: {g: d[g] for g in SMALL} | {"corn": d["corn_west"] + corn_east}
+    r0 = lambda d: {g: round(v, 0) for g, v in d.items()}
+    ly = lambda g: None if pd.isna(panel.loc[last, f"feed_{g}"]) else round(float(panel.loc[last, f"feed_{g}"]), 0)
     return {
-        "crop_year": cur, "total": round(sum(est.values()), 0), "avg_years": [recent[0], recent[-1]],
-        "by_grain": {g: round(v, 0) for g, v in est.items()},
-        "model_only": {g: round(shares[g] * total, 0) for g in GRAINS},
-        "avg_5yr": {g: round(v, 0) for g, v in avg.items()},
-        "shares": {g: round(shares[g], 4) for g in GRAINS},
-        "supply": {g: round(v, 0) for g, v in supply.items()}, "supply_basis": basis,
+        "crop_year": cur, "total": round(sum(est.values()) + corn_east, 0), "avg_years": [recent[0], recent[-1]],
+        "by_grain": r0(canada(est)), "corn_west": round(est["corn_west"], 0), "corn_east": round(corn_east, 0),
+        "by_region": {r: r0(v) for r, v in regions.items()},
+        "region_shares": {g: {r: round(v, 4) for r, v in s.items()} for g, s in rs.items()},
+        "model_only": r0(canada(model_only)),
+        "avg_5yr": r0(canada(avg)),
+        "avg_5yr_by_region": {r: {g: round(float(np.mean([regional[t][g][r] for t in recent])), 0) for g in GRAINS} for r in REGIONS},
+        "shares": {g: round(shares[g], 4) for g in MODEL_GRAINS},
+        "supply": r0(supply), "supply_basis": basis,
         "prices": {g: round(v, 1) for g, v in price.items()},
-        "price_months": {g: latest[g][0] for g in latest} | {"corn": lm["date"]},
-        "last_year": {g: (None if pd.isna(panel.loc[last, f"feed_{g}"]) else round(float(panel.loc[last, f"feed_{g}"]), 0)) for g in GRAINS},
+        "price_months": {g: latest[g][0] for g in SMALL} | {"corn_west": lm["date"]},
+        "last_year": {g: ly(g) for g in SMALL} | {"corn": ly("corn_west") + ly("corn_east")},
+        "last_year_corn_west": ly("corn_west"), "last_year_corn_east": ly("corn_east"),
+        "last_year_by_region": {r: {g: regional.get(last, {}).get(g, {}).get(r) for g in GRAINS} for r in REGIONS},
         "last_year_corn_estimated": bool(panel.loc[last, "corn_estimated"]),
     }
 
@@ -423,13 +606,14 @@ def main() -> None:
     latest_week, week_ending = con.execute(
         "select grain_week, week_ending from gsw where crop_year = ? order by grain_week desc limit 1", [cur]).fetchone()
 
-    sd, cornd, prod, pr, liv = supply_disposition(), corn(), production(), prices(), livestock()
+    sd, cornd, prod, pr, liv, farm = supply_disposition(), corn(), production(), prices(), livestock(), farm_feed()
     all_years = sorted(set(years) | {cy for g in sd.values() for cy in g})
     all_years = [y for y in all_years if y >= "2012-2013"]
-    demand = demand_index(liv, all_years)
-    panel = model_panel(sd, cornd, prod, pr, all_years)
-    model = run_model(panel, cur)
-    estimate = current_estimate(model, panel, sd, prod, pr, cur)
+    regional = regional_feed(sd, farm, cornd, prod, all_years)
+    demand = {r: demand_index(liv, all_years, r) for r in ("west", "east")}
+    panel = model_panel(sd, cornd, pr, regional, all_years)
+    model = run_model(panel, regional, cur)
+    estimate = current_estimate(model, panel, sd, cornd, prod, pr, regional, cur)
 
     data = {
         "meta": {"current_year": cur, "latest_week": latest_week, "week_ending": week_ending.date().isoformat(),
@@ -439,7 +623,8 @@ def main() -> None:
                                  "canola_meal_yield": CANOLA_MEAL_YIELD}},
         "years": years,
         "supply_disposition": sd,
-        "western_farm_feed": western_farm_feed(),
+        "farm_feed": farm,
+        "regional_feed": regional,
         "corn": cornd,
         "production": prod,
         "prices": pr,
@@ -457,6 +642,7 @@ def main() -> None:
     print("model:", {k: (round(v, 3) if isinstance(v, float) else v) for k, v in model["fit"].items() if k != "const"}, "test years", model["test_years"])
     print("backtest MAE (kt):", {g: {m: round(e) for m, e in v.items()} for g, v in model["backtest_mae"].items()})
     print("estimate", cur, ":", estimate["total"], estimate["by_grain"])
+    print("by region:", {r: round(sum(v.values())) for r, v in estimate["by_region"].items()})
     print("last year:", estimate["last_year"], "(corn estimated)" if estimate["last_year_corn_estimated"] else "")
     print("supply:", estimate["supply"], "prices:", estimate["prices"], estimate["price_months"])
 

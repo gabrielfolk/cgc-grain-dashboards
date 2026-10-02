@@ -13,7 +13,7 @@ with Statistics Canada crop, livestock and price data and CBOT futures. Crop yea
 |---|---|---|
 | **Overview** | `/` | What are farmers doing across all 15 crops? Selling pace sized to the crop, cross-crop Things to watch (elevators, exports, stocks, ports, Thunder Bay), the all-crops weekly flash, pace cards, a 13-year heatmap, crop mix, and all-crops deliveries by province and commercial stocks. |
 | **Crop pages** (15) | `/wheat/`, `/canola/`, `/durum/`, `/barley/`, `/peas/`, `/oats/`, `/lentils/`, `/soybeans/`, `/corn/`, `/flaxseed/`, `/rye/`, `/beans/`, `/canaryseed/`, `/chickpeas/`, `/mustard/` | One crop from farm to use: generated "Things to watch" cards, weekly flash, pace math, farmer selling (pace sized to the crop, rank, projection, direct-to-processor and province shares), deliveries by province this week, country elevator throughput (net build, weeks of cover), port terminals (Pacific receipts vs exports, weeks of cover, Thunder Bay before freeze-up, export grade mix), exports by port, processing, feed and stocks. Canola adds a backtested crush and export forecast. |
-| **Western Feed Grains** | `/feed/` | How much barley, wheat, durum, oats and imported corn is fed. Covers quality, livestock numbers, energy-adjusted feed prices and a backtested feed-use estimate. |
+| **Feed Grains** | `/feed/` | How much barley, wheat, durum, oats and corn is fed in Canada, split into Western Canada and Ontario + Quebec (estimated: StatCan publishes feed use for Canada only). Covers quality, livestock numbers by region, energy-adjusted feed prices (Alberta and Ontario) and a backtested feed-use estimate. |
 | **Producer Margins** | `/margins/` | What does an acre of each crop earn after variable costs, at seeding (April) and harvest (August) prices, and are farmers selling faster where margins are good? Saskatchewan budgets, 9 crops, 2017 on. Delivery detail is on the crop pages. |
 
 Every page has summary tiles or cards, a weekly flash table (with a copy-to-spreadsheet button) and charts.
@@ -151,7 +151,8 @@ even where a baseline does better.
   crop-year totals, using StatCan's in-season production estimates as they were published. See
   `reports/canola_forecast.md`.
 - **Feed use by grain** (`src/feed_data.py`): a 50/50 blend of a price-and-availability share model and each grain's
-  five-year average. See `reports/feed_estimate.md`.
+  five-year average, for Canada; eastern corn is its five-year average. Regions split each grain by its five-year
+  regional shares. See `reports/feed_estimate.md`.
 
 ## CGC data quirks handled
 

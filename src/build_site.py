@@ -25,7 +25,7 @@ OUT = ROOT / "docs"
 # A list entry is a dropdown menu: (menu label, [page folders]).
 NAV = ["", "margins", "feed", "canola", "wheat", "durum", "barley", "peas", "oats", "lentils", "soybeans", "corn",
        ("Special Crops", ["flaxseed", "rye", "beans", "canaryseed", "chickpeas", "mustard"])]
-LABELS = {"": "Overview", "margins": "Producer Margins", "feed": "Western Feed Grains",
+LABELS = {"": "Overview", "margins": "Producer Margins", "feed": "Feed Grains",
           **{slug: cfg["title"].removesuffix(" Pipeline") for slug, cfg in GRAINS.items()}}
 PAGES = [p for entry in NAV for p in (entry[1] if isinstance(entry, tuple) else [entry])]
 assert set(GRAINS) <= set(PAGES), "every crop page needs a place in NAV"

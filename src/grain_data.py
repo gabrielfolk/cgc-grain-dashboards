@@ -67,7 +67,7 @@ PORT_SLUGS = {"Vancouver": "vancouver", "Prince Rupert": "prince_rupert", "Pacif
 # Links to the cross-crop pages, relative to a crop page (dashboard/<crop>/ on the site)
 LINKS = {
     "Overview": "../",
-    "Western Feed Grains": "../feed/",
+    "Feed Grains": "../feed/",
     "Producer Margins": "../margins/",
 }
 # CGC grain name -> StatCan field crop name (table 32-10-0359), to size deliveries against the crop
