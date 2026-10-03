@@ -441,7 +441,7 @@
       <div>
         <div class="eyebrow" id="all-eyebrow"></div>
         <h2 id="all-h">All crops combined</h2>
-        <p class="sub">Total producer deliveries and commercial stocks of the 15 crops. Each crop's own delivery pace, stocks, uses and history are on its page.</p>
+        <p class="sub">Total producer deliveries, country elevator shipments and commercial stocks of the 15 crops. Each crop's own delivery pace, stocks, uses and history are on its page.</p>
       </div>
     </div>
     <div class="summary" id="summary" style="grid-template-columns:repeat(2,minmax(0,1fr))"></div>
@@ -463,6 +463,16 @@
         <div class="panel-head"><h3>Commercial stocks</h3><p>Thousand tonnes at week end in country elevators, processors and port terminals</p></div>
         <div class="legend" id="leg-stock"></div>
         <div class="chart" id="ch-stock" style="height:220px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Weekly shipments out of country elevators</h3><p>Thousand tonnes per week shipped from licensed country elevators to all destinations (rail to port, processors, domestic)</p></div>
+        <div class="legend" id="leg-ship"></div>
+        <div class="chart" id="ch-ship" style="height:220px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Net build in country elevators</h3><p>Deliveries into country elevators minus shipments out, thousand tonnes since Aug 1. Rising = country stocks building.</p></div>
+        <div class="legend" id="leg-build"></div>
+        <div class="chart" id="ch-build" style="height:220px"></div>
       </div>
     </div>
     <div class="section-head">
@@ -1109,6 +1119,29 @@
       ],
     });
 
+    // country elevators: shipments out, and deliveries in minus shipments out
+    const ship = (y) => useArr("elevator_shipments", g, y);
+    const sh5 = stat(ref.map((r) => diff(ship(r))));
+    legend($("leg-ship"), [{ ...cur5, kind: "rect" }, { label: "5-yr average", color: "--avg" }, { label: "Deliveries into country elevators", color: "--s2" }]);
+    weekChart($("ch-ship"), {
+      aria: `${g} weekly shipments out of country elevators`,
+      bars: { label: `Shipped out, ${short(cur)}`, color: css("--s1"), values: diff(upTo(ship(cur), W_NOW)) },
+      series: [{ label: "5-yr average", color: css("--avg"), values: sh5.avg, width: 1.5 },
+        { label: "Delivered in", color: css("--s2"), values: diff(upTo(useArr("elevator_deliveries", g, cur), W_NOW)), width: 1.5 }],
+    });
+    const build = (y) => { const d = useArr("elevator_deliveries", g, y), s2 = ship(y); return d.map((v, i) => v == null || s2[i] == null ? null : v - s2[i]); };
+    const bst = stat(ref.map(build));
+    legend($("leg-build"), [cur5, last5, { label: "5-yr average", color: "--avg" }, { label: "5-yr range", kind: "band" }]);
+    weekChart($("ch-build"), {
+      aria: `${g} net build in country elevators`,
+      band: { lo: bst.lo, hi: bst.hi, label: "5-yr range" },
+      series: [
+        { label: "5-yr average", color: css("--avg"), values: bst.avg, width: 1.5 },
+        { label: short(lastYr), color: css("--s2"), values: build(lastYr) },
+        { label: short(cur), color: css("--s1"), values: upTo(build(cur), W_NOW), dot: true },
+      ],
+    });
+
     // past crop years
     legend($("leg-all"), [cur5, last5, { label: "Earlier years", color: "--other" }]);
     const others = years.filter((yr) => yr !== cur && yr !== lastYr);
@@ -1415,6 +1448,10 @@
     const stP = pct(stNow, stAvg);
     const c7 = card("Grain in the system", Math.abs(stP) < 0.02 ? "Commercial stocks are close to average" : `Commercial stocks are ${Math.round(Math.abs(stP) * 100)}% ${stP > 0 ? "above" : "below"} average`);
     big(c7, fmtKt(stNow), `at week ${W_NOW}`);
+    const shRatio = (y) => { const d = at(useArr("elevator_deliveries", ALL, y), W_NOW), sh = at(useArr("elevator_shipments", ALL, y), W_NOW); return d > 0 && sh != null ? sh / d : null; };
+    const shNow = at(useArr("elevator_shipments", ALL, cur), W_NOW), shP = pct(shNow, mean(ref.map((r) => at(useArr("elevator_shipments", ALL, r), W_NOW))));
+    const rNow = shRatio(cur), r5 = mean(ref.map(shRatio));
+    if (rNow != null && r5 != null) para(c7, `Country elevators have shipped out ${fmtKt(shNow)} since Aug 1 (${fmtPct(shP)} vs 5-yr), ${Math.round(100 * rNow)}% of what came in, against ${Math.round(100 * r5)}% normally: ${Math.abs(rNow - r5) < 0.03 ? "stocks are building at the usual rate." : rNow < r5 ? "grain is backing up in the country." : "elevators are drawing down faster than usual."}`);
     para(c7, `${short(lastYr)} ended with ${fmtKt(endStocks(ALL, lastYr))} in commercial storage on Jul 31, ${lastRank === 1 ? `the most since ${short(years[0])}` : `${ordinal(lastRank)} highest of ${ends.length} years`}.`);
 
     renderSized(rows);
@@ -1525,6 +1562,8 @@
     // [group, header, value getter key, formatter]
     ["Producer deliveries", `Wk`, "dWk", n1], ["Producer deliveries", "Chg", "dChg", chgTxt], ["Producer deliveries", "CYTD", "dCy", n1],
     ["Producer deliveries", "y/y", "dYy", fmtPct], ["Producer deliveries", "vs 5-yr", "d5", fmtPct],
+    ["Elevator shipments", "Wk", "shWk", n1], ["Elevator shipments", "CYTD", "shCy", n1], ["Elevator shipments", "vs 5-yr", "sh5", fmtPct],
+    ["Elevator shipments", "Out per t in", "shRatio", (v) => v == null ? "–" : (100 * v).toFixed(0) + "%"],
     ["Exports", "Wk", "eWk", n1], ["Exports", "CYTD", "eCy", n1], ["Exports", "y/y", "eYy", fmtPct], ["Exports", "vs 5-yr", "e5", fmtPct],
     ["Licensed processing", "CYTD", "pCy", n1], ["Licensed processing", "y/y", "pYy", fmtPct],
     ["Commercial stocks", "Level", "sLv", n1], ["Commercial stocks", "Chg", "sChg", chgTxt], ["Commercial stocks", "vs 5-yr", "s5", fmtPct],
@@ -1538,10 +1577,13 @@
     const avg5 = (f) => mean(ref.map(f));
     return D.grains.map((g) => {
       const d = cum(g, cur), e = useArr("exports", g, cur), p = useArr("process", g, cur), st = stocks(g, cur);
+      const sh = useArr("elevator_shipments", g, cur), ed = useArr("elevator_deliveries", g, cur);
       const r = {
         g,
         dWk: wk(d, W_NOW), dChg: wk(d, W_NOW) - wk(d, W_NOW - 1), dCy: at(d, W_NOW),
         dYy: pct(at(d, W_NOW), at(cum(g, lastYr), W_NOW)), d5: pct(at(d, W_NOW), avg5((y) => at(cum(g, y), W_NOW))),
+        shWk: wk(sh, W_NOW), shCy: at(sh, W_NOW), sh5: pct(at(sh, W_NOW), avg5((y) => at(useArr("elevator_shipments", g, y), W_NOW))),
+        shRatio: at(ed, W_NOW) > 0 && at(sh, W_NOW) != null ? at(sh, W_NOW) / at(ed, W_NOW) : null,
         eWk: wk(e, W_NOW), eCy: at(e, W_NOW),
         eYy: pct(at(e, W_NOW), at(useArr("exports", g, lastYr), W_NOW)), e5: pct(at(e, W_NOW), avg5((y) => at(useArr("exports", g, y), W_NOW))),
         pCy: at(p, W_NOW) || null, pYy: at(p, W_NOW) ? pct(at(p, W_NOW), at(useArr("process", g, lastYr), W_NOW)) : null,
@@ -1601,7 +1643,7 @@
         if (i === 0 || FLASH_COLS[i - 1][0] !== grp) td.classList.add("sep");
       });
     }
-    $("mflash-note").textContent = `Wk = week ${W_NOW} (week-over-week change in CGC crop-year totals); Chg = change from week ${W_NOW - 1}. y/y vs ${short(lastYr)} and vs 5-yr (${short(ref[0])} to ${short(lastYr)}) compare crop year to date at the same week; stock comparisons are levels. Exports = port terminals plus direct shipments. Licensed processing covers CGC-licensed process elevators only. Sized to crop = share of StatCan's ${harvest} western production estimate delivered, against the usual share by this week. Click a column to sort, or a crop to open its page.`;
+    $("mflash-note").textContent = `Wk = week ${W_NOW} (week-over-week change in CGC crop-year totals); Chg = change from week ${W_NOW - 1}. y/y vs ${short(lastYr)} and vs 5-yr (${short(ref[0])} to ${short(lastYr)}) compare crop year to date at the same week; stock comparisons are levels. Elevator shipments = grain shipped out of licensed country elevators to all destinations; out per t in = shipments over deliveries into those elevators, crop year to date (under 100% means country stocks are building). Exports = port terminals plus direct shipments. Licensed processing covers CGC-licensed process elevators only. Sized to crop = share of StatCan's ${harvest} western production estimate delivered, against the usual share by this week. Click a column to sort, or a crop to open its page.`;
   }
 
 
@@ -1657,7 +1699,7 @@
       return {
         g, slug, close: C.meta.tbay_close_week,
         rNow: ratio(cur), r5: mean(ref.map(ratio)), delNow: at(f("primary_deliveries", cur), W_NOW),
-        exp: vs(exp), expLy: finalOf(exp(lastYr)), stk: vs(stocks), tb: vs(tb),
+        exp: vs(exp), expLy: finalOf(exp(lastYr)), stk: vs(stocks), tb: vs(tb), ship: vs((y) => f("primary_shipments", y)),
         cov: { now: cover(cur), avg: mean(ref.map(cover)) }, termAvg: mean(ref.map((r) => finalOf(term(r)))),
       };
     });
@@ -1692,8 +1734,8 @@
 
     const stk = top(m.filter((r) => r.stk.avg >= 100 && r.stk.p != null && Math.abs(r.stk.p) >= 0.2), (r) => r.stk.p);
     card(stk.length * 0.3 + Math.abs(stk[0]?.stk.p || 0) / 2, "Commercial stocks", "Biggest swings in commercial stocks",
-      stk.map((r) => ({ g: r.g, slug: r.slug, text: `${fmtKt(r.stk.now)}, ${fmtPct(r.stk.p)} vs 5-yr` })),
-      "Stocks in licensed elevators, processors and port terminals against the 5-yr average at this week.");
+      stk.map((r) => ({ g: r.g, slug: r.slug, text: `${fmtKt(r.stk.now)}, ${fmtPct(r.stk.p)} vs 5-yr` + (r.ship.p != null && r.ship.avg >= 20 ? `; elevator shipments ${fmtPct(r.ship.p)}` : "") })),
+      "Stocks in licensed elevators, processors and port terminals against the 5-yr average at this week, with country elevator shipments (crop year to date) against theirs.");
 
     const port = top(m.filter((r) => r.termAvg >= 200 && r.cov.now != null && r.cov.avg >= 0.5 && Math.abs(r.cov.now / r.cov.avg - 1) >= 0.25), (r) => r.cov.now / r.cov.avg - 1);
     card(port.length * 0.3 + Math.abs(port[0] ? port[0].cov.now / port[0].cov.avg - 1 : 0) / 2, "Port terminals", "Port stocks out of line with the export pace",

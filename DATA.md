@@ -38,7 +38,7 @@ exports as a memo line; add them back to match CGC's all-Canada totals.
 | **Exports** | Licensed port terminal exports, plus shipments from country elevators straight to export destinations or container loaders. Before 2018-19, Vancouver and Prince Rupert are reported together as Pacific. |
 | **Terminal receipts** | Unloads at port terminals. |
 | **Thunder Bay disposition** | Where Thunder Bay terminals send grain: straight to export, to domestic users, or by lake to other terminals. |
-| **Country elevator throughput** | Grain into and out of primary elevators, all destinations. With country stocks, shows whether elevators are filling up or being drawn down. |
+| **Country elevator shipments and throughput** | Grain shipped out of licensed primary (country) elevators to all destinations, against grain delivered into them. Wherever the pages discuss commercial stocks building or drawing down, they show these flows next to it: shipments out per tonne delivered in, net build (in minus out) and weeks of cover. |
 | **Commercial stocks** | Week-end stocks at country elevators, processors and port terminals. Grain on farms is not included. |
 | **Domestic feed grains** | CGC's "Feed Grains" table: feed-grade grain delivered to and shipped from primary elevators for domestic feed. A **subset** of elevator handlings, not extra supply. CGC notes elevators handle only about 10–15% of feed grain use. |
 | **US corn receipts** | US corn received at licensed primary and process elevators (Imported Grains worksheet). |
@@ -133,7 +133,7 @@ stocks; `null` for weeks not yet reported.
 
 | File | Built by | Main keys |
 |---|---|---|
-| `dashboard/data.json` (overview) | `dashboard_data.py` | `grains`, `deliveries`, `stocks`, `province`, `channel`, `province_weekly`, `exports`, `process`, `production`, `groups` |
+| `dashboard/data.json` (overview) | `dashboard_data.py` | `grains`, `deliveries`, `stocks`, `province`, `channel`, `province_weekly`, `exports`, `process`, `elevator_deliveries`, `elevator_shipments` (into and out of country elevators), `production`, `groups` |
 | `dashboard/<crop>/data.json` | `grain_data.py` | `flows` (deliveries, process, feed, exports and receipts by port, Thunder Bay disposition, elevator throughput, eastern exports memo), `stocks`, `province`, `channel`, `production`, `grades`; `meta` holds the page's title, lede, notes and settings |
 | `dashboard/canola/forecast.json` | `canola_forecast.py` | `weekly` and `full_year` forecasts for crush and exports, `supply`, backtest results |
 | `dashboard/feed/data.json` | `feed_data.py`, `feed_model.py` | `demand_model` (by crop year: `by_region` grain kt, `by_group` barley-equivalent kt, `drivers`, `relative_price`, `meta`), `demand_model_meta`, `supply_disposition`, `farm_feed`, `regional_feed`, `corn`, `production`, `prices` (Alberta, `ontario`, CBOT, FX), `livestock` (`inventory.west` / `.east`), `weekly` (CGC), `model` (residual forecast fit and backtest), `panel`, `estimate` |

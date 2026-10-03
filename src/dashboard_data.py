@@ -102,16 +102,17 @@ def build() -> dict:
         """
     ).fetchall(), cumulative=True)
 
-    # Exports (terminal + direct) and licensed processing per grain, cumulative, for the flash table
+    # Exports (terminal + direct), licensed processing, and grain delivered into and shipped out of
+    # country (primary) elevators per grain, cumulative, for the flash table and stock context
     use_rows = []
     for g in grains:
         for name, year, week, kt in con.execute(flows_sql(g)).fetchall():
             if name.startswith("exports_"):
                 use_rows.append(("exports", g, year, week, kt))
-            elif name == "process":
-                use_rows.append(("process", g, year, week, kt))
+            elif name in ("process", "primary_deliveries", "primary_shipments"):
+                use_rows.append((name, g, year, week, kt))
     uses = {}
-    for kind in ("exports", "process"):
+    for kind in ("exports", "process", "primary_deliveries", "primary_shipments"):
         agg: dict = {}
         for k, g, year, week, kt in use_rows:
             if k == kind:
@@ -147,6 +148,8 @@ def build() -> dict:
         "province_weekly": province_weekly,
         "exports": uses["exports"],
         "process": uses["process"],
+        "elevator_deliveries": uses["primary_deliveries"],
+        "elevator_shipments": uses["primary_shipments"],
         "production": production,
         "groups": GROUPS,
     }

@@ -389,6 +389,11 @@
         <div class="legend" id="leg-end"></div>
         <div class="chart" id="ch-end" style="height:280px"></div>
       </div>
+      <div class="panel wide" id="shipall-panel">
+        <div class="panel-head"><h3>Shipments out of country elevators, every crop year</h3><p>Cumulative thousand tonnes shipped from licensed country elevators to all destinations since Aug 1. With deliveries in, this is what builds or draws down country stocks. Hover to compare all years at one week.</p></div>
+        <div class="legend" id="leg-shipall"></div>
+        <div class="chart" id="ch-shipall" style="height:280px"></div>
+      </div>
       <div class="panel wide">
         <div class="panel-head"><h3 id="stk-h">Commercial stocks at this week</h3><p id="stk-p"></p></div>
         <div class="legend" id="leg-stkyr"></div>
@@ -1140,6 +1145,16 @@
         { label: short(cur), color: "var(--process)", values: upTo(series.stocks(cur), W_NOW), dot: true, em: true },
       ],
     });
+    $("shipall-panel").hidden = !years.some((yr) => finalOf(series.pship(yr)) > 0.5);
+    legend($("leg-shipall"), [{ label: short(cur), color: "var(--process)" }, { label: short(lastYr), color: "var(--avg)" }, { label: "Earlier years", color: "var(--other)" }]);
+    weekChart($("ch-shipall"), {
+      aria: `${NAME} shipments out of country elevators in every crop year`, sortTip: true,
+      series: [
+        ...years.filter((yr) => yr !== cur && yr !== lastYr).map((yr) => ({ label: short(yr), color: "var(--other)", tipColor: "var(--muted)", values: series.pship(yr), width: 1.25 })),
+        { label: short(lastYr), color: "var(--avg)", values: series.pship(lastYr), width: 1.5 },
+        { label: short(cur), color: "var(--process)", values: upTo(series.pship(cur), W_NOW), dot: true, em: true },
+      ],
+    });
     legend($("leg-end"), STOCKS.map((s) => ({ label: s.label, color: s.color, kind: "rect" })));
     const use = (yr) => finalOf(series.use(yr));
     yearStack($("ch-end"), {
@@ -1598,6 +1613,21 @@
     }
   }
 
+  // the flows behind a stock location's level, crop year to date against the 5-yr average:
+  // what comes in and what goes out, so a stock gap can be read as a supply or a shipping story
+  function stockFlowText(key) {
+    const vs = (fn) => { const w = lastWeek(fn(cur), W_NOW); if (!w) return null; const now = at(fn(cur), w), avg = mean(ref.map((r) => at(fn(r), w))); return avg > 5 ? { now, p: pct(now, avg) } : null; };
+    const pair = (inLabel, inFn, outLabel, outFn) => {
+      const a = vs(inFn), b = vs(outFn);
+      if (!a || !b) return "";
+      return ` Since Aug 1, ${inLabel} ${fmtKt(a.now)} (${fmtPct(a.p)} vs 5-yr) and ${outLabel} ${fmtKt(b.now)} (${fmtPct(b.p)}).`;
+    };
+    if (key === "stocks_country") return pair("delivered in", series.pdel, "shipped out", series.pship);
+    if (key === "stocks_terminals") return hasTerminal() ? pair("terminals received (incl. transfers between terminals)", (y) => sumArr(RECEIPT_ROWS.map(([k]) => flow(k, y))), "exported", series.terminal) : "";
+    if (key === "stocks_process" && META.process) return (() => { const b = vs(series.process); return b ? ` Processing so far: ${fmtKt(b.now)} (${fmtPct(b.p)} vs 5-yr).` : ""; })();
+    return "";
+  }
+
   // ---------- things to watch ----------
   // Each rule looks at one measure against its 5-year norm at this week and returns a card with a score;
   // the page shows the strongest few, so the cards change as the data does.
@@ -1660,7 +1690,7 @@
       const locs = STOCKS.map((s) => ({ s, now: at(stock(s.key, cur), W_NOW) || 0, avg: mean(ref.map((r) => at(stock(s.key, r), W_NOW))) || 0 }))
         .sort((a, b) => Math.abs(b.now - b.avg) - Math.abs(a.now - a.avg));
       add(Math.abs(stDev) * 1.5, "Commercial stocks", `Stocks are ${absPct(stDev)} ${stDev > 0 ? "above" : "below"} average`,
-        `${fmtKt(stNow)} in the licensed system at week ${W_NOW}, against a 5-yr average of ${fmtKt(stAvg)}. ${locs[0].s.label} account for most of the gap: ${fmtKt(locs[0].now)} against ${fmtKt(locs[0].avg)} normally.`);
+        `${fmtKt(stNow)} in the licensed system at week ${W_NOW}, against a 5-yr average of ${fmtKt(stAvg)}. ${locs[0].s.label} account for most of the gap: ${fmtKt(locs[0].now)} against ${fmtKt(locs[0].avg)} normally.` + stockFlowText(locs[0].s.key));
     }
 
     // port terminals
