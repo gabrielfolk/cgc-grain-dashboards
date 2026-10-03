@@ -125,6 +125,7 @@ def load_panel(con) -> dict:
 # ------------------------------------------------------------ helpers
 
 def prior_years(panel, y, n=MAX_PRIOR):
+    """The (up to n) crop years before y."""
     i = panel["years"].index(y)
     return panel["years"][max(0, i - n):i]
 
@@ -191,6 +192,8 @@ def weekly_rows(panel, s, y, t):
 
 
 def weekly_backtest(panel, s):
+    """Rolling-origin backtest of the 1-4 week forecasts: each test year is forecast from every
+    week, by models trained only on earlier years, alongside the baselines."""
     years = [y for y in panel["years"] if y in panel["final"][s]]
     test_years = years[-TEST_YEARS:]
     train_pool = [y for y in years if prior_years(panel, y)]  # need at least one prior year
@@ -210,6 +213,7 @@ def weekly_backtest(panel, s):
 
 
 def fit_weekly(rows, cols):
+    """Fit a ridge regression of the log change from the 4-week average on the given features."""
     X = pd.DataFrame([f for f, *_ in rows])[cols]
     # target: log change from the recent 4-week average
     yv = np.array([lg(actual, a4) for _, actual, _, a4 in rows])
@@ -220,6 +224,7 @@ def fit_weekly(rows, cols):
 
 
 def predict_weekly(models, feats, a4):
+    """Forecast a weekly flow (t) from the fitted model and the recent 4-week average."""
     x = pd.DataFrame([feats])[models["cols"]]
     if x.isna().any(axis=None):
         return np.nan
@@ -297,6 +302,7 @@ def fit_combo(rows, inputs):
 
 
 def full_year_training_rows(panel, s, years):
+    """One row per crop year and week: the inputs to the full-year forecast and the actual total."""
     rows = []
     for y in years:
         for t in range(1, WEEKS):
@@ -307,6 +313,8 @@ def full_year_training_rows(panel, s, years):
 
 
 def full_year_backtest(panel, s):
+    """Rolling-origin backtest of the full crop-year total: blend weights are fitted on earlier
+    years only, then applied from every week of the test year."""
     years = [y for y in panel["years"] if y in panel["final"][s]]
     test_years = years[-TEST_YEARS:]
     results = []
@@ -324,6 +332,7 @@ def full_year_backtest(panel, s):
 # ------------------------------------------------------------ scoring + current forecast
 
 def score(df, methods, by):
+    """Mean absolute percent error of each method, grouped by `by`."""
     out = {}
     for key, g in df.groupby(by):
         out[key] = {m: float(np.nanmean(np.abs(g[m] - g["actual"]) / g["actual"].clip(lower=1)) * 100) for m in methods}
@@ -331,6 +340,7 @@ def score(df, methods, by):
 
 
 def weekly_mae(df, methods):
+    """Mean absolute error (t) of each method by forecast horizon."""
     return {h: {m: float(np.nanmean(np.abs(g[m] - g["actual"]))) for m in methods} for h, g in df.groupby("h")}
 
 

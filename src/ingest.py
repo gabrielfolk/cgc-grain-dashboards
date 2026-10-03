@@ -73,6 +73,7 @@ def csv_url(start: int) -> str:
 
 
 def download(start: int, force: bool) -> Path | None:
+    """Fetch one crop year's CSV into data/raw/ (completed years are reused unless forced). None if CGC hasn't published it."""
     path = RAW_DIR / f"gsw-{crop_year_label(start)}.csv"
     if path.exists() and not force:
         return path
@@ -91,6 +92,7 @@ def download(start: int, force: bool) -> Path | None:
 
 
 def normalize(path: Path) -> pd.DataFrame:
+    """Read one raw CSV into the standard columns, whatever its header spelling and column order."""
     df = pd.read_csv(path, dtype=str, keep_default_na=False)
     # Header spelling ("crop_year" vs "Crop Year") and column order both vary
     # between crop years, so map by normalized name.
@@ -132,6 +134,7 @@ def fix_week_dates(df: pd.DataFrame, dates: pd.Series) -> pd.Series:
 def clean(df: pd.DataFrame) -> pd.DataFrame:
     # Blank cells are either empty table cells or footnote text that leaked into
     # label columns (e.g. grain="There has been a downward adju..."); drop both.
+    """Drop rows without a value (blank cells and leaked footnote text) and fix known label typos."""
     df = df[df["ktonnes"].notna()].copy()
     for col, mapping in FIXES.items():
         df[col] = df[col].replace(mapping)

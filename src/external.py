@@ -1,13 +1,14 @@
-"""External data for the canola forecast: StatCan production and prices, CBOT soy complex, USD/CAD.
+"""External data: StatCan tables, Yahoo Finance futures and FX, CGC harvest-quality pages.
 
-Everything here is looked up "as of" a date, so a backtest only sees what had been
-published by then.
+Everything is downloaded once and cached under data/raw/external/. Scripts read the cache;
+`--refresh` re-downloads it.
 
+Canola forecast (src/canola_forecast.py). Everything here is looked up "as of" a date, so a
+backtest only sees what had been published by then:
     production_known(harvest_year, as_of)  canola production expected at that date (t)
     prices_as_of(as_of)                    price features at that date
-
-Sources (downloaded and cached under data/raw/):
-    StatCan 32-10-0359  final area, yield and production by crop year
+Sources:
+    StatCan 32-10-0359  area, yield and production by crop year
     StatCan 32-10-0077  monthly farm price, canola, Saskatchewan (CAD/t)
     reference/statcan_canola_vintages.csv  StatCan's in-season production estimates as released
     Yahoo Finance weekly closes: ZL=F soybean oil (US cents/lb), ZM=F soybean meal (USD/short ton),
@@ -16,7 +17,14 @@ There is no free history for ICE canola futures, so canola's own price comes fro
 farm price. That series is published about two months after the month ends, so it is lagged
 to its approximate release date.
 
-    python src/external.py --refresh   # re-download everything
+Other pages:
+    statcan(table)          any StatCan table by id (feed page, margins, crop pages)
+    yahoo_weekly(symbol)    any Yahoo Finance weekly series (feed page: ZC=F CBOT corn)
+    western_production()    production summed over the western provinces (crop pages)
+    cgc_grade_distribution  CGC harvest-sample grades for CWRS and CWAD (not used on a page yet)
+
+    python src/external.py --refresh   # re-download every cached StatCan table and Yahoo series
+    python src/external.py --markets   # re-download the Yahoo series only (quick; for the weekly refresh)
 """
 
 from __future__ import annotations
@@ -155,19 +163,6 @@ def prices_as_of(as_of: pd.Timestamp) -> dict:
     }
 
 
-if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--refresh", action="store_true")
-    args = ap.parse_args()
-    load.cache_clear()
-    d = load(refresh=args.refresh)
-    print(d["crop"].tail(6).round(0).to_string())
-    print("markets:", d["markets"].index.min().date(), "..", d["markets"].index.max().date())
-    today = pd.Timestamp.today().normalize()
-    print("production known today:", production_known(today.year if today.month >= 8 else today.year - 1, today))
-    print("prices today:", {k: round(v, 3) for k, v in prices_as_of(today).items()})
-
-
 # ---------------------------------------------------------------- feed grains page
 
 def statcan(table: str, refresh: bool = False) -> pd.DataFrame:
@@ -211,3 +206,35 @@ def cgc_grade_distribution(cls: str, years: range, refresh: bool = False) -> pd.
             rows.append({"year": year, "grade": str(grade), "pct": float(table.loc["% of total", grade]),
                          "samples": float(table.loc["Number of samples", grade])})
     return pd.DataFrame(rows)
+
+
+def refresh_cache(markets_only: bool = False) -> None:
+    """Re-download every StatCan table and Yahoo series in the cache (whichever script first
+    fetched it), plus the canola forecast's own inputs. Each script only downloads what is
+    missing, so without this, cached tables never update."""
+    symbols = {p.stem.removeprefix("yahoo_")[::-1].replace("_", "=", 1)[::-1] for p in RAW.glob("yahoo_*.json")} | set(YAHOO.values())
+    for sym in sorted(symbols):
+        s = _yahoo_weekly(sym, refresh=True)
+        print(f"Yahoo {sym}: to {s.index.max().date()}")
+    if markets_only:
+        return
+    tables = {p.stem for p in RAW.glob("[0-9]*.csv")} | set(STATCAN_TABLES.values())
+    for t in sorted(tables):
+        d = _statcan_csv(t, refresh=True)
+        print(f"StatCan {t[:2]}-{t[2:4]}-{t[4:8]}: to {d['REF_DATE'].astype(str).max()}")
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--refresh", action="store_true", help="re-download every cached StatCan table and Yahoo series")
+    ap.add_argument("--markets", action="store_true", help="re-download the Yahoo series only")
+    args = ap.parse_args()
+    if args.refresh or args.markets:
+        refresh_cache(markets_only=args.markets and not args.refresh)
+    load.cache_clear()
+    d = load()
+    print(d["crop"].tail(6).round(0).to_string())
+    print("markets:", d["markets"].index.min().date(), "..", d["markets"].index.max().date())
+    today = pd.Timestamp.today().normalize()
+    print("production known today:", production_known(today.year if today.month >= 8 else today.year - 1, today))
+    print("prices today:", {k: round(v, 3) for k, v in prices_as_of(today).items()})

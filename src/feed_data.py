@@ -343,6 +343,8 @@ def livestock() -> dict:
 # ------------------------------------------------------------------ CGC weekly (Western Canada)
 
 def cgc_weekly(con, years: list[str]) -> dict:
+    """CGC weekly crop-year-to-date series (kt) for the feed page's flash table, Western Canada only.
+    Gaps inside a year are carried forward."""
     def series(sql):
         rows = con.execute(sql).fetchall()
         out: dict = {}
@@ -401,6 +403,7 @@ def demand_index(liv: dict, years: list[str], region: str) -> dict:
 
 
 def crop_year_price(series: dict, cy: str) -> float | None:
+    """Average of the monthly prices in an Aug-Jul crop year (None if no months are published)."""
     y0 = int(cy[:4])
     months = [f"{y0}-{m:02d}" for m in range(8, 13)] + [f"{y0 + 1}-{m:02d}" for m in range(1, 8)]
     v = [series[m] for m in months if m in series]
@@ -456,6 +459,7 @@ def fit_shares(panel: pd.DataFrame, train: list[str]):
 
 
 def predict_shares(fit, supply: dict, price: dict) -> dict:
+    """Each model grain's share of total feed use, from the fitted model, supplies and prices."""
     a_b = supply["barley"] / fit["means"]["barley"]
     p_b = price["barley"] / ENERGY["barley"]
     rel = {"barley": 1.0}
@@ -489,6 +493,8 @@ def by_region(est: dict, corn_east: float, shares: dict) -> dict:
 
 
 def run_model(panel: pd.DataFrame, regional: dict, cur: str) -> dict:
+    """Backtest the estimate year by year on earlier years only, against the 5-yr average and last
+    year (by grain, Canada total and regional totals), then fit the model on every complete year."""
     total = lambda cy: sum(panel.loc[cy, f"feed_{g}"] for g in MODEL_GRAINS)
     region_total = lambda cy, r: sum(regional[cy][g][r] for g in GRAINS)
     need = [f"feed_{g}" for g in MODEL_GRAINS + ["corn_east"]] + [f"price_{g}" for g in MODEL_GRAINS] + [f"supply_{g}" for g in SMALL]

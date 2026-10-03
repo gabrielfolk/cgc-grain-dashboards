@@ -386,6 +386,7 @@ def tbay_close_week(con, years: list[str]) -> int | None:
 
 
 def stocks_sql(grain: str) -> str:
+    """SQL for one grain's week-end commercial stocks: country elevators, processors and terminals."""
     return f"""
 select 'stocks_' || case location when 'country' then 'country' when 'process' then 'process' else 'terminals' end,
        crop_year, grain_week, kt
@@ -411,6 +412,7 @@ def to_series(rows, cumulative: bool, add: bool = False) -> dict:
 
 
 def build(con, slug: str, tbay_close: int | None = None) -> None:
+    """Write dashboard/<slug>/data.json and a copy of the page template for one crop."""
     cfg = GRAINS[slug]
     years = [y for (y,) in con.execute("select distinct crop_year from gsw order by 1").fetchall()]
     flows = to_series(con.execute(flows_sql(cfg["grain"])).fetchall(), cumulative=True)

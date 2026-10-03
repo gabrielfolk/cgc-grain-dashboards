@@ -42,6 +42,7 @@ CROP_COLORS = {
 
 
 def favicon(page: str) -> str:
+    """An inline SVG bar-chart favicon: the crop's colour on crop pages, multicoloured elsewhere."""
     if page in CROP_COLORS:
         bg, bars = CROP_COLORS[page], ["#101311"] * 3
     else:
@@ -162,6 +163,7 @@ def nav(page: str) -> str:
 
 
 def main() -> None:
+    """Rebuild docs/ from scratch: every page in NAV with its navigation bar and data files."""
     if OUT.exists():
         shutil.rmtree(OUT)
     for page in PAGES:

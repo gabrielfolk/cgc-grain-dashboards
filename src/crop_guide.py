@@ -64,6 +64,7 @@ NUM = re.compile(r"^-?\d{1,3}(,\d{3})*(\.\d+)?$|^-?\d+(\.\d+)?$")
 
 
 def download(refresh: bool = False) -> None:
+    """Download the guide PDFs listed in URLS into the cache (with retries; responses that are not PDFs are rejected)."""
     RAW.mkdir(parents=True, exist_ok=True)
     for year, url in URLS.items():
         path = RAW / f"{year}.pdf"
@@ -156,6 +157,7 @@ def _check(rec: dict) -> bool:
 
 
 def parse_year(year: int) -> list[dict]:
+    """Parse one year's guide into budget rows (crop, soil zone, yield, price and cost lines)."""
     out = []
     zone = None
     with pdfplumber.open(RAW / f"{year}.pdf") as pdf:
