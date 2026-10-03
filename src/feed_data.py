@@ -1,5 +1,5 @@
 """Build dashboard/feed/data.json: Canadian feed grain use, supply, quality, livestock and prices,
-with a West (MB, SK, AB, BC) and East (Ontario + Quebec) breakdown.
+with a West (MB, SK, AB, BC) and East (Ontario, Quebec and the Atlantic provinces) breakdown.
 
 Run after src/ingest.py:
     python src/feed_data.py
@@ -12,10 +12,10 @@ StatCan publishes feed use for Canada only, so the regional split is estimated:
     barley, wheat, durum, oats  each region's on-farm feed (32-10-0015, published by region)
                                 plus a share of the rest of Canada's feed use (fed off the farm
                                 that grew it) in proportion to the region's production
-    corn                        West = domestic use in "other provinces" (32-10-0014) less seed
-                                and the Atlantic crop; Atlantic = its own crop; East = the rest
-                                of Canada's corn feed. Corn for industry (ethanol, starch) is
-                                almost all in Ontario and Quebec.
+    corn                        West = domestic use in "other provinces" (32-10-0014, i.e. the West
+                                and the Atlantic provinces) less seed and the Atlantic crop (assumed
+                                fed where grown); East = the rest of Canada's corn feed. Corn for
+                                industry (ethanol, starch) is almost all in Ontario and Quebec.
 The regions add up to StatCan's Canada total.
 
 The page's estimate for the current crop year (Canada):
@@ -24,7 +24,7 @@ The page's estimate for the current crop year (Canada):
               log(share_i / share_barley) = crop constant
                   + a * log(availability ratio) + b * log(energy-adjusted price ratio)
     estimate for each grain = 50% model + 50% its own five-year average
-    eastern corn (Ontario, Quebec, Atlantic) = its five-year average: it is fed from the local
+    eastern corn = its five-year average: it is fed from the local
               crop and doesn't trade off against western barley on price, so it stays out of the model
     regions = each small grain's estimate x the region's average share of it over the same five years
 Backtested year by year on earlier years only (like the canola forecast), against the
@@ -48,10 +48,9 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_PATH = ROOT / "dashboard" / "feed" / "data.json"
 WEEKS = 52
 WEST = ["Manitoba", "Saskatchewan", "Alberta", "British Columbia"]
-EAST = ["Ontario", "Quebec"]
 ATLANTIC = ["New Brunswick", "Nova Scotia", "Prince Edward Island", "Newfoundland and Labrador"]
-PROVINCES = {"west": WEST, "east": EAST, "atlantic": ATLANTIC}
-REGIONS = list(PROVINCES)
+EAST = ["Ontario", "Quebec"] + ATLANTIC
+REGIONS = ["west", "east"]
 
 # StatCan supply-and-disposition crop names -> page keys
 SD_CROPS = {"Barley": "barley", "Wheat, excluding durum": "wheat", "Durum wheat": "durum", "Oats": "oats"}
@@ -124,8 +123,8 @@ def farm_feed() -> dict:
     """On-farm feed (kt, full crop year) by grain, crop year and region (StatCan 32-10-0015).
 
     West uses StatCan's Western Canada total (or the sum of its provinces where that is
-    suppressed), East is Ontario + Quebec, Atlantic the Maritime provinces. Eastern and
-    Atlantic farms report only "All wheat"; no durum is grown there, so that is their wheat
+    suppressed), East StatCan's Eastern Canada total (Ontario, Quebec and the Maritimes).
+    Eastern farms report only "All wheat"; no durum is grown there, so that is their wheat
     (ex-durum) and their durum is zero."""
     fs = external.statcan("32100015")
     fs = fs[(fs["Farm supply and disposition of grains"] == "Animal feed, waste and dockage") & fs["REF_DATE"].str.endswith("-07")]
@@ -146,8 +145,7 @@ def farm_feed() -> dict:
             east_crop = "All wheat" if g == "wheat" else crop
             reg = {
                 "west": total("Western Canada", WEST, crop, ref),
-                "east": 0.0 if g == "durum" else total("", EAST, east_crop, ref),
-                "atlantic": 0.0 if g == "durum" else total("Maritime provinces", ATLANTIC, east_crop, ref),
+                "east": 0.0 if g == "durum" else total("Eastern Canada", EAST, east_crop, ref),
             }
             if reg["west"] is None:
                 continue
@@ -211,9 +209,10 @@ def corn_full_year(cornd: dict, cy: str, key: str) -> tuple[float | None, bool]:
 
 
 def production() -> dict:
-    """Production (kt) by grain, region and harvest year. East and Atlantic are sums of their
-    provinces; West is Canada less those, so the regions add up to Canada (and suppressed
-    western provinces don't drop out)."""
+    """Production (kt) by grain, region and harvest year. East is the sum of its provinces;
+    West is Canada less East, so the regions add up to Canada (and suppressed western
+    provinces don't drop out). The Atlantic provinces are also kept on their own, for the
+    corn split."""
     p = external.statcan("32100359")
     p = p[(p["Harvest disposition"] == "Production (metric tonnes)") & p["Type of crop"].isin(PROD_NAMES.values()) & (p["REF_DATE"] >= 2010)]
     out: dict = {}
@@ -225,7 +224,7 @@ def production() -> dict:
         out[k] = {"canada": {}, "west": {}, "east": {}, "atlantic": {}}
         for y, v in canada.items():
             e, a = float(east.get(y, 0.0)), float(atl.get(y, 0.0))
-            for r, x in (("canada", v), ("east", e), ("atlantic", a), ("west", v - e - a)):
+            for r, x in (("canada", v), ("east", e), ("atlantic", a), ("west", v - e)):
                 out[k][r][str(y)] = round(x / 1000, 1)
     return out
 
@@ -257,7 +256,7 @@ def regional_feed(sd: dict, farm: dict, cornd: dict, prod: dict, years: list[str
         atl = prod["corn"]["atlantic"].get(cy[:4], 0.0)
         if feed is not None and use is not None:
             west = max(0.0, use - seed - atl)
-            rec["corn"] = {"west": round(west, 1), "east": round(feed - west - atl, 1), "atlantic": round(atl, 1), "estimated": est}
+            rec["corn"] = {"west": round(west, 1), "east": round(feed - west, 1), "estimated": est}
         if rec:
             out[cy] = rec
     return out
@@ -288,7 +287,7 @@ def corn_delivered(zc_cents: float, fx: float, basis_usd_bu: float = CORN_BASIS_
 
 
 def livestock() -> dict:
-    """Inventories (Jan 1 / Jul 1) for the West and the East (Ontario + Quebec), Canada slaughter
+    """Inventories (Jan 1 / Jul 1) for the West and the East, Canada slaughter
     and meat production, and poultry meat by region."""
     cat = external.statcan("32100130")
     hogs = external.statcan("32100160")
@@ -300,7 +299,7 @@ def livestock() -> dict:
         return {key(r, s): round(float(v), 1) for (r, s), v in g.items() if not pd.isna(v) and int(r) >= 2010}
 
     inv: dict = {}
-    for region, geos in (("west", ["Western provinces"]), ("east", EAST)):
+    for region, geos in (("west", ["Western provinces"]), ("east", ["Eastern provinces"])):
         c = cat[cat["GEO"].isin(geos)]
         cattle = lambda livestock, farm_type: region_sum(c[(c["Livestock"] == livestock) & (c["Farm type"] == farm_type)], geos)
         inv[region] = {
@@ -410,7 +409,7 @@ def crop_year_price(series: dict, cy: str) -> float | None:
 
 def model_panel(sd, cornd, pr, regional, years) -> pd.DataFrame:
     """One row per crop year. Model grains: barley, wheat, durum and oats (Canada) and corn fed in
-    the West; eastern corn (Ontario, Quebec and the Atlantic crop) is kept separate."""
+    the West; eastern corn is kept separate."""
     rows = []
     for cy in years:
         rec = {"cy": cy}
@@ -421,7 +420,7 @@ def model_panel(sd, cornd, pr, regional, years) -> pd.DataFrame:
             rec[f"price_{g}"] = crop_year_price(pr[g]["values"], cy)
         rc = regional.get(cy, {}).get("corn")
         rec["feed_corn_west"] = rc["west"] if rc else None
-        rec["feed_corn_east"] = rc["east"] + rc["atlantic"] if rc else None
+        rec["feed_corn_east"] = rc["east"] if rc else None
         rec["feed_corn"], rec["corn_estimated"] = corn_full_year(cornd, cy, "feed_canada")
         rec["imports_corn_west"], _ = corn_full_year(cornd, cy, "imports_west")
         rec["supply_corn_west"] = None
@@ -473,15 +472,11 @@ def blend(shares: dict, total: float, avg: dict) -> dict:
 
 
 def region_shares(regional: dict, yrs: list[str]) -> dict:
-    """Each region's average share of each small grain's Canada feed use over the given crop
-    years, and the East's average share of eastern (East + Atlantic) corn."""
+    """Each region's average share of each small grain's Canada feed use over the given crop years."""
     out = {}
     for g in SMALL:
         rows = [regional[y][g] for y in yrs if g in regional.get(y, {})]
         out[g] = {k: float(np.mean([r[k] / sum(r[j] for j in REGIONS) for r in rows])) for k in REGIONS}
-    rows = [regional[y]["corn"] for y in yrs if "corn" in regional.get(y, {})]
-    east = float(np.mean([r["east"] / (r["east"] + r["atlantic"]) for r in rows]))
-    out["corn_east"] = {"east": east, "atlantic": 1 - east}
     return out
 
 
@@ -489,8 +484,7 @@ def by_region(est: dict, corn_east: float, shares: dict) -> dict:
     """Split a Canada estimate (model grains) plus eastern corn into regions."""
     out = {r: {g: est[g] * shares[g][r] for g in SMALL} for r in REGIONS}
     out["west"]["corn"] = est["corn_west"]
-    out["east"]["corn"] = corn_east * shares["corn_east"]["east"]
-    out["atlantic"]["corn"] = corn_east * shares["corn_east"]["atlantic"]
+    out["east"]["corn"] = corn_east
     return out
 
 

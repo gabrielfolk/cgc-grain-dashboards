@@ -16,8 +16,7 @@ only**.
 
 ## Regional split (estimated)
 
-West = MB, SK, AB, BC. East = Ontario + Quebec. The Atlantic provinces are kept as a third, small region so the
-three add up to Canada.
+West = MB, SK, AB, BC. East = Ontario, Quebec and the Atlantic provinces. West + East = Canada.
 
 - **Small grains:** each region's on-farm feed (32-10-0015, published by region) plus a share of the rest of
   Canada's feed use (fed off the farm that grew it) in proportion to the region's production (32-10-0359).
@@ -26,13 +25,12 @@ three add up to Canada.
     of wheat feed, more than they grow.
   - Assumes off-farm feed grain is mostly used in the region that grew it.
 - **Corn:** provincial corn feed has been suppressed since 2007-08.
-  - West = domestic use in "other provinces" (= Canada less Ontario and Quebec), less seed and the Atlantic crop.
-    It includes any western industrial use (Minnedosa ethanol).
-  - Atlantic = its own crop, assumed fed where grown.
-  - East = Canada corn feed less West and Atlantic. This equals Ontario + Quebec domestic use less Canada's
-    industrial use.
+  - West = domestic use in "other provinces" (= Canada less Ontario and Quebec, so the West plus the Atlantic
+    provinces), less seed and the Atlantic crop (assumed fed where grown). It includes any western industrial use
+    (Minnedosa ethanol).
+  - East = Canada corn feed less West.
 
-2025-26: West 14.0 Mt, East 6.3 Mt (of which corn 5.8 Mt), Atlantic 0.3 Mt.
+2025-26: West 14.0 Mt, East 6.7 Mt (of which corn 5.9 Mt).
 
 ## Method
 
@@ -49,12 +47,12 @@ three add up to Canada.
      (CBOT + US$1.60/bu basis and freight, at the monthly USD/CAD).
    - Fitted on 2013-14 to 2025-26: **a = 2.40**, **b = −0.52**.
 3. **Estimate:** 50% model and 50% each grain's own five-year average.
-4. **Eastern corn** (Ontario, Quebec, Atlantic): its five-year average. Putting all Canada corn in the share model
+4. **Eastern corn:** its five-year average. Putting all Canada corn in the share model
    flipped the price effect to the wrong sign (b = +0.17 with Ontario corn prices, +0.13 with US corn). Eastern
    corn is fed from the local crop to hogs, poultry and dairy and doesn't trade off against western barley on price.
    It was taken out on that economic ground, not on backtest score.
-5. **Regions:** each small grain's estimate × the region's five-year average share of it; eastern corn × the East's
-   five-year share of eastern corn.
+5. **Regions:** each small grain's estimate × the region's five-year average share of it; western corn from the model,
+   eastern corn as above.
 
 **For the current crop year:**
 - Supply is carry-in from StatCan's July ending stocks, plus StatCan's latest production estimate (Canada), plus
@@ -75,10 +73,10 @@ Each crop year from 2019-20 to 2025-26 was estimated using only earlier years. M
 | Oats | **253** | 302 | 270 | 330 |
 | Corn, Canada | 1,031 | 1,257 | **804** | 1,385 |
 |   fed in the West | 1,014 | 1,367 | **908** | 1,772 |
-|   fed in the East + Atlantic | **527** | 527 | 527 | 621 |
+|   fed in the East | **527** | 527 | 527 | 621 |
 | Total | **1,436** | 1,436 | 1,436 | 1,586 |
 | Western Canada total | 1,355 | 1,356 | **1,351** | 1,749 |
-| Ontario + Quebec total | 649 | 679 | 611 | **479** |
+| East total | 654 | 692 | 610 | **482** |
 
 - **The blend beats both baselines** for barley, durum and oats.
 - **Wheat and western corn are the weak spots;** the five-year average does better there.
@@ -92,11 +90,11 @@ Each crop year from 2019-20 to 2025-26 was estimated using only earlier years. M
 
 ## 2026-27 estimate (week 7 build)
 
-Total **20.1 Mt**: West 13.7 Mt, East 6.1 Mt, Atlantic 0.4 Mt.
+Total **20.1 Mt**: West 13.7 Mt, East 6.5 Mt.
 
 | Grain | Estimate |
 |---|---|
-| Corn | 9.21 Mt (West 3.72, East + Atlantic 5.49) |
+| Corn | 9.21 Mt (West 3.72, East 5.49) |
 | Barley | 5.57 Mt |
 | Wheat (ex-durum) | 4.12 Mt |
 | Oats | 0.82 Mt |
