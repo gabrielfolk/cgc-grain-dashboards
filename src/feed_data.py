@@ -4,11 +4,16 @@ with a West (MB, SK, AB, BC) and East (Ontario, Quebec and the Atlantic province
 Run after src/ingest.py:
     python src/feed_data.py
 
-Feed use (StatCan "animal feed, waste and dockage") is estimated by StatCan as a residual of
-its supply and disposition balance. It is published three times per crop year, cumulative:
-December (Aug-Dec), March (Aug-Mar) and July (full crop year; corn: August, Sep-Aug).
+Two measures of feed use:
 
-StatCan publishes feed use for Canada only, so the regional split is estimated:
+1. The feed demand model (src/feed_model.py), the page's headline: grain fed, built from animal
+   numbers x feeding rates, by province, livestock class and grain. See that module.
+
+2. StatCan's "animal feed, waste and dockage", a residual of its supply and disposition balance
+   (what is left after exports, processing, seed and stocks), so it also carries waste, dockage
+   and balancing error. Published three times per crop year, cumulative: December (Aug-Dec),
+   March (Aug-Mar) and July (full crop year; corn: August, Sep-Aug), for Canada only.
+   This page splits it into regions:
     barley, wheat, durum, oats  each region's on-farm feed (32-10-0015, published by region)
                                 plus a share of the rest of Canada's feed use (fed off the farm
                                 that grew it) in proportion to the region's production
@@ -16,9 +21,10 @@ StatCan publishes feed use for Canada only, so the regional split is estimated:
                                 and the Atlantic provinces) less seed and the Atlantic crop (assumed
                                 fed where grown); East = the rest of Canada's corn feed. Corn for
                                 industry (ethanol, starch) is almost all in Ontario and Quebec.
-The regions add up to StatCan's Canada total.
+   The regions add up to StatCan's Canada total. The West's measured corn use also sets the
+   demand model's western corn (the 1999 rations predate Manitoba's corn crop).
 
-The page's estimate for the current crop year (Canada):
+   A forecast of the residual for the current crop year (shown lower on the page):
     total   = average total feed use (barley, wheat, durum, oats, western corn) of the last five crop years
     shares  = split across those grains by a model fitted on past crop years:
               log(share_i / share_barley) = crop constant
@@ -27,9 +33,8 @@ The page's estimate for the current crop year (Canada):
     eastern corn = its five-year average: it is fed from the local
               crop and doesn't trade off against western barley on price, so it stays out of the model
     regions = each small grain's estimate x the region's average share of it over the same five years
-Backtested year by year on earlier years only (like the canola forecast), against the
-five-year average and last year's use; scaling the total by the livestock demand index made
-it worse, so the index is shown as context only.
+   Backtested year by year on earlier years only (like the canola forecast), against the
+   five-year average and last year's use.
 """
 
 from __future__ import annotations
@@ -42,6 +47,7 @@ import numpy as np
 import pandas as pd
 
 import external
+import feed_model
 from db import connect
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -73,16 +79,13 @@ PRICE_SERIES = {
     "hogs": "Hogs",
 }
 # Ontario monthly farm prices (C$/t), the Eastern benchmark. Ontario corn is the corn price in the model.
-EAST_PRICE_SERIES = {"corn": "Corn for grain", "barley": "Barley", "wheat": "Ontario wheat excluding payments"}
+EAST_PRICE_SERIES = {"corn": "Corn for grain", "barley": "Barley", "wheat": "Ontario wheat excluding payments", "oats": "Oats"}
 # Feeding value relative to barley (cattle energy basis). Editable on the page.
 ENERGY = {"barley": 1.00, "wheat": 1.08, "durum": 1.06, "oats": 0.85, "corn": 1.12}
 # US corn delivered to southern Alberta = CBOT + this basis and freight (US$/bu). Editable on the page.
 CORN_BASIS_USD_BU = 1.60
 BU_CORN_PER_T = 39.368
 
-# Grain-consuming demand weights: tonnes of grain per head of inventory per year
-# (feedlot cattle, cows, hogs) and per tonne of poultry meat produced.
-DEMAND_WEIGHTS = {"feedlot": 2.7, "beef_cows": 0.15, "dairy_cows": 1.5, "hogs": 0.55, "poultry": 1.6}
 CANOLA_MEAL_YIELD = 0.57  # tonnes of meal per tonne of canola crushed
 
 
@@ -376,31 +379,7 @@ def cgc_weekly(con, years: list[str]) -> dict:
     """)
 
 
-# ------------------------------------------------------------------ demand index + model
-
-def demand_index(liv: dict, years: list[str], region: str) -> dict:
-    """Grain-consuming demand index (kt of grain per year) for each crop year, from the
-    Jul 1 inventory at the start of the crop year and the Jan 1 inventory in it."""
-    inv = liv["inventory"][region]
-    out = {}
-    for cy in years:
-        y0, y1 = cy[:4], cy[5:]
-        def avg(series):
-            v = [inv[series].get(f"{y0}-07"), inv[series].get(f"{y1}-01")]
-            v = [x for x in v if x is not None]
-            return sum(v) / len(v) if v else None
-        feedlot = [avg(k) for k in ("feedlot_steers", "feedlot_heifers")]
-        parts = {
-            "feedlot": sum(feedlot) if all(x is not None for x in feedlot) else None,
-            "beef_cows": avg("beef_cows"), "dairy_cows": avg("dairy_cows"), "hogs": avg("hogs"),
-            "poultry": liv["meat"][f"poultry_{region}"].get(y0),
-        }
-        if any(v is None for v in parts.values()):
-            continue
-        out[cy] = {k: round(v * DEMAND_WEIGHTS[k], 1) for k, v in parts.items()}
-        out[cy]["total"] = round(sum(out[cy].values()), 1)
-    return out
-
+# ------------------------------------------------------------------ StatCan residual estimate
 
 def crop_year_price(series: dict, cy: str) -> float | None:
     """Average of the monthly prices in an Aug-Jul crop year (None if no months are published)."""
@@ -597,6 +576,30 @@ def clean_json(o):
     return o
 
 
+# ------------------------------------------------------------------ demand model
+
+def model_demand(pr: dict, years: list[str], corn_west: dict) -> dict:
+    """Feed demand from animal numbers (src/feed_model.py), priced off each region's grains:
+    West = Alberta farm prices and US corn delivered to southern Alberta; East = Ontario."""
+    years = sorted(set(years))
+    us = {}
+    for cy in years:
+        zc, fx = crop_year_price(pr["cbot_corn"]["values"], cy), crop_year_price(pr["usdcad"]["values"], cy)
+        if zc and fx:
+            us[cy] = corn_delivered(zc, fx)
+    series = {"west": {"barley": pr["barley"]["values"], "wheat": pr["wheat"]["values"], "oats": pr["oats"]["values"]},
+              "east": {g: pr["ontario"][g]["values"] for g in ("corn", "barley", "wheat", "oats")}}
+    prices = {r: {g: {cy: v for cy in years if (v := crop_year_price(s, cy))} for g, s in gs.items()} for r, gs in series.items()}
+    prices["west"]["corn"] = us
+    out = feed_model.demand([int(cy[:4]) for cy in years], prices, corn_west)
+    r1 = lambda d: {k: round(v, 1) for k, v in d.items()}
+    return {cy: {"by_region": {r: r1(v) for r, v in rec["by_region"].items()},
+                 "by_group": {r: r1(v) for r, v in rec["by_group"].items()},
+                 "beq": r1(rec["beq"]), "relative_price": rec["relative_price"], "drivers": rec["drivers"], "meta": rec["meta"],
+                 "corn_west": rec["corn_west"]}
+            for cy, rec in out.items()}
+
+
 # ------------------------------------------------------------------ main
 
 def main() -> None:
@@ -610,7 +613,7 @@ def main() -> None:
     all_years = sorted(set(years) | {cy for g in sd.values() for cy in g})
     all_years = [y for y in all_years if y >= "2012-2013"]
     regional = regional_feed(sd, farm, cornd, prod, all_years)
-    demand = {r: demand_index(liv, all_years, r) for r in ("west", "east")}
+    demand = model_demand(pr, all_years + [cur], {cy: r["corn"]["west"] for cy, r in regional.items() if "corn" in r and not r["corn"]["estimated"]})
     panel = model_panel(sd, cornd, pr, regional, all_years)
     model = run_model(panel, regional, cur)
     estimate = current_estimate(model, panel, sd, cornd, prod, pr, regional, cur)
@@ -619,7 +622,7 @@ def main() -> None:
         "meta": {"current_year": cur, "latest_week": latest_week, "week_ending": week_ending.date().isoformat(),
                  "generated": dt.date.today().isoformat(),
                  "assumptions": {"energy_vs_barley": ENERGY, "corn_basis_usd_bu": CORN_BASIS_USD_BU,
-                                 "bu_corn_per_t": BU_CORN_PER_T, "demand_weights": DEMAND_WEIGHTS,
+                                 "bu_corn_per_t": BU_CORN_PER_T,
                                  "canola_meal_yield": CANOLA_MEAL_YIELD}},
         "years": years,
         "supply_disposition": sd,
@@ -629,7 +632,10 @@ def main() -> None:
         "production": prod,
         "prices": pr,
         "livestock": liv,
-        "demand_index": demand,
+        "demand_model": demand,
+        "demand_model_meta": {"sigma": feed_model.SIGMA, "west_cattle_mix": feed_model.WEST_CATTLE_MIX,
+                              "feedlot_lb_day": feed_model.FEEDLOT_BARLEY_LB_DAY, "background_lb_day": feed_model.BACKGROUND_BARLEY_LB_DAY,
+                              "background_days": feed_model.BACKGROUND_DAYS, "hog_factors": feed_model.HOG_FACTORS},
         "weekly": cgc_weekly(con, years),
         "model": {k: v for k, v in model.items() if k not in ("fitted", "done")},
         "panel": panel.round(1).reset_index().to_dict(orient="records"),
@@ -643,6 +649,8 @@ def main() -> None:
     print("backtest MAE (kt):", {g: {m: round(e) for m, e in v.items()} for g, v in model["backtest_mae"].items()})
     print("estimate", cur, ":", estimate["total"], estimate["by_grain"])
     print("by region:", {r: round(sum(v.values())) for r, v in estimate["by_region"].items()})
+    dm = demand[cur]
+    print("demand model", cur, ":", {r: round(sum(v.values())) for r, v in dm["by_region"].items()}, dm["meta"])
     print("last year:", estimate["last_year"], "(corn estimated)" if estimate["last_year_corn_estimated"] else "")
     print("supply:", estimate["supply"], "prices:", estimate["prices"], estimate["price_months"])
 

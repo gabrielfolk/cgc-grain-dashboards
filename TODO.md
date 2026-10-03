@@ -39,3 +39,7 @@
   grading feed). CGC publishes them in different formats each year (HTML tables, spreadsheets, PDFs), and the
   2023-2025 reports have moved on CGC's site, so each year needs its own parser.
 - [ ] **Add AAFC weekly slaughter data** to the feed page for a timelier livestock signal than StatCan's annual figures.
+- [ ] **Improve the feed demand model's grain mix.** It uses StatCan's 1999 rations, updated for feedlot cattle, hogs
+  and dairy, with western corn anchored to measured corn use. Next: net out co-products (distillers' grains from
+  Ontario and Quebec ethanol plants, wheat millfeeds), track feed-grade wheat in western rations (CGC harvest quality,
+  feed wheat deliveries), and swap in newer provincial ration surveys or cost-of-production guides as they come out.

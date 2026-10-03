@@ -68,12 +68,16 @@ StatCan data is published with a lag; `src/external.py --refresh` picks up new r
 | [32-10-0013](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210001301) | Supply and disposition of grains, Canada | Feed page: feed use, supply, stocks, imports for barley, wheat, durum, oats |
 | [32-10-0014](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210001401) | Supply and disposition of corn: Canada, Ontario, Quebec, other provinces | Feed page: corn feed, imports, exports, industrial use, regional corn split |
 | [32-10-0015](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210001501) | Farm supply and disposition of grains, by region | Feed page: on-farm feed by region (basis of the regional split) |
-| [32-10-0130](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210013001) | Cattle inventories, by farm type and region | Feed page: cattle, feedlot, beef and dairy cows |
-| [32-10-0160](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210016001) | Hog inventories, by region | Feed page |
+| [32-10-0130](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210013001) | Cattle inventories, by class, farm type and province | Feed page: livestock charts and the demand model (cattle on feeding and feeder operations, cows, heifers, bulls) |
+| [32-10-0160](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210016001) | Hog inventories, by class and province | Feed page; demand model (sows, boars) |
+| [32-10-0200](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210020001) | Supply and disposition of hogs, by province | Demand model: pig crop and pigs finished in each province |
+| [32-10-0113](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210011301) | Milk production and utilization | Demand model: milk sold per dairy cow |
+| [32-10-0121](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210012101) | Production and disposition of eggs, monthly | Demand model: layers by province |
+| [32-10-0129](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210012901) | Sheep and lambs | Demand model: sheep |
 | [32-10-0125](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210012501), [32-10-0126](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210012601) | Cattle and hog slaughter and meat production, Canada | Feed page |
-| [32-10-0117](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210011701) | Poultry production, by province | Feed page (meat production, demand index) |
+| [32-10-0117](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210011701) | Poultry production, by province | Feed page (meat production); demand model (chicken and turkey meat) |
 
-Tables 32-10-0007 (stocks) and 32-10-0200 are in the cache but not used yet.
+Tables 32-10-0007 (stocks) and 32-10-0139 (cattle supply and disposition) are in the cache but not used yet.
 
 **Notes:**
 - **Supply and disposition tables are cumulative within the crop year:** December (Aug–Dec), March (Aug–Mar) and
@@ -81,8 +85,13 @@ Tables 32-10-0007 (stocks) and 32-10-0200 are in the cache but not used yet.
   it scales March by the usual March-to-August ratio and marks the value with `*`.
 - **Feed use** ("animal feed, waste and dockage") is a residual of the balance, so it also absorbs measurement error.
 - **StatCan publishes feed use for Canada only,** and has suppressed provincial corn feed since 2007-08. The feed
-  page's West/East split is estimated; the method is in [reports/feed_estimate.md](reports/feed_estimate.md) and in
-  the page's notes.
+  page's West/East split of it is estimated; the method is in [reports/feed_estimate.md](reports/feed_estimate.md)
+  and in the page's notes.
+- **The feed page's headline is a demand model,** not StatCan's residual: animal numbers × feeding rates from StatCan's
+  [Livestock Feed Requirements Study](https://www150.statcan.gc.ca/n1/pub/23-501-x/23-501-x2003001-eng.pdf)
+  (1999 rates, catalogue 23-501-X; saved in `reference/statcan_livestock_feed_1999.csv`), updated with Manitoba
+  Agriculture's 2025–2026 cost-of-production guides for feedlot cattle, backgrounding and hogs, and with milk per cow
+  for dairy. See `src/feed_model.py` and [reports/feed_estimate.md](reports/feed_estimate.md).
 - **In-season production estimates** are not kept as vintages in the tables. The canola forecast needs them as
   released, so they are recorded by hand in `reference/statcan_canola_vintages.csv`, with links to
   [The Daily](https://www150.statcan.gc.ca/n1/dai-quo/index-eng.htm).
@@ -127,7 +136,7 @@ stocks; `null` for weeks not yet reported.
 | `dashboard/data.json` (overview) | `dashboard_data.py` | `grains`, `deliveries`, `stocks`, `province`, `channel`, `province_weekly`, `exports`, `process`, `production`, `groups` |
 | `dashboard/<crop>/data.json` | `grain_data.py` | `flows` (deliveries, process, feed, exports and receipts by port, Thunder Bay disposition, elevator throughput, eastern exports memo), `stocks`, `province`, `channel`, `production`, `grades`; `meta` holds the page's title, lede, notes and settings |
 | `dashboard/canola/forecast.json` | `canola_forecast.py` | `weekly` and `full_year` forecasts for crush and exports, `supply`, backtest results |
-| `dashboard/feed/data.json` | `feed_data.py` | `supply_disposition`, `farm_feed`, `regional_feed`, `corn`, `production`, `prices` (Alberta, `ontario`, CBOT, FX), `livestock` (`inventory.west` / `.east`), `demand_index`, `weekly` (CGC), `model` (fit and backtest), `panel`, `estimate` |
+| `dashboard/feed/data.json` | `feed_data.py`, `feed_model.py` | `demand_model` (by crop year: `by_region` grain kt, `by_group` barley-equivalent kt, `drivers`, `relative_price`, `meta`), `demand_model_meta`, `supply_disposition`, `farm_feed`, `regional_feed`, `corn`, `production`, `prices` (Alberta, `ontario`, CBOT, FX), `livestock` (`inventory.west` / `.east`), `weekly` (CGC), `model` (residual forecast fit and backtest), `panel`, `estimate` |
 | `dashboard/margins/data.json` | `margins_data.py` | `deliveries`, `production` and `margins` (`rows` by crop and year, `now`) |
 
 Series definitions inside each file are in the building script's module docstring.
@@ -139,10 +148,14 @@ Hand-curated inputs, in git:
 - `reference/statcan_canola_vintages.csv`: StatCan's in-season canola production estimates as released (harvest
   year, release date, Mt, survey, link).
 - `reference/sk_crop_planning_guide.csv`: the parsed Crop Planning Guide budgets.
+- `reference/statcan_livestock_feed_1999.csv`: StatCan's per-animal feed rates by province, livestock subclass and
+  ingredient (t per head per year; poultry per bird), from table 7 of the Livestock Feed Requirements Study 1999–2001.
+  Blank values are suppressed in the source; the model uses the Canada rate for them.
 
 ## Licence
 
 CGC and Statistics Canada data are used under the
 [Open Government Licence – Canada](https://open.canada.ca/en/open-government-licence-canada). CBOT futures and
 USD/CAD are from Yahoo Finance. The Saskatchewan Crop Planning Guide is published by the Government of
-Saskatchewan.
+Saskatchewan; the Manitoba cost-of-production guides by the Government of Manitoba; the dairy feed cost brief by
+the Government of Alberta.
