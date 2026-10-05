@@ -203,6 +203,11 @@
     <p class="flash-note" id="dm-note"></p>
     <div class="panel">
       <div class="panel-head"><h3 id="bridge-h">What changed from last year</h3><p id="bridge-p"></p></div>
+      <div class="seg" role="group" aria-label="Region" id="bridge-region" style="justify-self:start">
+        <button type="button" data-region="canada" aria-pressed="true">Canada</button>
+        <button type="button" data-region="west" aria-pressed="false">Western Canada</button>
+        <button type="button" data-region="east" aria-pressed="false">Eastern Canada</button>
+      </div>
       <div class="flash-wrap" style="border:0"><table class="flash" id="bridge-table"></table></div>
     </div>
   </section>
@@ -231,14 +236,19 @@
         </div>
         <p class="flash-note" id="step2-note"></p>
       </div>
-      <div class="panel">
+      <div class="panel wide">
         <div class="panel-head"><h3>3. Corn: Canadian-grown or US imports</h3><p id="step3-p"></p></div>
         <div class="flash-wrap" style="border:0"><table class="flash" id="origin-table"></table></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><h3>Corn fed in the West, by origin</h3><p>Thousand tonnes per crop year (corn: Sep–Aug). Marker: the western corn crop.</p></div>
-        <div class="legend" id="leg-origin"></div>
-        <div class="chart" id="ch-origin" style="height:240px"></div>
+        <div class="panel-head"><h3>Corn fed in Western Canada, by origin</h3><p>Thousand tonnes per crop year (corn: Sep–Aug). Marker: the western corn crop.</p></div>
+        <div class="legend" id="leg-origin-west"></div>
+        <div class="chart" id="ch-origin-west" style="height:240px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Corn fed in Eastern Canada, by origin</h3><p>Thousand tonnes per crop year (corn: Sep–Aug). Marker: the Ontario and Quebec corn crop, which also supplies ethanol plants and exports.</p></div>
+        <div class="legend" id="leg-origin-east"></div>
+        <div class="chart" id="ch-origin-east" style="height:240px"></div>
       </div>
     </div>
   </section>
@@ -947,15 +957,25 @@
     $("bridge-h").textContent = `What changed from ${short(ly)}`;
     $("bridge-p").textContent = `Each grain's change split in two. Animal numbers: last year's tonnes scaled by the change in grain energy needed in its region (step 1). Grain mix: the rest, from relative prices, availability and, for corn, how much comes from the US (steps 2 and 3).`;
     const part = (g, r) => { const a = dmv(ly, r, g), b = dmv(cur, r, g); const animals = a * (DM[cur].beq[r] / DM[ly].beq[r] - 1); return { a, b, animals, mix: b - a - animals }; };
-    const bRow = (g, cls, label) => {
-      const p = REG.map((r) => part(g.key, r.key)), s = (k) => sumOf(p.map((x) => x[k]));
-      return { label: label || g.label, color: cls ? null : g.color, cls, cells: [n1(s("a")), chg(s("animals")), chg(s("mix")), n1(s("b")), chg(s("b") - s("a")), fmtPct(pct(s("b"), s("a"))), chg(p[0].b - p[0].a), chg(p[1].b - p[1].a)] };
-    };
-    const bTot = (() => { const rows = MG.map((g) => REG.map((r) => part(g.key, r.key))).flat(), s = (k) => sumOf(rows.map((x) => x[k]));
-      return { label: "Total", cls: "total", cells: [n1(s("a")), chg(s("animals")), chg(s("mix")), n1(s("b")), chg(s("b") - s("a")), fmtPct(pct(s("b"), s("a"))), chg(dmTot(cur, "west") - dmTot(ly, "west")), chg(dmTot(cur, "east") - dmTot(ly, "east"))] }; })();
-    buildTable($("bridge-table"), ["Thousand tonnes", short(ly), "Animal numbers", "Grain mix", short(cur), "Change", "%", "West change", "East change"],
-      [[null, [...GR.slice(0, 4).map((g) => bRow(g)), bRow(CORN_CA, null, "Corn, Canadian-grown"), bRow(CORN_US, null, "Corn, US imports"), bTot]]], { seps: [1, 4, 7] });
+    for (const b of document.querySelectorAll("#bridge-region button")) b.setAttribute("aria-pressed", b.dataset.region === bridgeRegion);
+    const bRegs = bridgeRegion === "canada" ? REG.map((r) => r.key) : [bridgeRegion];
+    const keys = [...GR.slice(0, 4), CORN_CA, CORN_US].filter((g) => !(bridgeRegion === "east" && g.key === "durum"));
+    const cells = (p) => { const s = (k) => sumOf(p.map((x) => x[k])); return [n1(s("a")), chg(s("animals")), chg(s("mix")), n1(s("b")), chg(s("b") - s("a")), fmtPct(pct(s("b"), s("a")))]; };
+    const bRow = (g) => ({ label: g.key === "corn_ca" ? "Corn, Canadian-grown" : g.key === "corn_us" ? "Corn, US imports" : g.label, color: g.color, cells: cells(bRegs.map((r) => part(g.key, r))) });
+    const bTot = { label: "Total", cls: "total", cells: cells(MG.flatMap((g) => bRegs.map((r) => part(g.key, r)))) };
+    const animalsNote = bRegs.map((r) => `${r === "west" ? "West" : "East"} ${fmtPct(DM[cur].beq[r] / DM[ly].beq[r] - 1)}`).join(", ");
+    buildTable($("bridge-table"), [`Thousand tonnes, ${bridgeRegion === "canada" ? "Canada" : REG.find((r) => r.key === bridgeRegion).long}`, short(ly), "Animal numbers", "Grain mix", short(cur), "Change", "%"],
+      [[null, [...keys.map(bRow), bTot]]], { seps: [1, 4] });
+    $("bridge-p").textContent += ` Grain energy needed: ${animalsNote}.`;
   }
+
+  let bridgeRegion = "canada";
+  try { const r = localStorage.getItem("feed-bridge-region"); if (["canada", "west", "east"].includes(r)) bridgeRegion = r; } catch (e) {}
+  document.querySelectorAll("#bridge-region button").forEach((b) => b.addEventListener("click", () => {
+    bridgeRegion = b.dataset.region;
+    try { localStorage.setItem("feed-bridge-region", bridgeRegion); } catch (e) {}
+    renderDemand();
+  }));
 
   // ---------- 1-3. how the estimate is built ----------
   function renderSteps() {
@@ -1010,11 +1030,15 @@
         { label: `US share of supply${oe.method === "projected" ? " (3-yr avg)" : ""}`, cls: "sub", cells: [pctTxt(oe.us_share), pctTxt(le.us_share), pp(oe.us_share - le.us_share)] },
         oRow("US imports fed", oe.us, le.us, "sub"), oRow("Canadian-grown", oe.ca, le.ca, "sub")]],
     ], { seps: [3] });
-    legend($("leg-origin"), [{ ...CORN_CA, kind: "rect" }, { ...CORN_US, kind: "rect" }, { label: "Western corn crop", kind: "mark" }]);
-    yearStack($("ch-origin"), { years: dmYears, maxBar: 30, aria: "Corn fed in Western Canada by origin", keys: [CORN_CA, CORN_US],
-      getVals: (y) => ({ corn_ca: dmv(y, "west", "corn_ca"), corn_us: dmv(y, "west", "corn_us") }),
-      marker: { label: "Western corn crop", get: (y) => O(y).west.crop },
-      tipExtra: (y) => [{ value: pctTxt(dmv(y, "west", "corn_us") / dmv(y, "west", "corn"), 0), label: "US share" }, { value: n1(finalOf(wk("us_corn_receipts", y))), label: "US corn at CGC-licensed facilities" }] });
+    for (const r of REG) {
+      const crop = r.key === "west" ? "Western corn crop" : "Ontario and Quebec crop";
+      legend($("leg-origin-" + r.key), [{ ...CORN_CA, kind: "rect" }, { ...CORN_US, kind: "rect" }, { label: crop, kind: "mark" }]);
+      yearStack($("ch-origin-" + r.key), { years: dmYears, maxBar: 30, aria: `Corn fed in ${r.long} by origin`, keys: [CORN_CA, CORN_US],
+        getVals: (y) => ({ corn_ca: dmv(y, r.key, "corn_ca"), corn_us: dmv(y, r.key, "corn_us") }),
+        marker: { label: crop, get: (y) => O(y)[r.key].crop },
+        tipExtra: (y) => [{ value: pctTxt(dmv(y, r.key, "corn_us") / dmv(y, r.key, "corn"), 0), label: "US share" },
+          ...(r.key === "west" ? [{ value: n1(finalOf(wk("us_corn_receipts", y))), label: "US corn at CGC-licensed facilities" }] : [])] });
+    }
   }
 
   // ---------- feed estimate by crop year ----------
