@@ -22,7 +22,9 @@ Two measures of feed use:
                                 fed where grown); East = the rest of Canada's corn feed. Corn for
                                 industry (ethanol, starch) is almost all in Ontario and Quebec.
    The regions add up to StatCan's Canada total. The West's measured corn use also sets the
-   demand model's western corn (the 1999 rations predate Manitoba's corn crop).
+   demand model's western corn (the 1999 rations predate Manitoba's corn crop), and durum's
+   median share of the West's wheat and durum feed sets the model's split of wheat into wheat
+   and durum (the 1999 study doesn't separate them).
 
    A forecast of the residual for the current crop year (shown lower on the page):
     total   = average total feed use (barley, wheat, durum, oats, western corn) of the last five crop years
@@ -578,20 +580,30 @@ def clean_json(o):
 
 # ------------------------------------------------------------------ demand model
 
-def model_demand(pr: dict, years: list[str], corn_west: dict) -> dict:
+def durum_share(regional: dict) -> tuple[float, list[str]]:
+    """Durum's median share (tonnes) of the wheat and durum fed in the West, over the crop years
+    StatCan has published; the median keeps out quality years like 2016-17, when a wet harvest
+    sent 2.1 Mt of durum to feed. Returns (share, [first, last crop year])."""
+    yrs = sorted(cy for cy, r in regional.items() if "wheat" in r and "durum" in r and r["wheat"]["west"] + r["durum"]["west"] > 0)
+    shares = [regional[cy]["durum"]["west"] / (regional[cy]["wheat"]["west"] + regional[cy]["durum"]["west"]) for cy in yrs]
+    return float(np.median(shares)), [yrs[0], yrs[-1]]
+
+
+def model_demand(pr: dict, years: list[str], corn_west: dict, durum: float) -> dict:
     """Feed demand from animal numbers (src/feed_model.py), priced off each region's grains:
-    West = Alberta farm prices and US corn delivered to southern Alberta; East = Ontario."""
+    West = Alberta farm prices and US corn delivered to southern Alberta; East = Ontario.
+    durum: durum's base share of the West's wheat and durum (see durum_share)."""
     years = sorted(set(years))
     us = {}
     for cy in years:
         zc, fx = crop_year_price(pr["cbot_corn"]["values"], cy), crop_year_price(pr["usdcad"]["values"], cy)
         if zc and fx:
             us[cy] = corn_delivered(zc, fx)
-    series = {"west": {"barley": pr["barley"]["values"], "wheat": pr["wheat"]["values"], "oats": pr["oats"]["values"]},
+    series = {"west": {g: pr[g]["values"] for g in ("barley", "wheat", "durum", "oats")},
               "east": {g: pr["ontario"][g]["values"] for g in ("corn", "barley", "wheat", "oats")}}
     prices = {r: {g: {cy: v for cy in years if (v := crop_year_price(s, cy))} for g, s in gs.items()} for r, gs in series.items()}
     prices["west"]["corn"] = us
-    out = feed_model.demand([int(cy[:4]) for cy in years], prices, corn_west)
+    out = feed_model.demand([int(cy[:4]) for cy in years], prices, corn_west, durum)
     r1 = lambda d: {k: round(v, 1) for k, v in d.items()}
     return {cy: {"by_region": {r: r1(v) for r, v in rec["by_region"].items()},
                  "by_group": {r: r1(v) for r, v in rec["by_group"].items()},
@@ -613,7 +625,9 @@ def main() -> None:
     all_years = sorted(set(years) | {cy for g in sd.values() for cy in g})
     all_years = [y for y in all_years if y >= "2012-2013"]
     regional = regional_feed(sd, farm, cornd, prod, all_years)
-    demand = model_demand(pr, all_years + [cur], {cy: r["corn"]["west"] for cy, r in regional.items() if "corn" in r and not r["corn"]["estimated"]})
+    durum, durum_years = durum_share(regional)
+    demand = model_demand(pr, all_years + [cur], {cy: r["corn"]["west"] for cy, r in regional.items() if "corn" in r and not r["corn"]["estimated"]},
+                          durum)
     panel = model_panel(sd, cornd, pr, regional, all_years)
     model = run_model(panel, regional, cur)
     estimate = current_estimate(model, panel, sd, cornd, prod, pr, regional, cur)
@@ -635,7 +649,8 @@ def main() -> None:
         "demand_model": demand,
         "demand_model_meta": {"sigma": feed_model.SIGMA, "west_cattle_mix": feed_model.WEST_CATTLE_MIX,
                               "feedlot_lb_day": feed_model.FEEDLOT_BARLEY_LB_DAY, "background_lb_day": feed_model.BACKGROUND_BARLEY_LB_DAY,
-                              "background_days": feed_model.BACKGROUND_DAYS, "hog_factors": feed_model.HOG_FACTORS},
+                              "background_days": feed_model.BACKGROUND_DAYS, "hog_factors": feed_model.HOG_FACTORS,
+                              "durum_share_west": round(durum, 4), "durum_share_years": durum_years},
         "weekly": cgc_weekly(con, years),
         "model": {k: v for k, v in model.items() if k not in ("fitted", "done")},
         "panel": panel.round(1).reset_index().to_dict(orient="records"),

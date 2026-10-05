@@ -34,7 +34,7 @@ Feeding rates
 What the model counts: grain an animal needs, on 1999 feeding practice. Co-products that replace
 grain in today's rations (distillers' grains from ethanol plants, millfeeds, bakery waste) are
 not netted out, so where they are fed, mostly in Ontario and Quebec, the model runs above the
-grain actually used. Durum fed is inside wheat.
+grain actually used.
 
 Grain mix
     Each class keeps its 1999 provincial mix of wheat, oats, barley and corn, except western
@@ -44,6 +44,12 @@ Grain mix
     using Alberta farm prices and US corn delivered to southern Alberta in the West, and Ontario
     farm prices in the East. The West's corn is then set to StatCan's measured western corn use
     where published (see demand()), because the 1999 rations predate Manitoba's corn crop.
+
+Durum
+    Durum and wheat trade independently, so durum is its own grain. The 1999 study reports
+    wheat only (durum included), so in the West each class's wheat is split into wheat and durum
+    at durum's usual share of western wheat and durum fed (see demand()), and durum then shifts
+    on its own price (Alberta durum). No durum is grown or fed in the East.
 
 Regions: West = MB, SK, AB, BC; East = ON, QC and the Atlantic provinces.
 Crop year Aug-Jul: inventories average July 1 of the first year and January 1 of the second;
@@ -65,7 +71,8 @@ COEFFS = ROOT / "reference" / "statcan_livestock_feed_1999.csv"
 WEST = ["Manitoba", "Saskatchewan", "Alberta", "British Columbia"]
 EAST = ["Ontario", "Quebec", "New Brunswick", "Nova Scotia", "Prince Edward Island", "Newfoundland and Labrador"]
 PROVINCES = WEST + EAST
-FEED_GRAINS = ["barley", "wheat", "oats", "corn"]
+FEED_GRAINS = ["barley", "wheat", "durum", "oats", "corn"]
+STUDY_GRAINS = ["barley", "wheat", "oats", "corn"]  # the 1999 study's columns; its wheat includes durum
 
 LB = 0.45359237 / 1000          # tonnes per pound
 FEEDLOT_BARLEY_LB_DAY = 18.5     # Manitoba feedlot finishing guide, 2026
@@ -82,10 +89,10 @@ HOG_FACTORS = {
 }
 # Western feedlot and backgrounding grain mix: barley-based (Manitoba guides; Western Canadian
 # finishing diets are typically over 80% barley grain), with some wheat and corn
-WEST_CATTLE_MIX = {"barley": 0.85, "wheat": 0.08, "corn": 0.07, "oats": 0.0}
+WEST_CATTLE_MIX = {"barley": 0.85, "wheat": 0.08, "corn": 0.07, "oats": 0.0}  # wheat includes durum
 # East (Ontario/Quebec) feedlots: the 1999 Ontario finished-cattle mix
 SIGMA = 1.0   # substitution elasticity between grains on energy-adjusted price
-ENERGY = {"barley": 1.00, "wheat": 1.08, "oats": 0.85, "corn": 1.12}
+ENERGY = {"barley": 1.00, "wheat": 1.08, "durum": 1.06, "oats": 0.85, "corn": 1.12}
 
 
 def crop_year_label(y0: int) -> str:
@@ -95,14 +102,14 @@ def crop_year_label(y0: int) -> str:
 # ------------------------------------------------------------------ coefficients
 
 def coefficients() -> dict:
-    """{province: {subclass: {grain: t per head}}} for the four feed grains (1999 study).
+    """{province: {subclass: {grain: t per head}}} for the study's four grains (1999 study).
     Suppressed provincial values (layers, turkeys) fall back to the Canada rate."""
     c = pd.read_csv(COEFFS)
     out: dict = {}
     canada = {r.subclass: r for r in c[c.province == "Canada"].itertuples()}
     for r in c.itertuples():
         src = r if not pd.isna(r.complete) else canada[r.subclass]
-        out.setdefault(r.province, {})[r.subclass] = {g: float(getattr(src, g)) for g in FEED_GRAINS} | {"complete": float(src.complete)}
+        out.setdefault(r.province, {})[r.subclass] = {g: float(getattr(src, g)) for g in STUDY_GRAINS} | {"complete": float(src.complete)}
     return out
 
 
@@ -255,14 +262,23 @@ DRIVERS = ["feedlot", "background", "Beef Cows", "Dairy Cows", "Sows & Bred Gilt
            "Chickens t", "Turkeys t", "Layers"]
 
 
-def class_demand(pop: dict, coef: dict, kgpb: dict, region_of) -> list[dict]:
-    """Barley-equivalent grain demand (kt) and base mix for every province and class in one crop year."""
+def split_durum(mix: dict, durum_share: float) -> dict:
+    """Split an energy-share mix's wheat into wheat and durum; durum_share is durum's share of
+    wheat and durum in tonnes."""
+    w = mix.get("wheat", 0.0)
+    d_e, w_e = durum_share * ENERGY["durum"], (1 - durum_share) * ENERGY["wheat"]
+    return mix | {"wheat": w * w_e / (d_e + w_e), "durum": w * d_e / (d_e + w_e)}
+
+
+def class_demand(pop: dict, coef: dict, kgpb: dict, region_of, durum_share: float = 0.0) -> list[dict]:
+    """Barley-equivalent grain demand (kt) and base mix for every province and class in one crop year.
+    In the West, wheat is split into wheat and durum (durum_share: durum's tonnage share)."""
     rows = []
     meta = pop["_meta"]
     calf_total = sum(VEAL_SHARE_1999.values())
 
     def add(p, cls, kt_by_grain):
-        beq = sum(kt_by_grain.get(g, 0.0) * ENERGY[g] for g in FEED_GRAINS)
+        beq = sum(kt_by_grain.get(g, 0.0) * ENERGY[g] for g in STUDY_GRAINS)
         if beq > 0:
             rows.append({"province": p, "region": region_of(p), "class": cls, "group": GROUPS[cls], "beq": beq,
                          "base_mix": {g: kt_by_grain.get(g, 0.0) * ENERGY[g] / beq for g in FEED_GRAINS}})
@@ -275,17 +291,17 @@ def class_demand(pop: dict, coef: dict, kgpb: dict, region_of) -> list[dict]:
             if not n:
                 continue
             factor = HOG_FACTORS.get(key, 1.0) * (meta["milk_factor"] if key == "Dairy Cows" else 1.0)
-            add(p, key, {g: n * sum(c[s][g] for s in subs) * factor for g in FEED_GRAINS})
+            add(p, key, {g: n * sum(c[s][g] for s in subs) * factor for g in STUDY_GRAINS})
         # bull calves are a third of bulls (study convention)
         if a.get("Bulls"):
-            add(p, "Bulls", {g: a["Bulls"] / 3 * c["Bull Calves < 1 year"][g] for g in FEED_GRAINS})
+            add(p, "Bulls", {g: a["Bulls"] / 3 * c["Bull Calves < 1 year"][g] for g in STUDY_GRAINS})
         if meta["calf_slaughter"]:
-            add(p, "veal", {g: meta["calf_slaughter"] * VEAL_SHARE_1999[p] / calf_total * c["Slaughter Calves"][g] for g in FEED_GRAINS})
+            add(p, "veal", {g: meta["calf_slaughter"] * VEAL_SHARE_1999[p] / calf_total * c["Slaughter Calves"][g] for g in STUDY_GRAINS})
         for cls in ("Chickens", "Turkeys"):
             meat = a.get(cls + " t")
             per_bird = kgpb.get(p, {}).get(cls) or kgpb["Canada"][cls]
             if meat:
-                add(p, cls, {g: c[cls][g] / per_bird * meat for g in FEED_GRAINS})
+                add(p, cls, {g: c[cls][g] / per_bird * meat for g in STUDY_GRAINS})
         # cattle on feed: head x days x barley-equivalent grain per day
         for cls, n, days, lb in (("feedlot", a.get("feedlot"), 365, FEEDLOT_BARLEY_LB_DAY),
                                  ("background", a.get("background"), BACKGROUND_DAYS, BACKGROUND_BARLEY_LB_DAY)):
@@ -296,9 +312,13 @@ def class_demand(pop: dict, coef: dict, kgpb: dict, region_of) -> list[dict]:
                 mix = WEST_CATTLE_MIX
             else:
                 f = c["Steers & Heifers Slaughter"]
-                tot = sum(f[g] * ENERGY[g] for g in FEED_GRAINS)
-                mix = {g: f[g] * ENERGY[g] / tot for g in FEED_GRAINS}
-            rows.append({"province": p, "region": region_of(p), "class": cls, "group": "feedlot", "beq": beq, "base_mix": dict(mix)})
+                tot = sum(f[g] * ENERGY[g] for g in STUDY_GRAINS)
+                mix = {g: f[g] * ENERGY[g] / tot for g in STUDY_GRAINS}
+            rows.append({"province": p, "region": region_of(p), "class": cls, "group": "feedlot", "beq": beq,
+                         "base_mix": {g: mix.get(g, 0.0) for g in FEED_GRAINS}})
+    for row in rows:
+        if row["region"] == "west":
+            row["base_mix"] = split_durum(row["base_mix"], durum_share)
     return rows
 
 
@@ -309,12 +329,15 @@ def price_shift(base: dict, rel: dict) -> dict:
     return {g: w.get(g, 0.0) / tot for g in FEED_GRAINS} if tot else base
 
 
-def demand(years: list[int], prices: dict, corn_west: dict | None = None) -> dict:
+def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_share: float = 0.0) -> dict:
     """Feed grain demand by crop year: {crop_year: {"by_region": {region: {grain: kt}},
     "by_group": {region: {group: kt barley-eq}}, ...}}.
 
     prices: {region: {grain: {crop_year: C$/t}}}; relative prices are each grain's
-    energy-adjusted price over its average across all years.
+    energy-adjusted price over its average across all years (a grain without prices in a
+    region, durum in the East, stays at 1).
+    durum_share: durum's share (tonnes) of the wheat and durum fed in the West before prices
+    shift it, e.g. its usual share of StatCan's western feed use.
     corn_west: {crop_year: kt} corn used in the West (StatCan's corn balance for the provinces
     other than Ontario and Quebec: production, imports and stock changes, all measured). The
     1999 rations predate Manitoba's corn crop (about 0.5 Mt then, over 2 Mt now), so where it is
@@ -326,16 +349,16 @@ def demand(years: list[int], prices: dict, corn_west: dict | None = None) -> dic
     pops = populations(years)
     corn_west = corn_west or {}
     region_of = lambda p: "west" if p in WEST else "east"
-    avg = {r: {g: np.mean([v / ENERGY[g] for v in prices[r][g].values()]) for g in FEED_GRAINS} for r in prices}
+    avg = {r: {g: np.mean([v / ENERGY[g] for v in prices[r][g].values()]) for g in FEED_GRAINS if prices[r].get(g)} for r in prices}
     out: dict = {}
     for y0 in years:
         cy = crop_year_label(y0)
-        rows = class_demand(pops[y0], coef, kgpb, region_of)
+        rows = class_demand(pops[y0], coef, kgpb, region_of, durum_share)
         rec = {"by_region": {r: {g: 0.0 for g in FEED_GRAINS} for r in ("west", "east")},
                "by_group": {r: {} for r in ("west", "east")},
                "beq": {r: 0.0 for r in ("west", "east")}, "relative_price": {}, "corn_west": None}
         for r in ("west", "east"):
-            pr = {g: prices[r][g].get(cy) for g in FEED_GRAINS}
+            pr = {g: prices[r].get(g, {}).get(cy) for g in FEED_GRAINS}
             rel = {g: (pr[g] / ENERGY[g]) / avg[r][g] if pr[g] else 1.0 for g in FEED_GRAINS}
             rec["relative_price"][r] = {g: round(v, 3) for g, v in rel.items()}
             for row in rows:

@@ -814,25 +814,25 @@
   const DM = D.demand_model, DMM = D.demand_model_meta;
   const dmYears = Object.keys(DM).sort();
   const MG = [
-    { key: "barley", label: "Barley", color: "var(--c1)" }, { key: "wheat", label: "Wheat (incl. durum)", color: "var(--c2)" },
-    { key: "oats", label: "Oats", color: "var(--c4)" }, { key: "corn", label: "Corn", color: "var(--c5)" },
+    { key: "barley", label: "Barley", color: "var(--c1)" }, { key: "wheat", label: "Wheat (ex-durum)", color: "var(--c2)" },
+    { key: "durum", label: "Durum", color: "var(--c3)" }, { key: "oats", label: "Oats", color: "var(--c4)" }, { key: "corn", label: "Corn", color: "var(--c5)" },
   ];
   const DGROUPS = [["feedlot", "Feedlot and backgrounding cattle"], ["beef_herd", "Beef cows, bulls, heifers, veal"], ["dairy", "Dairy"],
     ["hogs", "Hogs"], ["poultry", "Poultry and eggs"], ["sheep", "Sheep"]];
   const dmv = (cy, r, g) => { const x = DM[cy]?.by_region; if (!x) return null; return r === "canada" ? x.west[g] + x.east[g] : x[r][g]; };
   const dmTot = (cy, r) => DM[cy] ? sumOf(MG.map((g) => dmv(cy, r, g.key))) : null;
   const dmAvg = (cy, r, g) => { const i = dmYears.indexOf(cy); const ys = dmYears.slice(Math.max(0, i - 5), i); return ys.length ? mean(ys.map((y) => g ? dmv(y, r, g) : dmTot(y, r))) : null; };
-  // StatCan's residual on the model's grains (wheat includes durum); regional values are this page's estimated split
+  // StatCan's residual on the model's grains; regional values are this page's estimated split
   function residual(cy, r, g) {
     const P = PANEL[cy];
     if (r === "canada") {
       if (!P) return null;
-      const one = (k) => k === "wheat" ? (P.feed_wheat != null && P.feed_durum != null ? P.feed_wheat + P.feed_durum : null) : P[`feed_${k}`];
+      const one = (k) => P[`feed_${k}`];
       if (g) return one(g);
       const v = MG.map((m) => one(m.key)); return v.some((x) => x == null) ? null : sumOf(v);
     }
     const R = RF[cy]; if (!R) return null;
-    const one = (k) => k === "wheat" ? (R.wheat && R.durum ? R.wheat[r] + R.durum[r] : null) : R[k]?.[r];
+    const one = (k) => R[k]?.[r];
     if (g) return one(g);
     const v = MG.map((m) => one(m.key)); return v.some((x) => x == null) ? null : sumOf(v);
   }
@@ -964,7 +964,7 @@
     const t1 = tile(`Feed demand, Canada, ${short(cur)} (model)`);
     big(t1, (tot / 1000).toFixed(1), "million t", "hero-value");
     deltas(t1, [[pct(tot, dmTot(lyr, "canada")), `vs ${short(lyr)}`], [pct(tot, dmAvg(cur, "canada")), "vs 5-yr average"]]);
-    note(t1, MG.map((g) => [g, dmv(cur, "canada", g.key)]).sort((a, b) => b[1] - a[1]).map(([g, v]) => `${g.label.replace(" (incl. durum)", "")} ${fmtKt(v)}`).join(" · "));
+    note(t1, MG.map((g) => [g, dmv(cur, "canada", g.key)]).sort((a, b) => b[1] - a[1]).map(([g, v]) => `${g.label} ${fmtKt(v)}`).join(" · "));
     note(t1, `StatCan residual ${short(lyr)}: ${fmtKt(sc)}${PANEL[lyr]?.corn_estimated ? " (corn est.)" : ""}`);
 
     for (const r of REG) {
@@ -972,7 +972,7 @@
       const t = tile(`${r.long}, demand (model)`, r.color);
       big(t, (e / 1000).toFixed(1), "million t");
       deltas(t, [[pct(e, dmTot(lyr, r.key)), `vs ${short(lyr)}`], [pct(e, dmAvg(cur, r.key)), "vs 5-yr avg"]]);
-      note(t, `${Math.round(100 * e / tot)}% of Canada · ` + MG.map((g) => [g, dmv(cur, r.key, g.key)]).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([g, v]) => `${g.label.replace(" (incl. durum)", "").toLowerCase()} ${fmtKt(v)}`).join(" · "));
+      note(t, `${Math.round(100 * e / tot)}% of Canada · ` + MG.map((g) => [g, dmv(cur, r.key, g.key)]).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([g, v]) => `${g.label.toLowerCase()} ${fmtKt(v)}`).join(" · "));
     }
 
     const lp = latestPrices();
@@ -1124,7 +1124,7 @@
     const regs = REG.map((r) => { const now = dmTot(cy, r.key), last = dmTot(ly, r.key), a5 = dmAvg(cy, r.key), sc = residual(ly, r.key);
       return { label: r.long, cells: [n1(now), "", "", n1(last), fmtPct(pct(now, last)), n1(a5), fmtPct(pct(now, a5)), n1(sc), sc == null ? "–" : chg(sc - last)] }; });
     buildTable($("dm-table"), head, [[null, [...rows, tot]], ["By region", regs]], { seps: [1, 4, 8] });
-    $("dm-note").textContent = `Inventories: ${inv}${meta.inventory_dates.length < 2 ? " (January not yet published)" : ""}. Pig crop and poultry meat: ${meta.hog_year}; milk: ${meta.milk_year}. StatCan = its "animal feed, waste and dockage" for the last complete crop year, a residual of the supply and disposition balance (wheat includes durum; regional figures are this page's estimated split). Western corn is StatCan's measured corn use in the West where published, and ${(DM[cy].corn_west || "the model").replace(/(\d{4})-\d{2}(\d{2})/g, "$1-$2")} for ${short(cy)}. The model counts grain on 1999 feeding practice: co-products now fed in place of grain (distillers' grains, millfeeds) are not netted out, which matters most in the East.` + (PANEL[ly]?.corn_estimated ? " * August corn not yet published." : "");
+    $("dm-note").textContent = `Inventories: ${inv}${meta.inventory_dates.length < 2 ? " (January not yet published)" : ""}. Pig crop and poultry meat: ${meta.hog_year}; milk: ${meta.milk_year}. StatCan = its "animal feed, waste and dockage" for the last complete crop year, a residual of the supply and disposition balance (regional figures are this page's estimated split). Western corn is StatCan's measured corn use in the West where published, and ${(DM[cy].corn_west || "the model").replace(/(\d{4})-\d{2}(\d{2})/g, "$1-$2")} for ${short(cy)}. The model counts grain on 1999 feeding practice: co-products now fed in place of grain (distillers' grains, millfeeds) are not netted out, which matters most in the East.` + (PANEL[ly]?.corn_estimated ? " * August corn not yet published." : "");
 
     const gHead = ["Barley-eq kt", "West", "y/y", "East", "y/y", "Canada", "Share"];
     const g = (c, r, k) => DM[c]?.by_group[r][k] ?? 0;
@@ -1146,7 +1146,7 @@
   }
 
   // ---------- feed demand by crop year ----------
-  const HIST_PICKS = [{ key: "total", label: "Total" }, ...MG.map((g) => ({ key: g.key, label: g.label.replace(" (incl. durum)", ""), color: g.color }))];
+  const HIST_PICKS = [{ key: "total", label: "Total" }, ...MG.map((g) => ({ key: g.key, label: g.label, color: g.color }))];
   let histPick = "total";
   try { const k = localStorage.getItem("feed-hist-pick"); if (HIST_PICKS.some((h) => h.key === k)) histPick = k; } catch (e) {}
   function renderHistEstimates() {
@@ -1182,7 +1182,7 @@
       n1(mean(both.map((y) => residual(y, "canada", gk)))), chg(mean(both.map((y) => residual(y, "canada", gk) - val(y, "canada")))), "", n1(mean(both.map((y) => residual(y, "west", gk)))), n1(mean(both.map((y) => residual(y, "east", gk))))] });
     buildTable($("hist-est-table"), ["Crop year", "Model, Canada", "y/y", "Model, West", "Model, East", "StatCan residual", "StatCan − model", "StatCan vs model", "StatCan West (est. split)", "StatCan East (est. split)"],
       [[pick.label, body]], { seps: [1, 3, 5, 8] });
-    $("hist-est-note").textContent = `Model: src/feed_model.py, rates in About the data. StatCan residual: "animal feed, waste and dockage" (32-10-0013; corn 32-10-0014)${gk === "wheat" || !gk ? ", wheat including durum" : ""}; its West/East figures are this page's estimated split (see West and East). The current crop year's residual comes out in StatCan's December, March and July balances. * Corn for the latest complete year is estimated until StatCan publishes August.`;
+    $("hist-est-note").textContent = `Model: src/feed_model.py, rates in About the data. StatCan residual: "animal feed, waste and dockage" (32-10-0013; corn 32-10-0014); its West/East figures are this page's estimated split (see West and East). The current crop year's residual comes out in StatCan's December, March and July balances. * Corn for the latest complete year is estimated until StatCan publishes August.`;
   }
 
 
@@ -1412,9 +1412,10 @@
     const li = (...parts) => { const l = document.createElement("li"); l.append(...parts); ul.appendChild(l); };
     const link = (t, h) => { const a = document.createElement("a"); a.href = h; if (/^https?:/.test(h)) { a.target = "_blank"; a.rel = "noopener"; } a.textContent = t; return a; };
     const HF = DMM.hog_factors;
-    li("Feed demand model (src/feed_model.py): grain fed = animals × grain fed per animal, by province and livestock class, for barley, wheat (including durum), oats and corn. It does not use StatCan's feed residual.");
+    li("Feed demand model (src/feed_model.py): grain fed = animals × grain fed per animal, by province and livestock class, for barley, wheat (ex-durum), durum, oats and corn. It does not use StatCan's feed residual.");
+    li(`Durum: wheat and durum trade independently, so durum is its own grain. The 1999 study reports wheat with durum included, so in the West each class's wheat is split at durum's median share of western wheat and durum feed (${(DMM.durum_share_west * 100).toFixed(1)}%, StatCan's residual split, ${short(DMM.durum_share_years[0])} to ${short(DMM.durum_share_years[1])}), then each moves on its own price (Alberta durum vs non-milling wheat). No durum is fed in the East.`);
     li("Feeding rates: StatCan, ", link("Livestock Feed Requirements Study 1999–2001", "https://www150.statcan.gc.ca/n1/pub/23-501-x/23-501-x2003001-eng.pdf"), " (catalogue 23-501-X, table 7; its latest edition), grain fed per animal by class, province and ingredient, from provincial livestock specialists, the Animal Nutrition Association of Canada and feed mills. Updated where feeding has changed:");
-    li(`· Cattle on feed: `, link("Manitoba Agriculture, Cost of Production: Beef Feedlot Finishing (2026)", "https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-beef-feedlot-finishing.pdf"), `, ${DMM.feedlot_lb_day} lb of barley a day, per head on feeding operations; backgrounding (`, link("Backgrounding guide, 2026", "https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-beef-backgrounding.pdf"), `) ${DMM.background_lb_day} lb a day for ${DMM.background_days} days, per head on feeder and stocker operations at January 1. Western rations are ${Math.round(DMM.west_cattle_mix.barley * 100)}% barley, ${Math.round(DMM.west_cattle_mix.wheat * 100)}% wheat and ${Math.round(DMM.west_cattle_mix.corn * 100)}% corn before price shifts; eastern feedlots keep the 1999 Ontario/Quebec mix (mostly corn).`);
+    li(`· Cattle on feed: `, link("Manitoba Agriculture, Cost of Production: Beef Feedlot Finishing (2026)", "https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-beef-feedlot-finishing.pdf"), `, ${DMM.feedlot_lb_day} lb of barley a day, per head on feeding operations; backgrounding (`, link("Backgrounding guide, 2026", "https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-beef-backgrounding.pdf"), `) ${DMM.background_lb_day} lb a day for ${DMM.background_days} days, per head on feeder and stocker operations at January 1. Western rations are ${Math.round(DMM.west_cattle_mix.barley * 100)}% barley, ${Math.round(DMM.west_cattle_mix.wheat * 100)}% wheat (incl. durum) and ${Math.round(DMM.west_cattle_mix.corn * 100)}% corn before price shifts; eastern feedlots keep the 1999 Ontario/Quebec mix (mostly corn).`);
     li(`· Hogs: `, link("Manitoba Agriculture, Cost of Production: Swine Farrow-Finish (2025)", "https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-swine-farrow-finish.pdf"), `: 279 kg of feed per pig grown from 26 to 123 kg, 33 kg in the nursery, sows 3.0 kg a day dry and 6.5 lactating. Each stage's 1999 rate is scaled by the guide against Manitoba's 1999 rate (finishing ×${HF["Feeder Pigs"].toFixed(2)}, nursery ×${HF["Weaner Pigs"].toFixed(2)}, sows ×${HF["Sows & Bred Gilts"].toFixed(2)}): heavier pigs, better feed conversion. Pigs finished in each province = pig crop less live exports and deaths (StatCan 32-10-0200).`);
     li(`· Dairy cows: the 1999 rate × milk sold per cow against 1999 (StatCan 32-10-0113 and 32-10-0130), because concentrate fed per litre of milk has stayed flat (`, link("Alberta Agriculture, Dairy Feed Costs, 2021", "https://open.alberta.ca/dataset/bd8da099-da84-4544-8613-bb64e79712ab/resource/019a53b4-3f5c-4a3d-b17c-55d0d823ef45/download/af-explained-in-brief-dairy-feed-costs-dairy-2-2021-01.pdf"), `: 2.2 litres of milk per kg of concentrate, 1997–2019).`);
     li("· Broilers and turkeys: the 1999 rate per kilogram of meat produced (32-10-0117). Beef cows, bulls, replacement heifers, veal calves, layers (32-10-0121) and sheep (32-10-0129): the 1999 rates. Horses, other poultry and fish are left out (no current counts; under 0.4 Mt).");

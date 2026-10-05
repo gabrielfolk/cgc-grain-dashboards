@@ -12,7 +12,7 @@ The page has two measures of feed use:
 # Part 1: Feed demand model
 
 `src/feed_model.py`. Grain fed = animals (by class and province) × grain fed per animal, for barley, wheat
-(including durum), oats and corn. It does not use StatCan's feed residual.
+(excluding durum), durum, oats and corn. It does not use StatCan's feed residual.
 
 ## Feeding rates
 
@@ -66,7 +66,12 @@ the latest full calendar year.
 - **Western corn** is set to StatCan's measured corn use in the provinces outside Ontario and Quebec (production,
   imports and stock changes, 32-10-0014) where published, because the 1999 rations predate Manitoba's corn crop
   (about 0.5 Mt then, over 2 Mt now). For years not yet published, it is projected from the last three years' share,
-  shifted by price. The rest of the West's demand is split among barley, wheat and oats.
+  shifted by price. The rest of the West's demand is split among barley, wheat, durum and oats.
+- **Durum** is its own grain, because durum and wheat trade independently. The 1999 study reports wheat with durum
+  included, so in the West each class's wheat is split at durum's median share of the West's wheat and durum feed in
+  StatCan's residual (11.9% over 2012-13 to 2025-26; the median keeps out 2016-17, when 2.1 Mt of weather-damaged
+  durum was fed). Durum then shifts on its own price (Alberta durum, energy value 1.06 against wheat's 1.08). No
+  durum is fed in the East.
 
 ## What it shows
 
@@ -88,7 +93,8 @@ the latest full calendar year.
   averages 3.5 Mt more. Eastern livestock need about 9.6 Mt, while the East's residual averages 2.4 Mt less. That
   points to western grain moving east, dockage and waste counted in the western residual, and eastern co-products
   (below).
-- **2026-27 by grain:** corn 11.9 Mt (West 3.9, East 8.1), barley 5.1, wheat 1.8, oats 0.3. By livestock (barley
+- **2026-27 by grain:** corn 11.9 Mt (West 3.9, East 8.1), barley 5.1, wheat
+  (ex-durum) 1.7, durum 0.1 (all in the West), oats 0.3. By livestock (barley
   equivalent): hogs 35%, feedlot and backgrounding cattle 24%, dairy 20%, poultry 17%, cow herd 5%.
 
 ## Limits
