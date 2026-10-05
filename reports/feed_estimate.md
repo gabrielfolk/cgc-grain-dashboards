@@ -11,8 +11,16 @@ The page has two measures of feed use:
 
 # Part 1: Feed demand model
 
-`src/feed_model.py`. Grain fed = animals (by class and province) × grain fed per animal, for barley, wheat
-(excluding durum), durum, oats and corn. It does not use StatCan's feed residual.
+`src/feed_model.py`, with inputs assembled in `src/feed_data.py`. Three steps, by province and livestock class:
+
+1. **Grain energy needed** = animals × grain fed per head (barley-equivalent). Animal numbers include slaughter and
+   live exports for cattle on feed.
+2. **Split across grains** (barley, wheat ex-durum, durum, oats, corn) from each class's ration, shifted by relative
+   energy-adjusted price and by availability (supply).
+3. **Corn by origin:** Canadian-grown or US imports.
+
+Totals do not use StatCan's feed residual. StatCan data do set the mix elasticities, the durum split, western corn
+where published and the corn import split (below).
 
 ## Feeding rates
 
@@ -25,7 +33,7 @@ boards and feed mills, "meant to reflect what was actually fed". Saved in `refer
 
 | Class | Rate | Source |
 |---|---|---|
-| Cattle on feeding operations | 18.5 lb barley/day, every day of the year | [Manitoba Agriculture, Cost of Production: Beef Feedlot Finishing (2026)](https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-beef-feedlot-finishing.pdf): 650 to 1,400 lb over 231 days |
+| Cattle on feed | fed cattle marketed × days on feed × 18.5 lb barley/day (see Animal numbers) | [Manitoba Agriculture, Cost of Production: Beef Feedlot Finishing (2026)](https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-beef-feedlot-finishing.pdf): 18.5 lb/day rolled barley |
 | Backgrounders (feeder and stocker operations, January 1) | 6.5 lb barley/day for 160 days | [Manitoba Agriculture, Cost of Production: Beef Backgrounding (2026)](https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-beef-backgrounding.pdf): 5 to 8 lb/day, 500 to 900 lb |
 | Hogs | 1999 rate × 1.09 finishing, × 0.56 nursery, × 1.25 sows | [Manitoba Agriculture, Cost of Production: Swine Farrow-Finish (2025)](https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-swine-farrow-finish.pdf): 279.3 kg feed per pig grown 26 to 123 kg, 33.2 kg nursery, sows 3.0 kg/day dry and 6.5 kg/day lactating; against Manitoba's 1999 rates |
 | Dairy cows | 1999 rate × milk sold per cow against 1999 (+55% by 2025) | StatCan 32-10-0113 and 32-10-0130. [Alberta Agriculture, Dairy Feed Costs (2021)](https://open.alberta.ca/dataset/bd8da099-da84-4544-8613-bb64e79712ab/resource/019a53b4-3f5c-4a3d-b17c-55d0d823ef45/download/af-explained-in-brief-dairy-feed-costs-dairy-2-2021-01.pdf): milk per kg of concentrate flat at 2.2 litres, 1997–2019 |
@@ -52,6 +60,16 @@ changed more (see below).
 | Veal calves | 32-10-0125 (Canada), split by the 1999 provincial shares | calendar year |
 | Sheep | 32-10-0129 | July 1 and January 1 |
 
+**Cattle on feed from slaughter.** Fed cattle marketed = cattle slaughter + live international exports, July to June,
+by province (StatCan 32-10-0139), × the steer and heifer share of slaughter: West 85.8%, East 82.6% (AAFC federally
+inspected slaughter, January 1 to June 7, 2025: West 984,649 steers and heifers and 163,245 cows and bulls; East
+254,965 and 53,634). Days on feed = average cattle on feeding operations × 365 ÷ fed cattle marketed, averaged over
+2012-13 to 2025-26: **160 days in the West** (between 140 and 182 in any one year, in line with prairie feedlot
+turnover), 133 in the East. That gives 1.34 t of barley per fed animal in the West. The level matches StatCan's
+inventories; the year-to-year change follows marketings. When a crop year's marketings aren't out yet, last year's
+are moved by the July 1 cattle on feeding operations, province by province. For 2026-27 that is +15% in the West:
+Alberta reported 900k head on feeding operations at July 1, 2026, against 777k a year earlier.
+
 For the current crop year, January inventories aren't out yet (July only), and the pig crop, poultry meat and milk use
 the latest full calendar year.
 
@@ -60,9 +78,16 @@ the latest full calendar year.
 - Each class keeps its 1999 provincial mix of barley, wheat, oats and corn, except western feedlot and backgrounding
   cattle: 85% barley, 8% wheat, 7% corn (the Manitoba guides feed barley; western finishing diets are typically over
   80% barley).
-- The mix shifts each crop year with relative energy-adjusted prices: share ∝ base share × (price ÷ energy value ÷
-  its long-run average)^−1. Alberta prices and US corn delivered to southern Alberta in the West, Ontario prices in
-  the East.
+- The mix shifts each crop year with relative price and availability: share ∝ ration share × price index^−σ ×
+  availability index^α. Price index = energy-adjusted crop-year price over its average (Alberta prices and US corn
+  delivered to southern Alberta in the West, Ontario prices in the East; a crop year with no StatCan prices yet
+  takes the latest month). Availability index = Canada supply (carry-in + production + imports) over its average; the
+  current year uses last July's stocks, StatCan's latest production estimate and last year's imports.
+- **σ = 0.52 and α = 2.40** are the elasticities of the pooled share regression in Part 2, fitted on how StatCan's
+  grain shares move from year to year (with grain constants, so they carry no level). Availability is applied in the
+  West only. The fit is on Canada-wide shares, which western grain drives. Applied to eastern crops, it swung eastern
+  wheat from 0.4 to 1.2 Mt in a year, and eastern feeders buy the local crop at Ontario prices, which already reflect
+  its size.
 - **Western corn** is set to StatCan's measured corn use in the provinces outside Ontario and Quebec (production,
   imports and stock changes, 32-10-0014) where published, because the 1999 rations predate Manitoba's corn crop
   (about 0.5 Mt then, over 2 Mt now). For years not yet published, it is projected from the last three years' share,
@@ -70,40 +95,54 @@ the latest full calendar year.
 - **Durum** is its own grain, because durum and wheat trade independently. The 1999 study reports wheat with durum
   included, so in the West each class's wheat is split at durum's median share of the West's wheat and durum feed in
   StatCan's residual (11.9% over 2012-13 to 2025-26; the median keeps out 2016-17, when 2.1 Mt of weather-damaged
-  durum was fed). Durum then shifts on its own price (Alberta durum, energy value 1.06 against wheat's 1.08). No
-  durum is fed in the East.
+  durum was fed). Durum then shifts on its own price and availability (Alberta durum, energy value 1.06 against
+  wheat's 1.08). No durum is fed in the East.
+
+## Corn by origin
+
+- **West:** US corn = StatCan's international imports into the provinces outside Ontario and Quebec (32-10-0014;
+  March scaled to the full year until August is out), capped at the West's corn fed. The rest is western-grown.
+  When imports aren't published, western-grown corn = the western crop (32-10-0359) × the share of it fed in the
+  West over the last three years (111%; it is above 100% because the corn balance also includes Atlantic corn and
+  stock changes), and US corn fills the rest of the West's corn demand.
+- **East:** Ontario and Quebec imports (Ontario reports only total imports, all from abroad) as a share of their
+  crop plus imports, applied to corn fed in the East. Imported corn is assumed to be used like local corn, by feeders
+  and ethanol plants alike. Years not yet published use the last three years' share.
+- Western US imports ranged from 0.3 Mt (2013-14) to 5.8 Mt (2021-22, the drought); 2026-27 is projected at 1.5 Mt
+  against a record 2.5 Mt western crop.
 
 ## What it shows
 
 | Crop year | Model, Canada | West | East | StatCan residual | West (est. split) | East (est. split) |
 |---|---|---|---|---|---|---|
-| 2021-22 | 18.7 Mt | 9.0 | 9.7 | 22.1 | 15.3 | 6.7 |
-| 2022-23 | 18.9 | 9.2 | 9.7 | 19.8 | 12.8 | 7.0 |
-| 2023-24 | 18.8 | 9.1 | 9.7 | 20.1 | 14.3 | 5.7 |
-| 2024-25 | 18.7 | 9.0 | 9.7 | 18.0 | 12.1 | 5.9 |
-| 2025-26 | 18.9 | 9.0 | 9.9 | 20.7* | 14.0 | 6.7 |
-| **2026-27** | **19.2** | **9.3** | **9.9** | not yet published | | |
+| 2021-22 | 19.1 Mt | 9.4 | 9.7 | 22.1 | 15.3 | 6.7 |
+| 2022-23 | 19.1 | 9.4 | 9.7 | 19.8 | 12.8 | 7.0 |
+| 2023-24 | 19.0 | 9.3 | 9.7 | 20.1 | 14.3 | 5.7 |
+| 2024-25 | 18.9 | 9.2 | 9.7 | 18.0 | 12.1 | 5.9 |
+| 2025-26 | 18.9 | 9.0 | 9.8 | 20.7* | 14.0 | 6.7 |
+| **2026-27** | **19.4** | **9.6** | **9.8** | not yet published | | |
 
 \* corn estimated until StatCan publishes August.
 
 - **Same level, much less noise.** From 2012-13 to 2025-26 the model averages 18.6 Mt and StatCan's residual 19.6 Mt.
-  But the residual's standard deviation is 1.54 Mt against the model's 0.38 Mt: it swings about four times as much
+  But the residual's standard deviation is 1.54 Mt against the model's 0.55 Mt: it swings about three times as much
   as livestock numbers can explain. Those swings are waste, dockage and balancing error, not feeding.
 - **The regions disagree in opposite directions.** Western livestock need about 9.2 Mt, while the West's residual
   averages 3.5 Mt more. Eastern livestock need about 9.6 Mt, while the East's residual averages 2.4 Mt less. That
   points to western grain moving east, dockage and waste counted in the western residual, and eastern co-products
   (below).
-- **2026-27 by grain:** corn 11.9 Mt (West 3.9, East 8.1), barley 5.1, wheat
-  (ex-durum) 1.7, durum 0.1 (all in the West), oats 0.3. By livestock (barley
-  equivalent): hogs 35%, feedlot and backgrounding cattle 24%, dairy 20%, poultry 17%, cow herd 5%.
+- **2026-27 by grain:** corn 12.2 Mt (Canadian-grown 10.5, US 1.7; West 4.2, East 8.0), barley 5.0, wheat
+  (ex-durum) 1.8, durum 0.1 (all in the West), oats 0.3. By livestock (barley equivalent): hogs 34%, feedlot and
+  backgrounding cattle 25%, dairy 20%, poultry 17%, cow herd 5%. The West is up 6% on last year, mostly from more
+  cattle on feed.
 
 ## Limits
 
 - **Co-products aren't netted out.** Distillers' grains from ethanol plants, wheat millfeeds and bakery waste replace
   some grain, mostly in Ontario and Quebec. So the model's eastern corn need (8.1 Mt) runs above the East's corn feed in
   StatCan's balance (about 5.9 Mt).
-- **The mix is the weakest part.** It does not track crop quality, so a year with a lot of feed-grade wheat shows up
-  only through its price; western wheat is likely understated (model about 0.8 Mt against a residual near 3 Mt,
+- **The mix is the weakest part.** It does not track crop quality directly, so a year with a lot of feed-grade wheat
+  shows up only through supply and price; western wheat is likely understated (model about 0.8 Mt against a residual near 3 Mt,
   some of which is dockage).
 - **The rates are from 1999,** updated for the classes above. A new StatCan study or provincial ration surveys would
   replace them.

@@ -241,18 +241,12 @@
   .notes { display: grid; gap: 8px; font-size: 13px; color: var(--ink-2); max-width: 80ch; }
   .notes ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
   @media (prefers-reduced-motion: no-preference) { .btn { transition: background 0.12s; } }
-  /* feed page: grain colours (categorical slots 1-5) and calculator */
-  :root { --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #eda100; --c5: #e87ba4; }
+  /* feed page: grain colours (categorical slots 1-6) */
+  :root { --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #eda100; --c5: #e87ba4; --c6: #8a63d2; }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) { --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; }
+    :root:not([data-theme="light"]) { --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; --c6: #9a78e0; }
   }
-  :root[data-theme="dark"] { --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; }
-  .calc { display: grid; gap: 12px; align-content: start; }
-  .calc-field { display: grid; grid-template-columns: minmax(0, 1fr) 120px; gap: 2px 12px; align-items: center; font-size: 13px; color: var(--ink); }
-  .calc-field em { grid-column: 2; font-style: normal; font-size: 11px; color: var(--muted); }
-  .calc-field input { font: 500 14px var(--mono); font-variant-numeric: tabular-nums; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--ink); width: 100%; }
-  .calc .btn { justify-self: start; }
-  .calc-field input:focus-visible { outline: 2px solid var(--c1); outline-offset: 1px; }
+  :root[data-theme="dark"] { --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; --c6: #9a78e0; }
 </style>
 
 <nav class="site-nav" aria-label="Dashboards"><div class="site-nav-inner"><span class="site-name">CGC grain dashboards</span><ul><li><a href="../">Overview</a></li><li><a href="../margins/">Producer Margins</a></li><li><a href="../feed/" aria-current="page">Feed Grains</a></li><li><a href="../canola/">Canola</a></li><li><a href="../wheat/">Wheat</a></li><li><a href="../durum/">Durum</a></li><li><a href="../barley/">Barley</a></li><li><a href="../peas/">Peas</a></li><li><a href="../oats/">Oats</a></li><li><a href="../lentils/">Lentils</a></li><li><a href="../soybeans/">Soybeans</a></li><li><a href="../corn/">Corn</a></li><li><details><summary>Special Crops</summary><div class="menu"><a href="../flaxseed/">Flaxseed</a><a href="../rye/">Rye</a><a href="../beans/">Beans</a><a href="../canaryseed/">Canaryseed</a><a href="../chickpeas/">Chickpeas</a><a href="../mustard/">Mustard</a></div></details></li></ul></div></nav>
@@ -267,11 +261,170 @@
   <header>
     <div class="eyebrow">CGC · StatCan · CBOT · Feed grains</div>
     <h1>Canadian Feed Grains</h1>
-    <p class="sub" id="lede">How much barley, wheat, oats and corn Canada's livestock eat, built from animal numbers and feeding rates, for Western Canada (MB, SK, AB, BC) and Eastern Canada (Ontario, Quebec and the Atlantic provinces), next to StatCan's residual feed figure, with the supply, quality, livestock and price drivers behind it.</p>
+    <p class="sub" id="lede">Feed grain use in Canada, estimated from the demand side: livestock numbers and slaughter times feeding rates, split across barley, wheat, durum, oats and Canadian and US corn by price and availability. Western Canada (MB, SK, AB, BC) and Eastern Canada (Ontario, Quebec and the Atlantic provinces), compared with StatCan.</p>
     <p class="asof" id="asof"></p>
   </header>
 
   <div class="summary" id="summary"></div>
+
+  <section aria-labelledby="dm-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="dm-eyebrow"></div>
+        <h2 id="dm-h">Feed estimate by commodity</h2>
+        <p class="sub" id="dm-sub"></p>
+      </div>
+      <button type="button" class="btn" data-copy="dm-table">Copy table</button>
+    </div>
+    <div class="flash-wrap"><table class="flash" id="dm-table"></table></div>
+    <p class="flash-note" id="dm-note"></p>
+    <div class="panel">
+      <div class="panel-head"><h3 id="bridge-h">What changed from last year</h3><p id="bridge-p"></p></div>
+      <div class="flash-wrap" style="border:0"><table class="flash" id="bridge-table"></table></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="how-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="how-eyebrow"></div>
+        <h2 id="how-h">How the estimate is built</h2>
+        <p class="sub">Three steps: animals set how much grain energy is needed; price and availability split it across grains; corn is then split into Canadian-grown and US imports.</p>
+      </div>
+    </div>
+    <div class="two">
+      <div class="panel wide">
+        <div class="panel-head"><h3>1. Animal numbers and slaughter set the grain energy needed</h3><p id="step1-p"></p></div>
+        <div class="two">
+          <div class="flash-wrap" style="border:0"><table class="flash" id="dm-drivers-table"></table></div>
+          <div class="flash-wrap" style="border:0"><table class="flash" id="dm-group-table"></table></div>
+        </div>
+      </div>
+      <div class="panel wide">
+        <div class="panel-head"><h3>2. Price and availability split it across grains</h3><p id="step2-p"></p></div>
+        <div class="two">
+          <div class="flash-wrap" style="border:0"><table class="flash" id="mix-west-table"></table></div>
+          <div class="flash-wrap" style="border:0"><table class="flash" id="mix-east-table"></table></div>
+        </div>
+        <p class="flash-note" id="step2-note"></p>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>3. Corn: Canadian-grown or US imports</h3><p id="step3-p"></p></div>
+        <div class="flash-wrap" style="border:0"><table class="flash" id="origin-table"></table></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Corn fed in the West, by origin</h3><p>Thousand tonnes per crop year (corn: Sep–Aug). Marker: the western corn crop.</p></div>
+        <div class="legend" id="leg-origin"></div>
+        <div class="chart" id="ch-origin" style="height:240px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="hist-est-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="hist-est-eyebrow"></div>
+        <h2 id="hist-est-h">Feed estimate by crop year</h2>
+        <p class="sub" id="hist-est-sub"></p>
+      </div>
+      <button type="button" class="btn" data-copy="hist-est-table">Copy table</button>
+    </div>
+    <div class="seg" role="group" aria-label="Commodity" id="hist-est-pick" style="justify-self:start;flex-wrap:wrap"></div>
+    <div class="two">
+      <div class="panel wide">
+        <div class="panel-head"><h3 id="hist-est-ch-h">Model versus StatCan</h3><p>Thousand tonnes per crop year. Bars: the model, West and East; marker: StatCan's "animal feed, waste and dockage".</p></div>
+        <div class="legend" id="leg-hist-est"></div>
+        <div class="chart" id="ch-hist-est" style="height:260px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Western Canada, by grain</h3><p>Thousand tonnes per crop year (model); marker: StatCan, this page&rsquo;s estimated regional split</p></div>
+        <div class="legend" id="leg-west"></div>
+        <div class="chart" id="ch-west" style="height:260px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Eastern Canada, by grain</h3><p>Thousand tonnes per crop year (model); marker: StatCan, this page&rsquo;s estimated regional split</p></div>
+        <div class="legend" id="leg-east"></div>
+        <div class="chart" id="ch-east" style="height:260px"></div>
+      </div>
+    </div>
+    <div class="flash-wrap"><table class="flash" id="hist-est-table"></table></div>
+    <p class="flash-note" id="hist-est-note"></p>
+  </section>
+
+  <section aria-labelledby="drv-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">StatCan · CBOT · CGC</div>
+        <h2 id="drv-h">Drivers: prices, availability and livestock</h2>
+      </div>
+      <div class="seg" role="group" aria-label="Region" id="liv-region">
+        <button type="button" data-region="west" aria-pressed="true">Western Canada</button>
+        <button type="button" data-region="east" aria-pressed="false">Eastern Canada</button>
+      </div>
+    </div>
+    <div class="two">
+      <div class="panel wide">
+        <div class="panel-head"><h3>Energy-adjusted feed prices, Alberta</h3><p>C$ per tonne of barley-equivalent, monthly. Alberta farm prices (StatCan); US corn = CBOT + basis and freight to southern Alberta, at the monthly USD/CAD.</p></div>
+        <div class="legend" id="leg-eprice"></div>
+        <div class="chart" id="ch-eprice" style="height:280px"></div>
+        <p class="flash-note" id="corn-note"></p>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Availability index, Canada</h3><p>Supply (carry-in + production + imports) over its average, by crop year: the model's availability input for the West. Current year: StatCan's latest production estimate.</p></div>
+        <div class="legend" id="leg-avail"></div>
+        <div class="chart" id="ch-avail" style="height:240px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Energy-adjusted feed prices, Ontario</h3><p>C$ per tonne of barley-equivalent, monthly. Ontario farm prices (StatCan), the East's price input.</p></div>
+        <div class="legend" id="leg-eprice-e"></div>
+        <div class="chart" id="ch-eprice-e" style="height:240px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Share of production fed, Canada (StatCan)</h3><p>StatCan feed use as a percent of production. High shares follow poor-quality or drought crops.</p></div>
+        <div class="legend" id="leg-fedshare"></div>
+        <div class="chart" id="ch-fedshare" style="height:240px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Feed-grade share of elevator deliveries, Western Canada</h3><p>CGC domestic feed grain deliveries as a percent of all primary elevator deliveries, by crop year</p></div>
+        <div class="legend" id="leg-quality"></div>
+        <div class="chart" id="ch-quality" style="height:240px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3 id="cattle-h">Cattle in Western Canada</h3><p>Thousand head at Jan 1 and Jul 1. Feedlot = steers and slaughter heifers on feeding operations.</p></div>
+        <div class="legend" id="leg-cattle"></div>
+        <div class="chart" id="ch-cattle" style="height:240px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3 id="hogs-h">Hogs in Western Canada</h3><p>Thousand head at Jan 1 and Jul 1</p></div>
+        <div class="chart" id="ch-hogs" style="height:240px"></div>
+      </div>
+      <div class="panel wide">
+        <div class="panel-head"><h3 id="dem-h">Grain energy needed by livestock group, Western Canada</h3><p>Thousand tonnes of barley-equivalent grain per crop year (step 1 of the model)</p></div>
+        <div class="legend" id="leg-dem"></div>
+        <div class="chart" id="ch-dem" style="height:260px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="est-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="est-eyebrow"></div>
+        <h2 id="est-h">What StatCan will likely print</h2>
+        <p class="sub" id="est-sub"></p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn" id="toggle-table" aria-expanded="false">Show StatCan history</button>
+        <button type="button" class="btn" data-copy="est-table">Copy table</button>
+      </div>
+    </div>
+    <div class="flash-wrap"><table class="flash" id="est-table"></table></div>
+    <div class="table-wrap" id="hist-table" hidden></div>
+    <div class="panel">
+      <div class="panel-head"><h3>How accurate has this forecast been?</h3><p id="acc-p"></p></div>
+      <div class="flash-wrap" style="border:0"><table class="flash" id="acc-table"></table></div>
+    </div>
+  </section>
 
   <section aria-labelledby="flash-h">
     <div class="section-head">
@@ -283,222 +436,6 @@
     </div>
     <div class="flash-wrap"><table class="flash" id="flash-table"></table></div>
     <p class="flash-note" id="flash-note"></p>
-  </section>
-
-  <section aria-labelledby="dm-h">
-    <div class="section-head">
-      <div>
-        <div class="eyebrow" id="dm-eyebrow"></div>
-        <h2 id="dm-h">Feed demand model</h2>
-        <p class="sub" id="dm-sub"></p>
-      </div>
-      <button type="button" class="btn" data-copy="dm-table">Copy table</button>
-    </div>
-    <div class="flash-wrap"><table class="flash" id="dm-table"></table></div>
-    <p class="flash-note" id="dm-note"></p>
-    <div class="two">
-      <div class="panel">
-        <div class="panel-head"><h3>Grain demand by livestock group</h3><p>Thousand tonnes of barley-equivalent grain (corn and wheat count for more energy per tonne)</p></div>
-        <div class="flash-wrap" style="border:0"><table class="flash" id="dm-group-table"></table></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3>What drives it: animal numbers</h3><p id="dm-drivers-p"></p></div>
-        <div class="flash-wrap" style="border:0"><table class="flash" id="dm-drivers-table"></table></div>
-      </div>
-    </div>
-  </section>
-
-  <section aria-labelledby="hist-est-h">
-    <div class="section-head">
-      <div>
-        <div class="eyebrow" id="hist-est-eyebrow"></div>
-        <h2 id="hist-est-h">Feed demand by crop year</h2>
-        <p class="sub" id="hist-est-sub"></p>
-      </div>
-      <button type="button" class="btn" data-copy="hist-est-table">Copy table</button>
-    </div>
-    <div class="seg" role="group" aria-label="Commodity" id="hist-est-pick" style="justify-self:start;flex-wrap:wrap"></div>
-    <div class="two">
-      <div class="panel wide">
-        <div class="panel-head"><h3 id="hist-est-ch-h">Model versus StatCan's residual</h3><p>Thousand tonnes per crop year. Bars: the demand model, West and East; marker: StatCan's "animal feed, waste and dockage".</p></div>
-        <div class="legend" id="leg-hist-est"></div>
-        <div class="chart" id="ch-hist-est" style="height:260px"></div>
-      </div>
-    </div>
-    <div class="flash-wrap"><table class="flash" id="hist-est-table"></table></div>
-    <p class="flash-note" id="hist-est-note"></p>
-  </section>
-
-  <section aria-labelledby="reg-h">
-    <div class="section-head">
-      <div>
-        <div class="eyebrow" id="reg-eyebrow"></div>
-        <h2 id="reg-h">West and East</h2>
-        <p class="sub">Feed demand by region from the model, with StatCan&rsquo;s residual split by region for reference. West = MB, SK, AB, BC; East = Ontario, Quebec and the Atlantic provinces.</p>
-      </div>
-      <button type="button" class="btn" data-copy="reg-table">Copy table</button>
-    </div>
-    <div class="flash-wrap"><table class="flash" id="reg-table"></table></div>
-    <p class="flash-note" id="reg-note"></p>
-    <div class="two">
-      <div class="panel">
-        <div class="panel-head"><h3>Feed demand, Western Canada</h3><p>Thousand tonnes per crop year, by grain (model); marker: StatCan&rsquo;s residual, estimated split</p></div>
-        <div class="legend" id="leg-west"></div>
-        <div class="chart" id="ch-west" style="height:260px"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3>Feed demand, Eastern Canada</h3><p>Thousand tonnes per crop year, by grain (model); marker: StatCan&rsquo;s residual, estimated split</p></div>
-        <div class="legend" id="leg-east"></div>
-        <div class="chart" id="ch-east" style="height:260px"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3>Corn used by region, StatCan corn balance</h3><p>Thousand tonnes per Sep–Aug corn year. The West&rsquo;s corn swings with imports, which jump when the prairie barley crop fails.</p></div>
-        <div class="legend" id="leg-cornreg"></div>
-        <div class="chart" id="ch-cornreg" style="height:240px"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3>Where the Eastern corn crop goes</h3><p>Thousand tonnes per corn year: fed in the East, used by industry (ethanol, starch; Canada total, almost all in the East) and exported. Marker: the Eastern crop.</p></div>
-        <div class="legend" id="leg-eastcorn"></div>
-        <div class="chart" id="ch-eastcorn" style="height:240px"></div>
-      </div>
-    </div>
-  </section>
-
-  <section aria-labelledby="est-h">
-    <div class="section-head">
-      <div>
-        <div class="eyebrow" id="est-eyebrow"></div>
-        <h2 id="est-h">StatCan&rsquo;s feed residual: what it will likely print</h2>
-        <p class="sub" id="est-sub"></p>
-      </div>
-      <button type="button" class="btn" data-copy="est-table">Copy table</button>
-    </div>
-    <div class="flash-wrap"><table class="flash" id="est-table"></table></div>
-    <div class="two">
-      <div class="panel">
-        <div class="panel-head"><h3>How accurate has the estimate been?</h3><p id="acc-p"></p></div>
-        <div class="flash-wrap" style="border:0"><table class="flash" id="acc-table"></table></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3>Estimate versus last crop year</h3><p>Thousand tonnes fed, by grain</p></div>
-        <div class="legend" id="leg-estbar"></div>
-        <div class="chart" id="ch-estbar"></div>
-      </div>
-    </div>
-  </section>
-
-  <section aria-labelledby="econ-h">
-    <div class="section-head">
-      <div>
-        <h2 id="econ-h">Feed economics</h2>
-        <p class="sub">Price per tonne of barley-equivalent feeding value: each grain's price divided by its energy relative to barley. Western Canada is priced off Alberta farm prices and US corn delivered to southern Alberta; Eastern Canada off Ontario farm prices. Adjust the assumptions to see which grain a feeder should be buying.</p>
-      </div>
-    </div>
-    <div class="two">
-      <div class="panel">
-        <div class="panel-head"><h3>Assumptions</h3><p>Energy relative to barley (cattle ration basis) and the cost of getting US corn to southern Alberta</p></div>
-        <div class="calc" id="calc"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3 id="rank-h">Cheapest feed energy, Alberta</h3><p id="rank-p"></p></div>
-        <div class="flash-wrap" style="border:0"><table class="flash" id="rank-table"></table></div>
-        <p class="flash-note" id="corn-note"></p>
-      </div>
-      <div class="panel wide">
-        <div class="panel-head"><h3>Energy-Adjusted feed prices, Alberta</h3><p>C$ per tonne of barley-equivalent, monthly. Alberta farm prices (StatCan); US corn = CBOT + basis and freight, converted at the monthly USD/CAD.</p></div>
-        <div class="legend" id="leg-eprice"></div>
-        <div class="chart" id="ch-eprice" style="height:300px"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3>US corn premium over barley</h3><p>Crop-year average, C$/t barley-equivalent. Below zero, delivered US corn was cheaper than feed barley.</p></div>
-        <div class="chart" id="ch-spread" style="height:240px"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3>Corn imports into Western Canada</h3><p>Thousand tonnes per crop year: StatCan imports into provinces other than Ontario and Quebec, and US corn received at CGC-licensed elevators and processors</p></div>
-        <div class="legend" id="leg-corn"></div>
-        <div class="chart" id="ch-corn" style="height:240px"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3 id="rank-e-h">Cheapest feed energy, Ontario</h3><p>Latest StatCan Ontario farm prices (about two months behind). Wheat is all Ontario wheat (StatCan has no Ontario feed wheat series).</p></div>
-        <div class="flash-wrap" style="border:0"><table class="flash" id="rank-e-table"></table></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3>Energy-Adjusted feed prices, Ontario</h3><p>C$ per tonne of barley-equivalent, monthly. Ontario farm prices (StatCan).</p></div>
-        <div class="legend" id="leg-eprice-e"></div>
-        <div class="chart" id="ch-eprice-e" style="height:240px"></div>
-      </div>
-    </div>
-  </section>
-
-  <section aria-labelledby="hist-h">
-    <div class="section-head">
-      <div>
-        <div class="eyebrow">StatCan supply and disposition</div>
-        <h2 id="hist-h">Feed use and quality history</h2>
-      </div>
-      <button type="button" class="btn" id="toggle-table" aria-expanded="false">Show data table</button>
-    </div>
-    <div class="two">
-      <div class="panel wide">
-        <div class="panel-head"><h3>Feed use by grain, Canada</h3><p>Thousand tonnes of animal feed, waste and dockage per crop year (corn: Sep–Aug corn year)</p></div>
-        <div class="legend" id="leg-feed"></div>
-        <div class="chart" id="ch-feed" style="height:300px"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3>Share of production fed, Canada</h3><p>Feed use as a percent of production each crop year. High shares follow poor-quality or drought crops.</p></div>
-        <div class="legend" id="leg-fedshare"></div>
-        <div class="chart" id="ch-fedshare" style="height:240px"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3>Feed-Grade share of elevator deliveries, Western Canada</h3><p>CGC domestic feed grain deliveries as a percent of all primary elevator deliveries, by crop year</p></div>
-        <div class="legend" id="leg-quality"></div>
-        <div class="chart" id="ch-quality" style="height:240px"></div>
-      </div>
-      <div class="table-wrap wide" id="hist-table" hidden></div>
-    </div>
-  </section>
-
-  <section aria-labelledby="liv-h">
-    <div class="section-head">
-      <div>
-        <div class="eyebrow">StatCan livestock surveys</div>
-        <h2 id="liv-h">Livestock: the demand side</h2>
-      </div>
-      <div class="seg" role="group" aria-label="Region" id="liv-region">
-        <button type="button" data-region="west" aria-pressed="true">Western Canada</button>
-        <button type="button" data-region="east" aria-pressed="false">Eastern Canada</button>
-      </div>
-    </div>
-    <div class="two">
-      <div class="panel">
-        <div class="panel-head"><h3 id="cattle-h">Cattle in Western Canada</h3><p>Thousand head at Jan 1 and Jul 1. Feedlot = steers and slaughter heifers on feeding operations.</p></div>
-        <div class="legend" id="leg-cattle"></div>
-        <div class="chart" id="ch-cattle" style="height:240px"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3 id="hogs-h">Hogs in Western Canada</h3><p>Thousand head at Jan 1 and Jul 1</p></div>
-        <div class="chart" id="ch-hogs" style="height:240px"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3>Meat production, Canada</h3><p>Thousand tonnes per calendar year</p></div>
-        <div class="legend" id="leg-meat"></div>
-        <div class="chart" id="ch-meat" style="height:240px"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3>Slaughter, Canada</h3><p>Thousand head per calendar year</p></div>
-        <div class="flash-wrap" style="border:0"><table class="flash" id="slaughter-table"></table></div>
-      </div>
-      <div class="panel wide">
-        <div class="panel-head"><h3 id="dem-h">Grain demand by livestock group, Western Canada</h3><p id="dem-p"></p></div>
-        <div class="legend" id="leg-dem"></div>
-        <div class="chart" id="ch-dem" style="height:260px"></div>
-      </div>
-      <div class="panel wide">
-        <div class="panel-head"><h3>Feed demand versus StatCan&rsquo;s residual, West and East</h3><p>Thousand tonnes per crop year. Lines: the demand model; dots: StatCan&rsquo;s residual, this page&rsquo;s estimated regional split (it also carries waste, dockage and balancing error).</p></div>
-        <div class="legend" id="leg-dem2"></div>
-        <div class="chart" id="ch-dem2" style="height:240px"></div>
-      </div>
-    </div>
   </section>
 
   <footer class="notes">
@@ -876,31 +813,30 @@
     { key: "oats", label: "Oats", color: "var(--c4)" },
     { key: "corn", label: "Corn", color: "var(--c5)" },
   ];
-  const GLAB = Object.fromEntries(GR.map((g) => [g.key, g.label]));
-  // feed economics in the West: corn is US corn delivered to southern Alberta
-  const ELAB = { ...GLAB, wheat: "Wheat", corn: "US corn" };
   const REG = [
     { key: "west", label: "West", long: "Western Canada", color: "var(--c1)" },
     { key: "east", label: "East", long: "Eastern Canada", color: "var(--c2)" },
   ];
   const RF = D.regional_feed;
-  const regYears = Object.keys(RF).filter((y) => GR.every((g) => RF[y][g.key])).sort();
-  const regTotal = (y, r) => RF[y] ? sumOf(GR.map((g) => RF[y][g.key]?.[r])) : null;
   const ONT = D.prices.ontario;
-  // demand model: grain fed by livestock, from animal numbers x feeding rates (src/feed_model.py)
+  // the feed model: grain fed by livestock (src/feed_model.py, src/feed_data.py)
   const DM = D.demand_model, DMM = D.demand_model_meta;
   const dmYears = Object.keys(DM).sort();
-  const MG = [
-    { key: "barley", label: "Barley", color: "var(--c1)" }, { key: "wheat", label: "Wheat (ex-durum)", color: "var(--c2)" },
-    { key: "durum", label: "Durum", color: "var(--c3)" }, { key: "oats", label: "Oats", color: "var(--c4)" }, { key: "corn", label: "Corn", color: "var(--c5)" },
-  ];
+  // model grains (corn as one) and the same with corn split by origin
+  const MG = GR;
+  const CORN_CA = { key: "corn_ca", label: "Corn, Canadian-grown", color: "var(--c5)" };
+  const CORN_US = { key: "corn_us", label: "Corn, US imports", color: "var(--c6)" };
+  const MGX = [...GR.slice(0, 4), CORN_CA, CORN_US];
   const DGROUPS = [["feedlot", "Feedlot and backgrounding cattle"], ["beef_herd", "Beef cows, bulls, heifers, veal"], ["dairy", "Dairy"],
     ["hogs", "Hogs"], ["poultry", "Poultry and eggs"], ["sheep", "Sheep"]];
   const dmv = (cy, r, g) => { const x = DM[cy]?.by_region; if (!x) return null; return r === "canada" ? x.west[g] + x.east[g] : x[r][g]; };
   const dmTot = (cy, r) => DM[cy] ? sumOf(MG.map((g) => dmv(cy, r, g.key))) : null;
+  const dmPrev = (cy) => dmYears[dmYears.indexOf(cy) - 1];
   const dmAvg = (cy, r, g) => { const i = dmYears.indexOf(cy); const ys = dmYears.slice(Math.max(0, i - 5), i); return ys.length ? mean(ys.map((y) => g ? dmv(y, r, g) : dmTot(y, r))) : null; };
-  // StatCan's residual on the model's grains; regional values are this page's estimated split
+  // StatCan's "animal feed, waste and dockage"; regional values are this page's estimated split.
+  // StatCan does not split corn by origin.
   function residual(cy, r, g) {
+    if (g === "corn_ca" || g === "corn_us") return null;
     const P = PANEL[cy];
     if (r === "canada") {
       if (!P) return null;
@@ -919,23 +855,21 @@
   const PR = D.prices;
   const WK = D.weekly;
   const LIV = D.livestock;
-  const calc = { basis: A.corn_basis_usd_bu, energy: { ...A.energy_vs_barley } };
-  try { const s = JSON.parse(localStorage.getItem("feed-calc") || "null"); if (s && s.energy) Object.assign(calc, s); } catch (e) {}
-  const saveCalc = () => { try { localStorage.setItem("feed-calc", JSON.stringify(calc)); } catch (e) {} };
+  const ENERGY = A.energy_vs_barley;
   const sumOf = (a) => a.reduce((s, x) => s + (x || 0), 0);
   const n1 = (v) => v == null || !isFinite(v) ? "–" : (Math.abs(v) >= 100 ? Math.round(v).toLocaleString() : v.toFixed(1));
   const chg = (v) => v == null || !isFinite(v) ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + n1(Math.abs(v));
   function fmtPct(p) { if (p == null || !isFinite(p)) return "–"; const r = Math.round(p * 100); return (r > 0 ? "+" : r < 0 ? "−" : "±") + Math.abs(r) + "%"; }
   const pp = (v) => v == null || !isFinite(v) ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v * 100).toFixed(1) + " pp";
   const pctTxt = (v, d = 1) => v == null || !isFinite(v) ? "–" : (100 * v).toFixed(d) + "%";
+  const idx = (v) => v == null || !isFinite(v) ? "–" : v.toFixed(2);
   const money = (v) => v == null || !isFinite(v) ? "–" : "$" + Math.round(v).toLocaleString();
   const monthName = (m) => { const [y, mo] = m.split("-"); return MONTHS[+mo - 1] + " " + y; };
   const wk = (k, y) => WK[k]?.[y] || empty();
   const lastWeek = (arr, w) => { let x = w; while (x > 1 && at(arr, x) == null) x--; return at(arr, x) == null ? null : x; };
   const cropYears = Object.keys(PANEL).sort();
-  const doneYears = cropYears.filter((y) => y !== cur && GR.every((g) => PANEL[y][`feed_${g.key}`] != null));
-  const cornDelivered = (zc, fx) => (zc / 100 + calc.basis) * A.bu_corn_per_t * fx;
-  const eAdj = (g, p) => p / calc.energy[g];
+  const cornDelivered = (zc, fx) => (zc / 100 + A.corn_basis_usd_bu) * A.bu_corn_per_t * fx;
+  const eAdj = (g, p) => p / ENERGY[g];
   function monthlyPrice(g, m) {
     if (g === "corn") { const zc = PR.cbot_corn.values[m], fx = PR.usdcad.values[m]; return zc && fx ? cornDelivered(zc, fx) : null; }
     return PR[g].values[m] ?? null;
@@ -966,8 +900,9 @@
     const svg = makeSvg(host, W, H, opts.aria, true);
     for (let v = min; v <= max + 1e-9; v += step) {
       el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: Math.abs(v) < 1e-9 ? css("--axis") : css("--grid") }, svg);
-      svgText(svg, { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, opts.pctAxis ? Math.round(v * 100) + "%" : Math.round(v).toLocaleString());
+      svgText(svg, { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, opts.pctAxis ? Math.round(v * 100) + "%" : opts.yFmt ? opts.yFmt(v) : Math.round(v).toLocaleString());
     }
+    if (opts.refLine != null) el("line", { x1: m.l, x2: W - m.r, y1: y(opts.refLine), y2: y(opts.refLine), stroke: css("--axis"), "stroke-dasharray": "4 3" }, svg);
     let lastX = -Infinity;
     xs.forEach((lab, i) => {
       const t = opts.xLabel ? opts.xLabel(lab) : lab;
@@ -1021,6 +956,11 @@
     }
   }
 
+  const ly = dmPrev(cur);
+  // last crop year StatCan has published in full
+  const scYear = dmYears.filter((y) => residual(y, "canada") != null).pop();
+  const cornStar = (y) => PANEL[y]?.corn_estimated ? "*" : "";
+
   // ---------- summary tiles ----------
   function renderSummary() {
     const host = $("summary");
@@ -1035,195 +975,127 @@
     const big = (t, text, unit, cls = "tile-value") => { const v = document.createElement("div"); v.className = cls; v.textContent = text; if (unit) { const s = document.createElement("small"); s.textContent = unit; v.appendChild(s); } t.appendChild(v); };
     const deltas = (t, pairs) => { const d = document.createElement("div"); d.className = "deltas"; for (const [p, txt] of pairs) { const s = document.createElement("span"); s.append(chip(p), document.createTextNode(" " + txt)); d.appendChild(s); } t.appendChild(d); };
     const note = (t, text) => { const n = document.createElement("div"); n.className = "note"; n.textContent = text; t.appendChild(n); };
-    const top = (vals) => GR.map((g) => [g, vals[g.key]]).sort((a, b) => b[1] - a[1]);
+    const byGrain = (r, n) => MGX.map((g) => [g, dmv(cur, r, g.key)]).filter(([, v]) => v > 0.5).sort((a, b) => b[1] - a[1]).slice(0, n)
+      .map(([g, v]) => `${g.label.replace("Corn, Canadian-grown", "Canadian corn").replace("Corn, US imports", "US corn").replace(" (ex-durum)", "")} ${fmtKt(v)}`).join(" · ");
 
-    const lyr = dmYears[dmYears.indexOf(cur) - 1], tot = dmTot(cur, "canada"), sc = residual(lyr, "canada");
-    const t1 = tile(`Feed demand, Canada, ${short(cur)} (model)`);
+    const tot = dmTot(cur, "canada");
+    const t1 = tile(`Feed estimate, Canada, ${short(cur)}`);
     big(t1, (tot / 1000).toFixed(1), "million t", "hero-value");
-    deltas(t1, [[pct(tot, dmTot(lyr, "canada")), `vs ${short(lyr)}`], [pct(tot, dmAvg(cur, "canada")), "vs 5-yr average"]]);
-    note(t1, MG.map((g) => [g, dmv(cur, "canada", g.key)]).sort((a, b) => b[1] - a[1]).map(([g, v]) => `${g.label} ${fmtKt(v)}`).join(" · "));
-    note(t1, `StatCan residual ${short(lyr)}: ${fmtKt(sc)}${PANEL[lyr]?.corn_estimated ? " (corn est.)" : ""}`);
+    deltas(t1, [[pct(tot, dmTot(ly, "canada")), `vs ${short(ly)}`], [pct(tot, dmAvg(cur, "canada")), "vs 5-yr average"]]);
+    note(t1, byGrain("canada", 6));
 
     for (const r of REG) {
       const e = dmTot(cur, r.key);
-      const t = tile(`${r.long}, demand (model)`, r.color);
+      const t = tile(`${r.long}, ${short(cur)}`, r.color);
       big(t, (e / 1000).toFixed(1), "million t");
-      deltas(t, [[pct(e, dmTot(lyr, r.key)), `vs ${short(lyr)}`], [pct(e, dmAvg(cur, r.key)), "vs 5-yr avg"]]);
-      note(t, `${Math.round(100 * e / tot)}% of Canada · ` + MG.map((g) => [g, dmv(cur, r.key, g.key)]).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([g, v]) => `${g.label.toLowerCase()} ${fmtKt(v)}`).join(" · "));
+      deltas(t, [[pct(e, dmTot(ly, r.key)), `vs ${short(ly)}`], [pct(e, dmAvg(cur, r.key)), "vs 5-yr avg"]]);
+      note(t, `${Math.round(100 * e / tot)}% of Canada · ` + byGrain(r.key, 3));
     }
 
-    const lp = latestPrices();
-    const ranked = GR.map((g) => ({ ...g, adj: eAdj(g.key, lp[g.key].price) })).sort((a, b) => a.adj - b.adj);
-    const t2 = tile("Cheapest feed energy, Alberta", ranked[0].color);
-    big(t2, ELAB[ranked[0].key], "");
-    note(t2, `${money(ranked[0].adj)}/t barley-equivalent, against ${ranked.slice(1).map((r) => `${ELAB[r.key].toLowerCase().replace("us corn", "US corn")} ${money(r.adj)}`).join(", ")}.`);
-
-    const lastMonth = (vals) => { const e = Object.entries(vals); const [m, v] = e[e.length - 1]; const ago = (k) => vals[`${+m.slice(0, 4) - k}${m.slice(4)}`]; return { m, v, yoy: ago(1), avg5: mean([1, 2, 3, 4, 5].map(ago)) }; };
-    const b = lastMonth(PR.barley.values);
-    const t3 = tile(`Feed barley, Alberta, ${monthName(b.m)}`, "var(--c1)");
-    big(t3, money(b.v), "/t");
-    deltas(t3, [[pct(b.v, b.yoy), "vs a year earlier"], [pct(b.v, b.avg5), "vs 5-yr average"]]);
-    const c = lastMonth(ONT.corn.values);
-    const tc = tile(`Corn, Ontario, ${monthName(c.m)}`, "var(--c5)");
-    big(tc, money(c.v), "/t");
-    deltas(tc, [[pct(c.v, c.yoy), "vs a year earlier"], [pct(c.v, c.avg5), "vs 5-yr average"]]);
-
-    const inv = LIV.inventory.west, dates = Object.keys(inv.feedlot_steers).sort(), dl = dates[dates.length - 1];
-    const fl = (d) => (inv.feedlot_steers[d] ?? 0) + (inv.feedlot_heifers[d] ?? 0);
-    const prevYear = `${+dl.slice(0, 4) - 1}${dl.slice(4)}`;
-    const t4 = tile(`Feedlot cattle, Western Canada, ${dl.endsWith("01") ? "Jan 1" : "Jul 1"} ${dl.slice(0, 4)}`);
-    big(t4, Math.round(fl(dl)).toLocaleString(), "thousand head");
-    deltas(t4, [[pct(fl(dl), fl(prevYear)), "vs a year earlier"]]);
-    const ie = LIV.inventory.east;
-    note(t4, `Hogs: West ${Math.round(inv.hogs[dl] ?? 0).toLocaleString()}k (${fmtPct(pct(inv.hogs[dl], inv.hogs[prevYear]))} y/y), East ${Math.round(ie.hogs[dl] ?? 0).toLocaleString()}k (${fmtPct(pct(ie.hogs[dl], ie.hogs[prevYear]))} y/y)`);
-
-    const cr = wk("us_corn_receipts", cur), w = lastWeek(cr, W_NOW);
-    const now = w ? at(cr, w) : 0, ly = at(wk("us_corn_receipts", lastYr), w || W_NOW), a5 = mean(ref.map((r) => at(wk("us_corn_receipts", r), w || W_NOW)));
-    const t5 = tile("US corn received so far, West", "var(--c5)");
-    big(t5, fmtKt(now).replace(" kt", "").replace(" Mt", ""), fmtKt(now).endsWith("Mt") ? "million t" : "thousand t");
-    deltas(t5, [[pct(now, ly), `vs ${short(lastYr)}`], [pct(now, a5), "vs 5-yr average"]]);
-    note(t5, "At CGC-licensed elevators and processors in Western Canada");
+    const sc = residual(scYear, "canada"), m = dmTot(scYear, "canada");
+    const t4 = tile(`StatCan feed use, ${short(scYear)}`);
+    big(t4, (sc / 1000).toFixed(1), "million t");
+    deltas(t4, [[pct(sc, m), `vs the model's ${fmtKt(m)}`]]);
+    note(t4, `StatCan's residual (it also carries waste, dockage and balancing error). Its ${short(cur)} figure comes out in December, March and July.${cornStar(scYear) ? " Corn estimated until August is published." : ""}`);
   }
 
-  // ---------- weekly flash ----------
-  function flowRow(label, key, cls) {
-    const c = wk(key, cur), w = lastWeek(c, W_NOW);
-    if (w == null) return null;
-    const d = diff(c), a4 = mean(d.slice(Math.max(0, w - 4), w));
-    const cy = at(c, w), ly = at(wk(key, lastYr), w), avg5 = mean(ref.map((r) => at(wk(key, r), w)));
-    return { label: label + (w < W_NOW ? ` (to wk ${w})` : ""), cls,
-      cells: [n1(d[w - 1]), n1(d[w - 2]), chg(d[w - 1] - d[w - 2]), n1(a4), n1(diff(wk(key, lastYr))[w - 1]), n1(cy), n1(ly), fmtPct(pct(cy, ly)), n1(avg5), fmtPct(pct(cy, avg5))] };
-  }
-  function shareRow(label, num, den) {
-    const f = (y, w) => { const a = at(wk(num, y), w), b = at(wk(den, y), w); return a != null && b ? a / b : null; };
-    const fw = (y, w) => { const a = diff(wk(num, y))[w - 1], b = diff(wk(den, y))[w - 1]; return a != null && b ? a / b : null; };
-    const w = lastWeek(wk(num, cur), W_NOW);
-    if (w == null) return null;
-    const cy = f(cur, w), ly = f(lastYr, w), a5 = mean(ref.map((r) => f(r, w)));
-    return { label: label + (w < W_NOW ? ` (to wk ${w})` : ""), cls: "sub",
-      cells: [pctTxt(fw(cur, w)), pctTxt(fw(cur, w - 1)), pp(fw(cur, w) - fw(cur, w - 1)), "–", pctTxt(fw(lastYr, w)), pctTxt(cy), pctTxt(ly), pp(cy - ly), pctTxt(a5), pp(cy - a5)] };
-  }
-  function renderFlash() {
-    const wEnd = new Date(D.meta.week_ending + "T12:00").toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
-    $("flash-eyebrow").textContent = `CGC · ${short(cur)} · week ${W_NOW} · ending ${wEnd} · kt`;
-    const meal = (y) => wk("canola_crush", y).map((v) => v == null ? null : v * A.canola_meal_yield);
-    WK.canola_meal = Object.fromEntries(Object.keys(WK.canola_crush || {}).map((y) => [y, meal(y)]));
-    const head = ["Thousand tonnes", `Wk ${W_NOW}`, `Wk ${W_NOW - 1}`, "Chg", "4-wk avg", `LY wk ${W_NOW}`, "CYTD", "LY CYTD", "y/y", "5-yr CYTD", "vs 5-yr"];
-    buildTable($("flash-table"), head, [
-      ["Barley", [flowRow("Feed barley delivered to elevators", "barley_feed_deliveries"), flowRow("Feed barley shipped for domestic feed", "barley_feed_shipments"),
-        flowRow("All barley delivered to elevators", "barley_primary_deliveries"), shareRow("Feed share of elevator deliveries", "barley_feed_deliveries", "barley_primary_deliveries")]],
-      ["Wheat (ex-durum)", [flowRow("Feed wheat delivered to elevators", "wheat_feed_deliveries"), flowRow("Feed wheat shipped for domestic feed", "wheat_feed_shipments"),
-        flowRow("All wheat delivered to elevators", "wheat_primary_deliveries"), shareRow("Feed share of elevator deliveries", "wheat_feed_deliveries", "wheat_primary_deliveries")]],
-      ["Imports", [flowRow("US corn received (licensed elevators and processors)", "us_corn_receipts")]],
-      ["Protein meal", [flowRow(`Canola meal output (crush × ${A.canola_meal_yield})`, "canola_meal")]],
-    ], { seps: [6, 8] });
-    $("flash-note").textContent = `Weekly values are week-over-week changes in CGC crop-year totals. Share rows are percents, and their changes are percentage points. LY = ${short(lastYr)}; 5-yr = ${short(ref[0])} to ${short(lastYr)} at the same week. Feed-grade deliveries and shipments come from CGC's domestic feed grain table (a subset of elevator deliveries). Canola meal is estimated from CGC crush at ${A.canola_meal_yield} t of meal per t of seed; most is exported.`;
-  }
-
-  // ---------- estimate ----------
-  function renderEstimate() {
-    const lp = latestPrices();
-    $("est-eyebrow").textContent = `StatCan residual · Canada · ${short(cur)} · kt`;
-    $("est-sub").textContent = `A forecast of the number StatCan will publish for this crop year (its residual), for comparison with the demand model above. Each grain's estimate is half the model (its share of the ${short(EST.avg_years[0])} to ${short(EST.avg_years[1])} average total, set by availability and energy-adjusted price) and half its own 5-year average. Supply is carry-in plus StatCan's latest production estimate plus last year's imports. Corn fed in the West is in the model, priced as US corn delivered to Alberta; corn fed in the East is its 5-year average, because it comes from the local crop and doesn't trade off against western barley on price. Regions split each grain by its 5-year regional shares.`;
-    const head = ["Thousand tonnes", `Estimate ${short(cur)}`, "West", "East", "Model only", "5-yr avg", short(lastYr), "vs last year", "Supply", "Latest price", "C$/t barley-eq", "Model share"];
-    const reg = (g) => REG.map((r) => n1(EST.by_region[r.key][g]));
-    const rows = GR.map((g) => {
-      const e = EST.by_grain[g.key], ly = EST.last_year[g.key], isCorn = g.key === "corn";
-      return { label: g.label + (isCorn && EST.last_year_corn_estimated ? "*" : ""), color: g.color,
-        cells: [n1(e), ...reg(g.key), n1(EST.model_only[g.key]), n1(EST.avg_5yr[g.key]), n1(ly), fmtPct(pct(e, ly)),
-          isCorn ? "–" : n1(EST.supply[g.key]), isCorn ? "" : money(lp[g.key].price), isCorn ? "" : money(eAdj(g.key, lp[g.key].price)), isCorn ? "" : pctTxt(EST.shares[g.key])] };
-    });
-    const cornSub = [
-      { label: "Fed in the West (model)", cls: "sub", cells: [n1(EST.corn_west), n1(EST.by_region.west.corn), "", n1(EST.model_only.corn - EST.corn_east), n1(EST.avg_5yr.corn - EST.corn_east), n1(EST.last_year_corn_west),
-        fmtPct(pct(EST.corn_west, EST.last_year_corn_west)), "imports", money(lp.corn.price) + " US", money(eAdj("corn", lp.corn.price)), pctTxt(EST.shares.corn_west)] },
-      { label: "Fed in the East (5-yr avg)", cls: "sub", cells: [n1(EST.corn_east), "", n1(EST.by_region.east.corn), n1(EST.corn_east), n1(EST.corn_east), n1(EST.last_year_corn_east),
-        fmtPct(pct(EST.corn_east, EST.last_year_corn_east)), "", "", "", ""] },
-    ];
-    const regTot = (r) => n1(sumOf(Object.values(EST.by_region[r])));
-    const tot = { label: "Total", cls: "total", cells: [n1(EST.total), regTot("west"), regTot("east"), n1(sumOf(Object.values(EST.model_only))), n1(sumOf(Object.values(EST.avg_5yr))), n1(sumOf(Object.values(EST.last_year))),
-      fmtPct(pct(EST.total, sumOf(Object.values(EST.last_year)))), "", "", "", "100%"] };
-    const lyReg = (r) => sumOf(Object.values(EST.last_year_by_region[r]));
-    const regRows = REG.slice(0, 2).map((r) => {
-      const e = sumOf(Object.values(EST.by_region[r.key])), a5 = sumOf(Object.values(EST.avg_5yr_by_region[r.key])), ly = lyReg(r.key);
-      return { label: r.long, cells: [n1(e), "", "", "", n1(a5), n1(ly), fmtPct(pct(e, ly)), "", "", "", ""] };
-    });
-    buildTable($("est-table"), head, [[null, [...rows.slice(0, 4), rows[4], ...cornSub, tot]], ["By region", regRows]], { seps: [1, 2, 4, 8] });
-
-    const bm = MODEL.backtest_mae, ty = MODEL.test_years;
-    $("acc-p").textContent = `Mean absolute error, kt, forecasting each crop year from ${short(ty[0])} to ${short(ty[ty.length - 1])} using only earlier years. Lower is better; ● is best. Eastern corn is its 5-year average in the first three methods.`;
-    const methods = [["estimate", "Estimate (50/50)"], ["model_only", "Model only"], ["avg_5yr", "5-yr average"], ["last_year", "Last year"]];
-    const accRow = (key, label, color, cls) => {
-      if (!bm[key]) return null;
-      const v = methods.map(([k]) => bm[key][k]), best = Math.min(...v);
-      return { label, color, cls, cells: v.map((x) => n1(x) + (x === best && key !== "total" ? " ●" : "")) };
-    };
-    buildTable($("acc-table"), ["Grain", ...methods.map((m) => m[1])], [
-      [null, [...GR.slice(0, 4).map((g) => accRow(g.key, g.label, g.color)), accRow("corn", "Corn", "var(--c5)"),
-        accRow("corn_west", "Fed in the West", null, "sub"), accRow("corn_east", "Fed in the East", null, "sub"), accRow("total", "Total", null, "total")]],
-      ["Region totals", [accRow("west", "Western Canada"), accRow("east", "Eastern Canada")]],
-    ]);
-
-    // estimate vs last year: grouped horizontal bars
-    const host = $("ch-estbar");
-    host.replaceChildren();
-    legend($("leg-estbar"), [{ label: short(cur) + " estimate", color: "var(--c1)", kind: "rect" }, { label: short(lastYr), color: "var(--other)", kind: "rect" }]);
-    const Wd = host.clientWidth; if (!Wd) return;
-    const rowH = 38, m = { l: 128, r: 64, t: 4, b: 4 }, H = m.t + m.b + GR.length * rowH;
-    host.style.height = H + "px";
-    const max = Math.max(...GR.map((g) => Math.max(EST.by_grain[g.key], EST.last_year[g.key] || 0)));
-    const xw = (v) => (v / max) * (Wd - m.l - m.r);
-    const svg = makeSvg(host, Wd, H, "Feed use estimate by grain against last crop year");
-    GR.forEach((g, i) => {
-      const y0 = m.t + i * rowH;
-      svgText(svg, { x: m.l - 8, y: y0 + rowH / 2 + 4, "text-anchor": "end", "font-size": 12, fill: css("--ink") }, g.label);
-      [[EST.by_grain[g.key], "var(--c1)", 6], [EST.last_year[g.key], "var(--other)", 20]].forEach(([v, col, dy]) => {
-        if (v == null) return;
-        const r = el("rect", { x: m.l, y: y0 + dy, width: Math.max(1, xw(v)), height: 12, rx: 3 }, svg); r.style.fill = col;
-        svgText(svg, { x: m.l + xw(v) + 6, y: y0 + dy + 10, "font-size": 11, fill: css("--ink-2") }, fmtKt(v));
-      });
-    });
-  }
-
-  // ---------- feed demand model ----------
+  // ---------- 0. the estimate by commodity ----------
   function renderDemand() {
-    const cy = cur, ly = dmYears[dmYears.indexOf(cur) - 1], meta = DM[cy].meta;
-    const inv = meta.inventory_dates.map((d) => monthName(d)).join(" and ");
-    $("dm-eyebrow").textContent = `Model · ${short(cy)} · kt`;
-    $("dm-sub").textContent = `Grain fed, built from the demand side: animals in each province × grain fed per animal. Feeding rates are StatCan's Livestock Feed Requirements Study (the latest edition, 1999 rates), updated with current Manitoba feeding guides for feedlot cattle and hogs and with milk per cow for dairy. The grain mix shifts each year with relative energy-adjusted prices.`;
-    const head = ["Thousand tonnes", `${short(cy)} Canada`, "West", "East", `${short(ly)}`, "y/y", "5-yr avg", "vs 5-yr", `StatCan ${short(ly)}`, "StatCan − model"];
-    const rows = MG.map((g) => {
-      const now = dmv(cy, "canada", g.key), last = dmv(ly, "canada", g.key), a5 = dmAvg(cy, "canada", g.key), sc = residual(ly, "canada", g.key);
-      return { label: g.label, color: g.color, cells: [n1(now), n1(dmv(cy, "west", g.key)), n1(dmv(cy, "east", g.key)), n1(last), fmtPct(pct(now, last)), n1(a5), fmtPct(pct(now, a5)),
-        n1(sc) + (g.key === "corn" && PANEL[ly]?.corn_estimated ? "*" : ""), sc == null ? "–" : chg(sc - last)] };
-    });
-    const tNow = dmTot(cy, "canada"), tLy = dmTot(ly, "canada"), tA5 = dmAvg(cy, "canada"), tSc = residual(ly, "canada");
-    const tot = { label: "Total", cls: "total", cells: [n1(tNow), n1(dmTot(cy, "west")), n1(dmTot(cy, "east")), n1(tLy), fmtPct(pct(tNow, tLy)), n1(tA5), fmtPct(pct(tNow, tA5)), n1(tSc), tSc == null ? "–" : chg(tSc - tLy)] };
-    const regs = REG.map((r) => { const now = dmTot(cy, r.key), last = dmTot(ly, r.key), a5 = dmAvg(cy, r.key), sc = residual(ly, r.key);
-      return { label: r.long, cells: [n1(now), "", "", n1(last), fmtPct(pct(now, last)), n1(a5), fmtPct(pct(now, a5)), n1(sc), sc == null ? "–" : chg(sc - last)] }; });
-    buildTable($("dm-table"), head, [[null, [...rows, tot]], ["By region", regs]], { seps: [1, 4, 8] });
-    $("dm-note").textContent = `Inventories: ${inv}${meta.inventory_dates.length < 2 ? " (January not yet published)" : ""}. Pig crop and poultry meat: ${meta.hog_year}; milk: ${meta.milk_year}. StatCan = its "animal feed, waste and dockage" for the last complete crop year, a residual of the supply and disposition balance (regional figures are this page's estimated split). Western corn is StatCan's measured corn use in the West where published, and ${(DM[cy].corn_west || "the model").replace(/(\d{4})-\d{2}(\d{2})/g, "$1-$2")} for ${short(cy)}. The model counts grain on 1999 feeding practice: co-products now fed in place of grain (distillers' grains, millfeeds) are not netted out, which matters most in the East.` + (PANEL[ly]?.corn_estimated ? " * August corn not yet published." : "");
+    const cy = cur, meta = DM[cy].meta;
+    $("dm-eyebrow").textContent = `Model · ${short(cy)} · thousand tonnes`;
+    $("dm-sub").textContent = `What livestock in each region will eat this crop year, by grain, from the model below. Corn is split into Canadian-grown corn and US imports. StatCan's figure for the last complete year is shown for reference.`;
+    const head = ["Thousand tonnes", `${short(cy)} Canada`, "West", "East", short(ly), "y/y", "5-yr avg", "vs 5-yr", `Model ${short(scYear)}`, `StatCan ${short(scYear)}`, "StatCan − model"];
+    const row = (g, cls, label) => {
+      const now = dmv(cy, "canada", g.key), last = dmv(ly, "canada", g.key), a5 = dmAvg(cy, "canada", g.key);
+      const ms = dmv(scYear, "canada", g.key), sc = residual(scYear, "canada", g.key);
+      return { label: label || g.label, color: cls ? null : g.color, cls, cells: [n1(now), n1(dmv(cy, "west", g.key)), n1(dmv(cy, "east", g.key)), n1(last), fmtPct(pct(now, last)), n1(a5), fmtPct(pct(now, a5)),
+        n1(ms), sc == null ? "" : n1(sc) + (g.key === "corn" ? cornStar(scYear) : ""), sc == null ? "" : chg(sc - ms)] };
+    };
+    const tNow = dmTot(cy, "canada"), tLy = dmTot(ly, "canada"), tA5 = dmAvg(cy, "canada"), tM = dmTot(scYear, "canada"), tSc = residual(scYear, "canada");
+    const tot = { label: "Total", cls: "total", cells: [n1(tNow), n1(dmTot(cy, "west")), n1(dmTot(cy, "east")), n1(tLy), fmtPct(pct(tNow, tLy)), n1(tA5), fmtPct(pct(tNow, tA5)), n1(tM), n1(tSc), chg(tSc - tM)] };
+    const regs = REG.map((r) => { const now = dmTot(cy, r.key), last = dmTot(ly, r.key), a5 = dmAvg(cy, r.key), ms = dmTot(scYear, r.key), sc = residual(scYear, r.key);
+      return { label: r.long, cells: [n1(now), "", "", n1(last), fmtPct(pct(now, last)), n1(a5), fmtPct(pct(now, a5)), n1(ms), n1(sc), chg(sc - ms)] }; });
+    buildTable($("dm-table"), head, [[null, [...GR.slice(0, 4).map((g) => row(g)), row(GR[4]), row(CORN_CA, "sub", "Canadian-grown"), row(CORN_US, "sub", "US imports"), tot]],
+      ["By region", regs]], { seps: [1, 4, 8] });
+    const proj = meta.cattle_source === "projected";
+    $("dm-note").textContent = `${short(cy)} inputs: animal inventories at ${meta.inventory_dates.map(monthName).join(" and ")}${meta.inventory_dates.length < 2 ? " (January not yet published)" : ""}; pig crop and poultry meat ${meta.hog_year}; milk ${meta.milk_year}; ${proj ? "fed cattle marketings projected from July 1 cattle on feed" : "fed cattle marketings as published"}; prices to ${monthName(Object.keys(PR.barley.values).pop())}; production as StatCan's latest estimate. StatCan = "animal feed, waste and dockage", a residual of its supply and disposition balance; regional figures are this page's estimated split, and it does not split corn by origin.${cornStar(scYear) ? " * August corn not yet published: March scaled by the usual ratio." : ""}`;
 
-    const gHead = ["Barley-eq kt", "West", "y/y", "East", "y/y", "Canada", "Share"];
-    const g = (c, r, k) => DM[c]?.by_group[r][k] ?? 0;
-    const canTot = DM[cy].beq.west + DM[cy].beq.east;
-    buildTable($("dm-group-table"), gHead, [[null, [...DGROUPS.map(([k, label]) => ({ label, cells: [n1(g(cy, "west", k)), fmtPct(pct(g(cy, "west", k), g(ly, "west", k))), n1(g(cy, "east", k)), fmtPct(pct(g(cy, "east", k), g(ly, "east", k))),
-      n1(g(cy, "west", k) + g(cy, "east", k)), pctTxt((g(cy, "west", k) + g(cy, "east", k)) / canTot, 0)] })),
-      { label: "Total", cls: "total", cells: [n1(DM[cy].beq.west), fmtPct(pct(DM[cy].beq.west, DM[ly].beq.west)), n1(DM[cy].beq.east), fmtPct(pct(DM[cy].beq.east, DM[ly].beq.east)), n1(canTot), "100%"] }]]], { seps: [3, 5] });
+    // y/y bridge: animal numbers (energy needed) vs grain mix (price, availability, corn origin)
+    $("bridge-h").textContent = `What changed from ${short(ly)}`;
+    $("bridge-p").textContent = `Each grain's change split in two. Animal numbers: last year's tonnes scaled by the change in grain energy needed in its region (step 1). Grain mix: the rest, from relative prices, availability and, for corn, how much comes from the US (steps 2 and 3).`;
+    const part = (g, r) => { const a = dmv(ly, r, g), b = dmv(cur, r, g); const animals = a * (DM[cur].beq[r] / DM[ly].beq[r] - 1); return { a, b, animals, mix: b - a - animals }; };
+    const bRow = (g, cls, label) => {
+      const p = REG.map((r) => part(g.key, r.key)), s = (k) => sumOf(p.map((x) => x[k]));
+      return { label: label || g.label, color: cls ? null : g.color, cls, cells: [n1(s("a")), chg(s("animals")), chg(s("mix")), n1(s("b")), chg(s("b") - s("a")), fmtPct(pct(s("b"), s("a"))), chg(p[0].b - p[0].a), chg(p[1].b - p[1].a)] };
+    };
+    const bTot = (() => { const rows = MG.map((g) => REG.map((r) => part(g.key, r.key))).flat(), s = (k) => sumOf(rows.map((x) => x[k]));
+      return { label: "Total", cls: "total", cells: [n1(s("a")), chg(s("animals")), chg(s("mix")), n1(s("b")), chg(s("b") - s("a")), fmtPct(pct(s("b"), s("a"))), chg(dmTot(cur, "west") - dmTot(ly, "west")), chg(dmTot(cur, "east") - dmTot(ly, "east"))] }; })();
+    buildTable($("bridge-table"), ["Thousand tonnes", short(ly), "Animal numbers", "Grain mix", short(cur), "Change", "%", "West change", "East change"],
+      [[null, [...GR.slice(0, 4).map((g) => bRow(g)), bRow(CORN_CA, null, "Corn, Canadian-grown"), bRow(CORN_US, null, "Corn, US imports"), bTot]]], { seps: [1, 4, 7] });
+  }
 
-    const DRV = [["feedlot", "Cattle on feeding operations, incl. calves", "k head"], ["background", "Backgrounders, Jan 1", "k head"], ["Beef Cows", "Beef cows", "k head"],
-      ["Dairy Cows", "Dairy cows", "k head"], ["Sows & Bred Gilts", "Sows and gilts", "k head"], ["Weaner Pigs", "Pig crop", "k head"], ["Feeder Pigs", "Hogs finished in region", "k head"],
-      ["Chickens t", "Chicken meat", "kt"], ["Turkeys t", "Turkey meat", "kt"], ["Layers", "Laying hens", "k birds"]];
+  // ---------- 1-3. how the estimate is built ----------
+  function renderSteps() {
+    const cy = cur, meta = DM[cy].meta;
+    $("how-eyebrow").textContent = `Model · ${short(cy)}`;
+    // step 1: animals
+    const dof = meta.days_on_feed, lbd = DMM.feedlot_lb_day, tph = (d) => (d * lbd * 0.45359237 / 1000).toFixed(2);
+    $("step1-p").textContent = `Grain energy needed = animals × grain fed per head, in barley-equivalent tonnes, by province and livestock class. Cattle on feed: fed cattle marketed (slaughter + live exports × ${Math.round(DMM.fed_share.west * 100)}% steers and heifers in the West, ${Math.round(DMM.fed_share.east * 100)}% in the East) × ${Math.round(dof.west)} days on feed × ${lbd} lb a day = ${tph(dof.west)} t per head in the West (East ${Math.round(dof.east)} days, ${tph(dof.east)} t). Hogs: per pig raised and finished, sows per head. Poultry: per tonne of meat. Dairy: per cow, rising with milk per cow (${Math.round((meta.milk_factor - 1) * 100)}% above 1999). Rates in About the data.`;
+    const DRV = [["cattle_slaughter", "Cattle slaughter, Jul–Jun", "k head"], ["cattle_exports", "Live cattle exports, Jul–Jun", "k head"],
+      ["fed_marketed", "Fed cattle marketed", "k head"], ["feedlot", "Cattle on feeding operations", "k head"], ["background", "Backgrounders, Jan 1", "k head"],
+      ["Beef Cows", "Beef cows", "k head"], ["Dairy Cows", "Dairy cows", "k head"], ["Sows & Bred Gilts", "Sows and gilts", "k head"], ["Weaner Pigs", "Pig crop", "k head"],
+      ["Feeder Pigs", "Hogs finished in region", "k head"], ["Chickens t", "Chicken meat", "kt"], ["Turkeys t", "Turkey meat", "kt"], ["Layers", "Laying hens", "k birds"]];
     const dv = (c, r, k) => { const v = DM[c]?.drivers[r][k]; return v == null ? null : k.endsWith(" t") ? v / 1000 : v; };
     // flows not yet published for this crop year repeat the latest year: show that rather than a 0% change
     const yearOf = (c, k) => ["Weaner Pigs", "Feeder Pigs"].includes(k) ? DM[c].meta.hog_year : ["Chickens t", "Turkeys t"].includes(k) ? DM[c].meta.poultry_year : null;
-    const yy = (r, k) => { const a = yearOf(cy, k); return a != null && a === yearOf(ly, k) ? "–" : fmtPct(pct(dv(cy, r, k), dv(ly, r, k))); };
-    $("dm-drivers-p").textContent = `Crop-year average of July 1 and January 1 inventories. Pig crop and poultry meat by calendar year (${meta.hog_year} for ${short(cy)} until StatCan publishes the next year, so no change is shown). Milk per dairy cow is ${Math.round((meta.milk_factor - 1) * 100)}% above 1999, and dairy grain scales with it.`;
-    buildTable($("dm-drivers-table"), ["", `West ${short(cy)}`, "y/y", "East", "y/y"], [[null, DRV.map(([k, label, unit]) => ({ label: `${label} (${unit})`,
-      cells: [n1(dv(cy, "west", k)), yy("west", k), n1(dv(cy, "east", k)), yy("east", k)] }))]], { seps: [3] });
+    const yy = (r, k) => { const a = yearOf(cy, k); return a != null && a === yearOf(ly, k) ? "same yr" : fmtPct(pct(dv(cy, r, k), dv(ly, r, k))); };
+    const proj = meta.cattle_source === "projected";
+    buildTable($("dm-drivers-table"), ["Animals", `West ${short(cy)}`, "y/y", "East", "y/y"], [[null, DRV.map(([k, label, unit]) => ({ label: `${label}${k === "fed_marketed" && proj ? ", projected" : ""} (${unit})`, cls: k === "fed_marketed" ? "total" : "",
+      cells: [dv(cy, "west", k) == null ? "n/a" : n1(dv(cy, "west", k)), yy("west", k), dv(cy, "east", k) == null ? "n/a" : n1(dv(cy, "east", k)), yy("east", k)] }))]], { seps: [3] });
+    const g = (c, r, k) => DM[c]?.by_group[r][k] ?? 0;
+    const canTot = DM[cy].beq.west + DM[cy].beq.east;
+    buildTable($("dm-group-table"), ["Grain energy, barley-eq kt", "West", "y/y", "East", "y/y", "Share"], [[null, [...DGROUPS.map(([k, label]) => ({ label, cells: [n1(g(cy, "west", k)), fmtPct(pct(g(cy, "west", k), g(ly, "west", k))), n1(g(cy, "east", k)), fmtPct(pct(g(cy, "east", k), g(ly, "east", k))),
+      pctTxt((g(cy, "west", k) + g(cy, "east", k)) / canTot, 0)] })),
+      { label: "Total", cls: "total", cells: [n1(DM[cy].beq.west), fmtPct(pct(DM[cy].beq.west, DM[ly].beq.west)), n1(DM[cy].beq.east), fmtPct(pct(DM[cy].beq.east, DM[ly].beq.east)), "100%"] }]]], { seps: [3, 5] });
+
+    // step 2: mix
+    $("step2-p").textContent = `Each class starts from its ration (StatCan's 1999 feeding study by province; western cattle 85% barley, 8% wheat, 7% corn). The mix then moves each year: share ∝ ration share × price index^−${DMM.sigma.toFixed(2)} × availability index^${DMM.alpha.toFixed(2)}. Price index = energy-adjusted price over its average; availability = supply over its average (West only). Both elasticities are fitted on how StatCan's grain shares have moved year to year.`;
+    const mixTable = (r, id) => {
+      const rec = DM[cy], beq = rec.beq[r], pr = rec.prices[r];
+      const rows = MG.filter((gg) => !(r === "east" && gg.key === "durum")).map((gg) => {
+        const k = gg.key, fin = rec.by_region[r][k] * ENERGY[k] / beq;
+        return { label: gg.label, color: gg.color, cells: [pctTxt(rec.base_mix[r][k]), money(pr[k]), idx(rec.relative_price[r][k]), r === "west" && k !== "corn" ? idx(rec.availability[r][k]) : "–", pctTxt(fin), n1(rec.by_region[r][k])] };
+      });
+      buildTable($(id), [r === "west" ? "Western Canada" : "Eastern Canada", "Ration share", "C$/t", "Price index", "Availability", "Final share", "kt"],
+        [[null, [...rows, { label: "Total", cls: "total", cells: ["100%", "", "", "", "100%", n1(dmTot(cy, r))] }]]], { seps: [2, 5] });
+    };
+    mixTable("west", "mix-west-table");
+    mixTable("east", "mix-east-table");
+    const cw = DM[cy].corn_west || "";
+    $("step2-note").textContent = `Shares are of grain energy (barley-equivalent). Prices are crop-year averages (${short(cy)}: the latest month until StatCan publishes the crop year's first): West = Alberta farm prices (feed barley, non-milling wheat, durum, oats) and US corn delivered to southern Alberta; East = Ontario farm prices. Western corn is then set to StatCan's measured corn use in the West where published, because the 1999 rations predate Manitoba's corn crop; for ${short(cy)} it is ${cw.startsWith("projected") ? "projected from its share in " + cw.replace("projected from ", "").replace(/(\d{4})-\d{2}(\d{2})/g, "$1-$2") + ", shifted by price" : "StatCan's figure"}. The other western grains take the remaining energy in proportion.`;
+
+    // step 3: corn origin
+    const O = (c) => DM[c].corn_origin;
+    const ow = O(cy).west, oe = O(cy).east, lw = O(ly).west, le = O(ly).east;
+    $("step3-p").textContent = `West: US corn = StatCan's corn imports into the provinces outside Ontario and Quebec (all fed there); the rest is western-grown. When imports aren't out yet, western-grown = the western crop × the share of it fed in the West over the last three years (${pctTxt(ow.crop_fed_share ?? null, 0)}), and US corn fills the rest. East: Ontario and Quebec imports as a share of their crop plus imports.`;
+    const ocell = (o, k) => o[k] == null ? "–" : n1(o[k]);
+    const oRow = (label, a, b, cls) => ({ label, cls, cells: [a == null ? "–" : n1(a), b == null ? "–" : n1(b), fmtPct(pct(a, b))] });
+    buildTable($("origin-table"), ["Thousand tonnes", short(cy), short(ly), "y/y"], [
+      ["Western Canada", [oRow("Corn fed (step 2)", ow.us + ow.ca, lw.us + lw.ca, "total"), oRow("Western corn crop", ow.crop, lw.crop, "sub"),
+        oRow(`US imports${ow.method === "projected" ? " (projected)" : ow.method === "estimated imports" ? " (est.)" : ""}`, ow.us, lw.us, "sub"), oRow("Canadian-grown", ow.ca, lw.ca, "sub")]],
+      ["Eastern Canada", [oRow("Corn fed (step 2)", oe.us + oe.ca, le.us + le.ca, "total"), oRow("Ontario and Quebec crop", oe.crop, le.crop, "sub"),
+        { label: `US share of supply${oe.method === "projected" ? " (3-yr avg)" : ""}`, cls: "sub", cells: [pctTxt(oe.us_share), pctTxt(le.us_share), pp(oe.us_share - le.us_share)] },
+        oRow("US imports fed", oe.us, le.us, "sub"), oRow("Canadian-grown", oe.ca, le.ca, "sub")]],
+    ], { seps: [3] });
+    legend($("leg-origin"), [{ ...CORN_CA, kind: "rect" }, { ...CORN_US, kind: "rect" }, { label: "Western corn crop", kind: "mark" }]);
+    yearStack($("ch-origin"), { years: dmYears, maxBar: 30, aria: "Corn fed in Western Canada by origin", keys: [CORN_CA, CORN_US],
+      getVals: (y) => ({ corn_ca: dmv(y, "west", "corn_ca"), corn_us: dmv(y, "west", "corn_us") }),
+      marker: { label: "Western corn crop", get: (y) => O(y).west.crop },
+      tipExtra: (y) => [{ value: pctTxt(dmv(y, "west", "corn_us") / dmv(y, "west", "corn"), 0), label: "US share" }, { value: n1(finalOf(wk("us_corn_receipts", y))), label: "US corn at CGC-licensed facilities" }] });
   }
 
-  // ---------- feed demand by crop year ----------
-  const HIST_PICKS = [{ key: "total", label: "Total" }, ...MG.map((g) => ({ key: g.key, label: g.label, color: g.color }))];
+  // ---------- feed estimate by crop year ----------
+  const HIST_PICKS = [{ key: "total", label: "Total" }, ...GR.map((g) => ({ key: g.key, label: g.label, color: g.color })), { key: "corn_ca", label: "Canadian corn" }, { key: "corn_us", label: "US corn" }];
   let histPick = "total";
   try { const k = localStorage.getItem("feed-hist-pick"); if (HIST_PICKS.some((h) => h.key === k)) histPick = k; } catch (e) {}
   function renderHistEstimates() {
@@ -1237,144 +1109,57 @@
     }
     for (const b of host.children) b.setAttribute("aria-pressed", b.dataset.key === histPick);
     const pick = HIST_PICKS.find((h) => h.key === histPick), gk = histPick === "total" ? null : histPick;
+    const byOrigin = gk === "corn_ca" || gk === "corn_us";
     const val = (cy, r) => gk ? dmv(cy, r, gk) : dmTot(cy, r);
     $("hist-est-eyebrow").textContent = `Model · ${short(dmYears[0])} to ${short(cur)} · kt`;
-    $("hist-est-sub").textContent = `The demand model for every crop year, by commodity and region, next to StatCan's residual. StatCan's figure is what is left over after exports, processing, seed and stocks, so it also carries waste, dockage and balancing error; the gap between the two is a measure of that.`;
-    $("hist-est-ch-h").textContent = `Model versus StatCan's residual: ${pick.label}`;
+    $("hist-est-sub").textContent = `The model for every crop year, by commodity and region, next to StatCan. StatCan's figure is what is left over after exports, processing, seed and stocks, so it also carries waste, dockage and balancing error.`;
+    $("hist-est-ch-h").textContent = `Model versus StatCan: ${pick.label}`;
     const w = REG[0], e = REG[1];
-    legend($("leg-hist-est"), [{ label: "Model, West", color: w.color, kind: "rect" }, { label: "Model, East", color: e.color, kind: "rect" }, { label: "StatCan residual, Canada", kind: "mark" }]);
-    yearStack($("ch-hist-est"), { years: dmYears, maxBar: 40, aria: `Feed demand model by crop year, ${pick.label}`,
+    legend($("leg-hist-est"), [{ label: "Model, West", color: w.color, kind: "rect" }, { label: "Model, East", color: e.color, kind: "rect" }, ...(byOrigin ? [] : [{ label: "StatCan, Canada", kind: "mark" }])]);
+    yearStack($("ch-hist-est"), { years: dmYears, maxBar: 40, aria: `Feed model by crop year, ${pick.label}`,
       keys: [{ key: "west", label: "Model, West", color: w.color }, { key: "east", label: "Model, East", color: e.color }],
       getVals: (y) => ({ west: val(y, "west"), east: val(y, "east") }),
-      marker: { label: "StatCan residual", get: (y) => residual(y, "canada", gk) },
-      tipExtra: (y) => { const sc = residual(y, "canada", gk), m = val(y, "canada"); return sc == null ? [{ value: "–", label: "StatCan residual not published yet" }] : [{ value: chg(sc - m), label: "StatCan minus model" }]; } });
+      marker: { label: "StatCan", get: (y) => residual(y, "canada", gk) },
+      tipExtra: (y) => { if (byOrigin) return []; const sc = residual(y, "canada", gk), m = val(y, "canada"); return sc == null ? [{ value: "–", label: "StatCan not published yet" }] : [{ value: chg(sc - m), label: "StatCan minus model" }]; } });
     const body = dmYears.slice().reverse().map((y) => {
-      const m = val(y, "canada"), sc = residual(y, "canada", gk), prev = dmYears[dmYears.indexOf(y) - 1];
+      const m = val(y, "canada"), sc = residual(y, "canada", gk), prev = dmPrev(y);
       return { label: short(y) + (y === cur ? " (current)" : ""), cls: y === cur ? "total" : "",
-        cells: [n1(m), fmtPct(prev ? pct(m, val(prev, "canada")) : null), n1(val(y, "west")), n1(val(y, "east")), n1(sc) + (gk !== "wheat" && gk !== "barley" && gk !== "oats" && PANEL[y]?.corn_estimated ? "*" : ""),
+        cells: [n1(m), fmtPct(prev ? pct(m, val(prev, "canada")) : null), n1(val(y, "west")), n1(val(y, "east")), n1(sc) + (sc != null && (!gk || gk === "corn") ? cornStar(y) : ""),
           sc == null ? "–" : chg(sc - m), sc == null ? "–" : fmtPct(pct(sc, m)), n1(residual(y, "west", gk)), n1(residual(y, "east", gk))] };
     });
     const both = dmYears.filter((y) => residual(y, "canada", gk) != null);
-    body.push({ label: `Average ${short(both[0])} to ${short(both[both.length - 1])}`, cls: "memo", cells: [n1(mean(both.map((y) => val(y, "canada")))), "", n1(mean(both.map((y) => val(y, "west")))), n1(mean(both.map((y) => val(y, "east")))),
+    if (both.length) body.push({ label: `Average ${short(both[0])} to ${short(both[both.length - 1])}`, cls: "memo", cells: [n1(mean(both.map((y) => val(y, "canada")))), "", n1(mean(both.map((y) => val(y, "west")))), n1(mean(both.map((y) => val(y, "east")))),
       n1(mean(both.map((y) => residual(y, "canada", gk)))), chg(mean(both.map((y) => residual(y, "canada", gk) - val(y, "canada")))), "", n1(mean(both.map((y) => residual(y, "west", gk)))), n1(mean(both.map((y) => residual(y, "east", gk))))] });
-    buildTable($("hist-est-table"), ["Crop year", "Model, Canada", "y/y", "Model, West", "Model, East", "StatCan residual", "StatCan − model", "StatCan vs model", "StatCan West (est. split)", "StatCan East (est. split)"],
+    buildTable($("hist-est-table"), ["Crop year", "Model, Canada", "y/y", "Model, West", "Model, East", "StatCan", "StatCan − model", "StatCan vs model", "StatCan West (est. split)", "StatCan East (est. split)"],
       [[pick.label, body]], { seps: [1, 3, 5, 8] });
-    $("hist-est-note").textContent = `Model: src/feed_model.py, rates in About the data. StatCan residual: "animal feed, waste and dockage" (32-10-0013; corn 32-10-0014); its West/East figures are this page's estimated split (see West and East). The current crop year's residual comes out in StatCan's December, March and July balances. * Corn for the latest complete year is estimated until StatCan publishes August.`;
-  }
+    $("hist-est-note").textContent = `StatCan: "animal feed, waste and dockage" (32-10-0013; corn 32-10-0014); its West/East figures are this page's estimated split: barley, wheat, durum and oats as each region's on-farm feed (32-10-0015) plus a share of the rest in proportion to production; corn from StatCan's regional corn balance. StatCan does not split corn by origin. The East's model runs well above its StatCan figure: part is met by co-products such as distillers' grains and by western grain shipped east. * Corn for the latest complete year is estimated until StatCan publishes August.`;
 
-
-  // ---------- West and East ----------
-  function renderRegions() {
-    const y = cur, yPrev = dmYears[dmYears.indexOf(y) - 1], y5 = dmYears.slice(Math.max(0, dmYears.indexOf(y) - 5), dmYears.indexOf(y));
-    const v = (yr, g, r) => RF[yr]?.[g]?.[r];
-    $("reg-eyebrow").textContent = `Model · ${short(y)} · kt`;
-    const row = (label, get, color, cls) => {
-      const w = get(y, "west"), e = get(y, "east"), c = w + e;
-      const wA = mean(y5.map((yr) => get(yr, "west"))), eA = mean(y5.map((yr) => get(yr, "east")));
-      return { label, color, cls, cells: [n1(w), n1(e), n1(c), pctTxt(w / c, 0), pctTxt(e / c, 0), fmtPct(pct(w, get(yPrev, "west"))), fmtPct(pct(e, get(yPrev, "east"))), fmtPct(pct(w, wA)), fmtPct(pct(e, eA))] };
-    };
-    const head = ["Thousand tonnes", "West", "East", "Canada", "West share", "East share", "West y/y", "East y/y", "West vs 5-yr", "East vs 5-yr"];
-    const ry = regYears[regYears.length - 1], farm = D.farm_feed, farmYr = (g) => farm[g]?.[ry];
-    const corn = RF[ry].corn;
-    buildTable($("reg-table"), head, [
-      ["Feed demand model", [...MG.map((g) => row(g.label, (yr, r) => dmv(yr, r, g.key), g.color)), row("Total", (yr, r) => dmTot(yr, r), null, "total")]],
-      [`StatCan residual, ${short(ry)} (this page's estimated split)`, [...GR.map((g) => {
-        const w = v(ry, g.key, "west"), e = v(ry, g.key, "east"), c = w + e;
-        return { label: g.label + (g.key === "corn" && corn.estimated ? "*" : ""), cls: "sub", cells: [n1(w), n1(e), n1(c), pctTxt(w / c, 0), pctTxt(e / c, 0), "", "", "", ""] };
-      }), (() => { const w = regTotal(ry, "west"), e = regTotal(ry, "east"); return { label: "Total", cls: "sub", cells: [n1(w), n1(e), n1(w + e), pctTxt(w / (w + e), 0), pctTxt(e / (w + e), 0), "", "", "", ""] }; })()]],
-      [`Of which fed on the farm that grew it, ${short(ry)} (published)`, GR.filter((g) => g.key !== "corn" && farmYr(g.key)).map((g) => {
-        const f = farmYr(g.key), c = f.west + f.east;
-        return { label: g.label, cls: "sub", cells: [n1(f.west), n1(f.east), n1(c), pctTxt(f.west / c, 0), pctTxt(f.east / c, 0), "", "", "", ""] };
-      })],
-    ], { seps: [3, 5, 7] });
-    $("reg-note").textContent = `5-yr = ${short(y5[0])} to ${short(y5[y5.length - 1])}. The model gives each region's demand from its own animals. StatCan publishes feed use for Canada only, so its regional figures are this page's estimate: barley, wheat, durum and oats are each region's on-farm feed (32-10-0015) plus a share of the rest in proportion to production; corn is from StatCan's regional corn balance (32-10-0014). The East's demand runs well above its StatCan figure: part is met by co-products such as distillers' grains and by western grain shipped east.` + (corn.estimated ? " * August corn not yet published: March scaled by the usual March-to-August ratio." : "");
-
-    for (const [id, r] of [["west", "west"], ["east", "east"]]) {
-      legend($("leg-" + id), [...MG.map((g) => ({ label: g.label, color: g.color, kind: "rect" })), { label: "StatCan residual (est. split)", kind: "mark" }]);
-      yearStack($("ch-" + id), { years: dmYears, maxBar: 36, aria: `Feed demand by grain, ${r === "west" ? "Western Canada" : "Eastern Canada"}`, keys: MG,
-        getVals: (yr) => Object.fromEntries(MG.map((g) => [g.key, dmv(yr, r, g.key) || 0])),
-        marker: { label: "StatCan residual (est. split)", get: (yr) => residual(yr, r) },
+    for (const r of ["west", "east"]) {
+      const keys = r === "east" ? MGX.filter((g) => g.key !== "durum") : MGX;
+      legend($("leg-" + r), [...keys.map((g) => ({ label: g.label, color: g.color, kind: "rect" })), { label: "StatCan (est. split)", kind: "mark" }]);
+      yearStack($("ch-" + r), { years: dmYears, maxBar: 36, aria: `Feed model by grain, ${r === "west" ? "Western Canada" : "Eastern Canada"}`, keys,
+        getVals: (yr) => Object.fromEntries(keys.map((g) => [g.key, dmv(yr, r, g.key) || 0])),
+        marker: { label: "StatCan (est. split)", get: (yr) => residual(yr, r) },
         tipExtra: (yr) => [{ value: pctTxt(dmTot(yr, r) / dmTot(yr, "canada"), 0), label: "share of Canada" }] });
     }
-
-    legend($("leg-cornreg"), [...REG.map((r) => ({ label: r.long, color: r.color, kind: "rect" })), { label: "Imports into the West", kind: "mark" }]);
-    yearStack($("ch-cornreg"), { years: regYears, aria: "Corn fed by region", keys: REG.map((r) => ({ key: r.key, label: r.long, color: r.color })),
-      getVals: (yr) => ({ west: v(yr, "corn", "west"), east: v(yr, "corn", "east") }),
-      marker: { label: "Imports into the West", get: (yr) => PANEL[yr]?.imports_corn_west } });
-
-    const C = D.corn, cy = regYears.filter((yr) => C[yr]?.aug && C[yr].aug.production_on != null);
-    const EK = [{ key: "fed", label: "Fed in the East (est.)", color: "var(--c2)" }, { key: "industry", label: "Industrial use, Canada", color: "var(--c4)" }, { key: "exports", label: "Exports", color: "var(--c1)" }];
-    legend($("leg-eastcorn"), [...EK.map((k) => ({ ...k, kind: "rect" })), { label: "Eastern crop", kind: "mark" }]);
-    yearStack($("ch-eastcorn"), { years: cy, aria: "Use of the Eastern corn crop", keys: EK,
-      getVals: (yr) => { const a = C[yr].aug; return { fed: v(yr, "corn", "east"), industry: a.industrial_canada, exports: (a.exports_on || 0) + (a.exports_qc || 0) }; },
-      marker: { label: "Eastern crop", get: (yr) => C[yr].aug.production_on + C[yr].aug.production_qc + (D.production.corn.atlantic[yr.slice(0, 4)] || 0) } });
   }
 
-  // ---------- feed economics ----------
-  function renderCalc() {
-    const host = $("calc");
-    host.replaceChildren();
-    const field = (id, label, value, step, onInput, suffix) => {
-      const w = document.createElement("label"); w.className = "calc-field"; w.htmlFor = id;
-      const s = document.createElement("span"); s.textContent = label;
-      const inp = document.createElement("input"); inp.type = "number"; inp.id = id; inp.step = step; inp.value = value;
-      inp.addEventListener("input", () => { const v = parseFloat(inp.value); if (isFinite(v) && v > 0) { onInput(v); saveCalc(); renderEconomics(); renderSummary(); renderEstimate(); } });
-      const sf = document.createElement("em"); sf.textContent = suffix || "";
-      w.append(s, inp, sf); host.appendChild(w);
-    };
-    field("calc-basis", "US corn basis + freight to southern Alberta", calc.basis, 0.05, (v) => { calc.basis = v; }, "US$/bu over CBOT");
-    for (const g of GR.filter((x) => x.key !== "barley")) field(`calc-e-${g.key}`, `${g.label} energy vs barley`, calc.energy[g.key], 0.01, (v) => { calc.energy[g.key] = v; }, "× barley");
-    const reset = document.createElement("button"); reset.type = "button"; reset.className = "btn"; reset.textContent = "Reset to defaults";
-    reset.addEventListener("click", () => { calc.basis = A.corn_basis_usd_bu; calc.energy = { ...A.energy_vs_barley }; saveCalc(); renderCalc(); renderEconomics(); renderSummary(); renderEstimate(); });
-    host.appendChild(reset);
-  }
-  function renderEconomics() {
+  // ---------- drivers ----------
+  function renderDrivers() {
     const lp = latestPrices();
-    const ranked = GR.map((g) => ({ ...g, price: lp[g.key].price, when: lp[g.key].when, adj: eAdj(g.key, lp[g.key].price) })).sort((a, b) => a.adj - b.adj);
-    $("rank-h").textContent = `Cheapest feed energy, Alberta: ${ELAB[ranked[0].key]}`;
-    $("rank-p").textContent = "Latest available prices. StatCan farm prices lag by about two months; CBOT corn is this week's close.";
-    const bAdj = eAdj("barley", lp.barley.price);
-    buildTable($("rank-table"), ["Grain", "C$/t", "As of", "Barley-eq", "vs barley"], [[null, ranked.map((r, i) => ({
-      label: `${i + 1}. ${ELAB[r.key]}`, color: r.color, cells: [money(r.price), r.when, money(r.adj), fmtPct(pct(r.adj, bAdj))] }))]]);
-    $("corn-note").textContent = `US corn delivered: (CBOT ${lp.corn.zc.toFixed(2)}¢/bu ÷ 100 + US$${calc.basis.toFixed(2)} basis and freight) × ${A.bu_corn_per_t} bu/t × ${lp.corn.fx.toFixed(4)} USD/CAD = ${money(lp.corn.price)}/t. Wheat price is StatCan's "wheat (except durum), other" (non-milling) series; durum and oats are all grades.`;
-
+    const ELAB = { barley: "Feed barley", wheat: "Wheat (non-milling)", durum: "Durum", oats: "Oats", corn: "US corn delivered" };
     const months = Object.keys(PR.barley.values).filter((mo) => mo >= "2016-01");
-    legend($("leg-eprice"), GR.map((g) => ({ label: g.key === "corn" ? "US corn delivered" : g.label, color: g.color })));
+    legend($("leg-eprice"), GR.map((g) => ({ label: ELAB[g.key], color: g.color })));
     lineChart($("ch-eprice"), {
-      x: months, aria: "Energy-adjusted feed grain prices by month",
+      x: months, aria: "Energy-adjusted feed grain prices in Alberta by month",
       xLabel: (mo, long) => long ? monthName(mo) : (mo.endsWith("-01") ? mo.slice(0, 4) : ""),
       series: GR.map((g) => ({ label: ELAB[g.key], color: g.color, values: months.map((mo) => { const p = monthlyPrice(g.key, mo); return p == null ? null : eAdj(g.key, p); }), width: g.key === "barley" ? 2.5 : 1.75 })),
       fmt: (v) => money(v),
     });
+    const ranked = GR.map((g) => ({ ...g, adj: eAdj(g.key, lp[g.key].price) })).sort((a, b) => a.adj - b.adj);
+    $("corn-note").textContent = `Cheapest energy now: ${ranked.map((r) => `${ELAB[r.key].toLowerCase().replace("us corn", "US corn")} ${money(r.adj)}`).join(", ")} per t barley-eq (StatCan prices to ${lp.barley.when}; corn at ${lp.corn.when}). US corn delivered = (CBOT ${lp.corn.zc.toFixed(2)}¢/bu ÷ 100 + US$${A.corn_basis_usd_bu.toFixed(2)} basis and freight) × ${A.bu_corn_per_t} bu/t × ${lp.corn.fx.toFixed(4)} USD/CAD = ${money(lp.corn.price)}/t. Energy vs barley: wheat ${ENERGY.wheat}, durum ${ENERGY.durum}, oats ${ENERGY.oats}, corn ${ENERGY.corn}.`;
 
-    const yrs = doneYears.filter((y) => y >= "2013-2014");
-    const cyAvg = (g, y) => { const y0 = +y.slice(0, 4); const ms = [...[8, 9, 10, 11, 12].map((mo) => `${y0}-${String(mo).padStart(2, "0")}`), ...[1, 2, 3, 4, 5, 6, 7].map((mo) => `${y0 + 1}-${String(mo).padStart(2, "0")}`)];
-      return mean(ms.map((mo) => { const p = monthlyPrice(g, mo); return p == null ? null : eAdj(g, p); })); };
-    yearStack($("ch-spread"), {
-      years: yrs, aria: "US corn premium over barley by crop year",
-      keys: [{ key: "spread", label: "Corn premium over barley", color: "var(--c5)" }],
-      getVals: (y) => { const c = cyAvg("corn", y), b = cyAvg("barley", y); return { spread: c != null && b != null ? Math.max(0, c - b) : 0 }; },
-      tipExtra: (y) => [{ value: money(cyAvg("corn", y) - cyAvg("barley", y)), label: "corn minus barley, C$/t barley-eq" }],
-      capLabel: (y) => { const v = cyAvg("corn", y) - cyAvg("barley", y); return v < 0 ? "−" + Math.round(-v) : ""; },
-    });
-    const cornYears = cropYears.filter((y) => y >= "2013-2014" && y !== cur && D.corn[y]);
-    legend($("leg-corn"), [{ label: "StatCan imports (West)", color: "var(--c5)", kind: "rect" }, { label: "US corn received at CGC-licensed facilities", kind: "mark" }]);
-    yearStack($("ch-corn"), {
-      years: cornYears, aria: "Corn imports into Western Canada by crop year",
-      keys: [{ key: "imports", label: "StatCan imports (West)", color: "var(--c5)" }],
-      getVals: (y) => ({ imports: PANEL[y]?.imports_corn_west ?? 0 }),
-      marker: { label: "US corn received at CGC-licensed facilities", get: (y) => finalOf(wk("us_corn_receipts", y)) },
-      tipExtra: (y) => (D.corn[y].aug ? [] : [{ value: "est.", label: "August not yet published: March scaled by the usual ratio" }]),
-    });
-
-    // Ontario: the Eastern benchmark
-    const EG = [{ key: "corn", label: "Corn", color: "var(--c5)" }, { key: "barley", label: "Barley", color: "var(--c1)" }, { key: "wheat", label: "Wheat", color: "var(--c2)" }];
-    const oLast = (g) => { const e = Object.entries(ONT[g].values); const [m, v] = e[e.length - 1]; return { m, v }; };
-    const oBar = eAdj("barley", oLast("barley").v);
-    const oRank = EG.map((g) => ({ ...g, ...oLast(g.key), adj: eAdj(g.key, oLast(g.key).v) })).sort((a, b) => a.adj - b.adj);
-    $("rank-e-h").textContent = `Cheapest feed energy, Ontario: ${oRank[0].label}`;
-    buildTable($("rank-e-table"), ["Grain", "C$/t", "As of", "Barley-eq", "vs barley"], [[null, oRank.map((r, i) => ({
-      label: `${i + 1}. ${r.label}`, color: r.color, cells: [money(r.v), monthName(r.m), money(r.adj), fmtPct(pct(r.adj, oBar))] }))]]);
+    const EG = [{ key: "corn", label: "Corn", color: "var(--c5)" }, { key: "barley", label: "Barley", color: "var(--c1)" }, { key: "wheat", label: "Wheat", color: "var(--c2)" }, { key: "oats", label: "Oats", color: "var(--c4)" }];
     const om = Object.keys(ONT.corn.values).filter((mo) => mo >= "2016-01");
     legend($("leg-eprice-e"), EG.map((g) => ({ label: g.label, color: g.color })));
     lineChart($("ch-eprice-e"), {
@@ -1383,17 +1168,16 @@
       series: EG.map((g) => ({ label: g.label, color: g.color, width: g.key === "corn" ? 2.5 : 1.75, values: om.map((mo) => { const p = ONT[g.key].values[mo]; return p == null ? null : eAdj(g.key, p); }) })),
       fmt: (v) => money(v),
     });
-  }
 
-  // ---------- history ----------
-  function renderHistory() {
-    legend($("leg-feed"), GR.map((g) => ({ label: g.label, color: g.color, kind: "rect" })));
-    yearStack($("ch-feed"), {
-      years: cropYears.filter((y) => y >= "2012-2013" && y !== cur), maxBar: 40, aria: "Feed use by grain and crop year",
-      keys: GR, getVals: (y) => Object.fromEntries(GR.map((g) => [g.key, PANEL[y][`feed_${g.key}`] || 0])),
-      tipExtra: (y) => [...REG.map((r) => ({ value: fmtKt(regTotal(y, r.key)), label: r.long + " (est.)", color: r.color, kind: "rect" })),
-        ...(PANEL[y].corn_estimated ? [{ value: "*", label: "corn estimated (August not yet published)" }] : [])],
+    const AG = GR.slice(0, 4);
+    legend($("leg-avail"), AG.map((g) => ({ label: g.label, color: g.color })));
+    lineChart($("ch-avail"), {
+      x: dmYears, aria: "Availability index by grain and crop year", zero: false, refLine: 1, yFmt: (v) => v.toFixed(1),
+      xLabel: (y, long) => long ? short(y) + (y === cur ? " (latest estimate)" : "") : "'" + y.slice(2, 4),
+      series: AG.map((g) => ({ label: g.label, color: g.color, dots: true, values: dmYears.map((y) => DM[y].availability.west[g.key]) })),
+      fmt: (v) => idx(v),
     });
+
     const sd = D.supply_disposition, yrs = cropYears.filter((y) => y !== cur && y >= "2012-2013");
     const fedShare = (g, y) => {
       if (g === "corn") { const a = D.corn[y]?.aug; return a && a.production_canada ? a.feed_canada / a.production_canada : null; }
@@ -1414,22 +1198,23 @@
       fmt: (v) => pctTxt(v),
     });
 
+    // StatCan history table (shown on demand)
     const table = document.createElement("table");
-    const head = ["Crop year", ...GR.map((g) => g.label + " fed"), "Total fed", "West fed (est.)", "East fed (est.)", ...GR.map((g) => g.label + " % of production"), "Feed barley AB $/t", "Wheat (other) AB $/t", "US corn AB $/t", "Corn ON $/t", "Western on-farm barley fed"];
+    const head = ["Crop year", ...GR.map((g) => g.label + " fed"), "Total fed", "West fed (est.)", "East fed (est.)", ...GR.slice(0, 4).map((g) => g.label + " supply"), ...GR.map((g) => g.label + " % of production"), "Feed barley AB $/t", "Wheat (other) AB $/t", "Durum AB $/t", "US corn AB $/t", "Corn ON $/t", "US corn imports, West"];
     const hr = table.createTHead().insertRow();
     head.forEach((h) => { const th = document.createElement("th"); th.scope = "col"; th.textContent = h; hr.appendChild(th); });
     const body = table.createTBody();
+    const regTotal = (y, r) => RF[y] ? sumOf(GR.map((g) => RF[y][g.key]?.[r])) : null;
     for (const y of yrs.slice().reverse()) {
       const p = PANEL[y], tr = body.insertRow();
-      const fedTot = sumOf(GR.map((g) => p[`feed_${g.key}`]));
-      [short(y), ...GR.map((g) => n1(p[`feed_${g.key}`]) + (g.key === "corn" && p.corn_estimated ? "*" : "")), n1(fedTot), ...REG.map((r) => n1(regTotal(y, r.key))),
-        ...GR.map((g) => pctTxt(fedShare(g.key, y))),
-        money(p.price_barley), money(p.price_wheat), money(p.price_corn_west), money(p.price_corn_ontario), n1(D.farm_feed.barley?.[y]?.west)].forEach((v) => { tr.insertCell().textContent = v; });
+      [short(y), ...GR.map((g) => n1(p[`feed_${g.key}`]) + (g.key === "corn" ? cornStar(y) : "")), n1(sumOf(GR.map((g) => p[`feed_${g.key}`]))), ...REG.map((r) => n1(regTotal(y, r.key))),
+        ...GR.slice(0, 4).map((g) => n1(p[`supply_${g.key}`])), ...GR.map((g) => pctTxt(fedShare(g.key, y))),
+        money(p.price_barley), money(p.price_wheat), money(p.price_durum), money(p.price_corn_west), money(p.price_corn_ontario), n1(p.imports_corn_west)].forEach((v) => { tr.insertCell().textContent = v; });
     }
     $("hist-table").replaceChildren(table);
   }
 
-  // ---------- livestock ----------
+  // ---------- livestock (region toggle) ----------
   let livRegion = "west";
   try { const r = localStorage.getItem("feed-liv-region"); if (r === "west" || r === "east") livRegion = r; } catch (e) {}
   function renderLivestock() {
@@ -1437,7 +1222,6 @@
     for (const b of document.querySelectorAll("#liv-region button")) b.setAttribute("aria-pressed", b.dataset.region === R);
     $("cattle-h").textContent = `Cattle in ${place}`;
     $("hogs-h").textContent = `Hogs in ${place}`;
-    $("dem-h").textContent = `Grain demand index, ${place}`;
     const inv = LIV.inventory[R], dates = Object.keys(inv.total_cattle).filter((d) => d >= "2012-01").sort();
     const dLab = (d, long) => long ? (d.endsWith("01") ? "Jan 1 " : "Jul 1 ") + d.slice(0, 4) : (d.endsWith("-01") ? d.slice(0, 4) : "");
     const CAT = [{ key: "total_cattle", label: "Total cattle", color: "var(--c3)" }, { key: "beef_cows", label: "Beef cows", color: "var(--c2)" },
@@ -1451,31 +1235,11 @@
     const hd = Object.keys(inv.hogs).filter((d) => d >= "2012-01").sort();
     lineChart($("ch-hogs"), { x: hd, aria: `Hog inventories in ${place}`, xLabel: dLab, zero: false, series: [{ label: "Hogs", color: "var(--c1)", values: hd.map((d) => inv.hogs[d]), dots: true }] });
 
-    const my = Object.keys(LIV.meat.pork).filter((y) => y >= "2012").sort();
-    const MEAT = [{ key: "beef", label: "Beef and veal", color: "var(--c1)" }, { key: "pork", label: "Pork", color: "var(--c2)" }, { key: "poultry", label: "Poultry", color: "var(--c3)" }];
-    legend($("leg-meat"), MEAT.map((k) => ({ label: k.label, color: k.color, kind: "rect" })));
-    yearStack($("ch-meat"), { years: my, aria: "Meat production in Canada by year", keys: MEAT,
-      getVals: (y) => ({ beef: (LIV.meat.beef[y] || 0) + (LIV.meat.veal[y] || 0), pork: LIV.meat.pork[y], poultry: LIV.meat.poultry[y] }) });
-    const sy = Object.keys(LIV.slaughter.hogs).sort().slice(-6).reverse();
-    buildTable($("slaughter-table"), ["Year", "Cattle", "Calves", "Hogs", "Beef + veal kt", "Pork kt", "Poultry kt"], [[null, sy.map((y) => ({ label: y,
-      cells: [n1(LIV.slaughter.cattle[y]), n1(LIV.slaughter.calves[y]), n1(LIV.slaughter.hogs[y]), n1((LIV.meat.beef[y] || 0) + (LIV.meat.veal[y] || 0)), n1(LIV.meat.pork[y]), n1(LIV.meat.poultry[y])] }))]]);
-
     const GCOL = { feedlot: "var(--c1)", hogs: "var(--c2)", poultry: "var(--c3)", beef_herd: "var(--c4)", dairy: "var(--c5)", sheep: "var(--other)" };
     const DK = DGROUPS.map(([k, label]) => ({ key: k, label, color: GCOL[k] }));
-    $("dem-h").textContent = `Grain demand by livestock group, ${place}`;
-    $("dem-p").textContent = "Thousand tonnes of barley-equivalent grain per crop year, from the demand model.";
+    $("dem-h").textContent = `Grain energy needed by livestock group, ${place}`;
     legend($("leg-dem"), DK.map((k) => ({ label: k.label, color: k.color, kind: "rect" })));
-    yearStack($("ch-dem"), { years: dmYears, maxBar: 40, aria: `Grain demand by livestock group, ${place}`, keys: DK, getVals: (y) => DM[y].by_group[R] });
-
-    const R2 = REG;
-    legend($("leg-dem2"), R2.flatMap((r) => [{ label: `${r.long}: model`, color: r.color }, { label: `${r.long}: StatCan residual (est. split)`, color: r.color, kind: "rect" }]));
-    lineChart($("ch-dem2"), {
-      x: dmYears, aria: "Feed demand versus StatCan's residual, West and East", xLabel: (y, long) => long ? short(y) : "'" + y.slice(2, 4),
-      series: R2.flatMap((r) => [
-        { label: `${r.label} model`, color: r.color, values: dmYears.map((y) => dmTot(y, r.key)) },
-        { label: `${r.label} StatCan residual`, color: r.color, width: 0, dots: true, values: dmYears.map((y) => residual(y, r.key)) },
-      ]),
-    });
+    yearStack($("ch-dem"), { years: dmYears, maxBar: 40, aria: `Grain energy needed by livestock group, ${place}`, keys: DK, getVals: (y) => DM[y].by_group[R] });
   }
   document.querySelectorAll("#liv-region button").forEach((b) => b.addEventListener("click", () => {
     livRegion = b.dataset.region;
@@ -1483,28 +1247,95 @@
     renderLivestock();
   }));
 
+  // ---------- what StatCan will likely print ----------
+  function renderEstimate() {
+    const lp = latestPrices();
+    $("est-eyebrow").textContent = `StatCan forecast · Canada · ${short(cur)} · kt`;
+    $("est-sub").textContent = `A separate, statistical forecast of the number StatCan will publish for ${short(cur)}, for traders positioning around its December, March and July balances. Each grain is half a share model (fitted on StatCan's own history: availability and energy-adjusted price) and half its 5-year average, applied to the ${short(EST.avg_years[0])} to ${short(EST.avg_years[1])} average total. Eastern corn is its 5-year average.`;
+    const head = ["Thousand tonnes", `Forecast ${short(cur)}`, "West", "East", "Share model", "5-yr avg", short(lastYr), "vs last year", `Model ${short(cur)}`, "Supply", "Latest price", "C$/t barley-eq"];
+    const reg = (g) => REG.map((r) => n1(EST.by_region[r.key][g]));
+    const rows = GR.map((g) => {
+      const e = EST.by_grain[g.key], lyv = EST.last_year[g.key], isCorn = g.key === "corn";
+      return { label: g.label + (isCorn && EST.last_year_corn_estimated ? "*" : ""), color: g.color,
+        cells: [n1(e), ...reg(g.key), n1(EST.model_only[g.key]), n1(EST.avg_5yr[g.key]), n1(lyv), fmtPct(pct(e, lyv)), n1(dmv(cur, "canada", g.key)),
+          isCorn ? "–" : n1(EST.supply[g.key]), isCorn ? money(lp.corn.price) + " US" : money(lp[g.key].price), money(eAdj(g.key, lp[g.key].price))] };
+    });
+    const regTot = (r) => n1(sumOf(Object.values(EST.by_region[r])));
+    const lyTot = sumOf(Object.values(EST.last_year));
+    const tot = { label: "Total", cls: "total", cells: [n1(EST.total), regTot("west"), regTot("east"), n1(sumOf(Object.values(EST.model_only))), n1(sumOf(Object.values(EST.avg_5yr))), n1(lyTot),
+      fmtPct(pct(EST.total, lyTot)), n1(dmTot(cur, "canada")), "", "", ""] };
+    buildTable($("est-table"), head, [[null, [...rows, tot]]], { seps: [1, 4, 8] });
+
+    const bm = MODEL.backtest_mae, ty = MODEL.test_years;
+    $("acc-p").textContent = `Mean absolute error, kt, forecasting each crop year from ${short(ty[0])} to ${short(ty[ty.length - 1])} using only earlier years. Lower is better; ● is best.`;
+    const methods = [["estimate", "Forecast (50/50)"], ["model_only", "Share model"], ["avg_5yr", "5-yr average"], ["last_year", "Last year"]];
+    const accRow = (key, label, color, cls) => {
+      if (!bm[key]) return null;
+      const v = methods.map(([k]) => bm[key][k]), best = Math.min(...v);
+      return { label, color, cls, cells: v.map((x) => n1(x) + (x === best && key !== "total" ? " ●" : "")) };
+    };
+    buildTable($("acc-table"), ["Grain", ...methods.map((m) => m[1])], [
+      [null, [...GR.slice(0, 4).map((g) => accRow(g.key, g.label, g.color)), accRow("corn", "Corn", "var(--c5)"), accRow("total", "Total", null, "total")]],
+      ["Region totals", [accRow("west", "Western Canada"), accRow("east", "Eastern Canada")]],
+    ]);
+  }
+
+  // ---------- weekly flash ----------
+  function flowRow(label, key, cls) {
+    const c = wk(key, cur), w = lastWeek(c, W_NOW);
+    if (w == null) return null;
+    const d = diff(c), a4 = mean(d.slice(Math.max(0, w - 4), w));
+    const cy = at(c, w), lyv = at(wk(key, lastYr), w), avg5 = mean(ref.map((r) => at(wk(key, r), w)));
+    return { label: label + (w < W_NOW ? ` (to wk ${w})` : ""), cls,
+      cells: [n1(d[w - 1]), n1(d[w - 2]), chg(d[w - 1] - d[w - 2]), n1(a4), n1(diff(wk(key, lastYr))[w - 1]), n1(cy), n1(lyv), fmtPct(pct(cy, lyv)), n1(avg5), fmtPct(pct(cy, avg5))] };
+  }
+  function shareRow(label, num, den) {
+    const f = (y, w) => { const a = at(wk(num, y), w), b = at(wk(den, y), w); return a != null && b ? a / b : null; };
+    const fw = (y, w) => { const a = diff(wk(num, y))[w - 1], b = diff(wk(den, y))[w - 1]; return a != null && b ? a / b : null; };
+    const w = lastWeek(wk(num, cur), W_NOW);
+    if (w == null) return null;
+    const cy = f(cur, w), lyv = f(lastYr, w), a5 = mean(ref.map((r) => f(r, w)));
+    return { label: label + (w < W_NOW ? ` (to wk ${w})` : ""), cls: "sub",
+      cells: [pctTxt(fw(cur, w)), pctTxt(fw(cur, w - 1)), pp(fw(cur, w) - fw(cur, w - 1)), "–", pctTxt(fw(lastYr, w)), pctTxt(cy), pctTxt(lyv), pp(cy - lyv), pctTxt(a5), pp(cy - a5)] };
+  }
+  function renderFlash() {
+    const wEnd = new Date(D.meta.week_ending + "T12:00").toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
+    $("flash-eyebrow").textContent = `CGC · ${short(cur)} · week ${W_NOW} · ending ${wEnd} · kt`;
+    const meal = (y) => wk("canola_crush", y).map((v) => v == null ? null : v * A.canola_meal_yield);
+    WK.canola_meal = Object.fromEntries(Object.keys(WK.canola_crush || {}).map((y) => [y, meal(y)]));
+    const head = ["Thousand tonnes", `Wk ${W_NOW}`, `Wk ${W_NOW - 1}`, "Chg", "4-wk avg", `LY wk ${W_NOW}`, "CYTD", "LY CYTD", "y/y", "5-yr CYTD", "vs 5-yr"];
+    buildTable($("flash-table"), head, [
+      ["Barley", [flowRow("Feed barley delivered to elevators", "barley_feed_deliveries"), flowRow("Feed barley shipped for domestic feed", "barley_feed_shipments"),
+        flowRow("All barley delivered to elevators", "barley_primary_deliveries"), shareRow("Feed share of elevator deliveries", "barley_feed_deliveries", "barley_primary_deliveries")]],
+      ["Wheat (ex-durum)", [flowRow("Feed wheat delivered to elevators", "wheat_feed_deliveries"), flowRow("Feed wheat shipped for domestic feed", "wheat_feed_shipments"),
+        flowRow("All wheat delivered to elevators", "wheat_primary_deliveries"), shareRow("Feed share of elevator deliveries", "wheat_feed_deliveries", "wheat_primary_deliveries")]],
+      ["Imports", [flowRow("US corn received (licensed elevators and processors)", "us_corn_receipts")]],
+      ["Protein meal", [flowRow(`Canola meal output (crush × ${A.canola_meal_yield})`, "canola_meal")]],
+    ], { seps: [6, 8] });
+    $("flash-note").textContent = `Weekly values are week-over-week changes in CGC crop-year totals. Share rows are percents, and their changes are percentage points. LY = ${short(lastYr)}; 5-yr = ${short(ref[0])} to ${short(lastYr)} at the same week. Feed-grade deliveries and shipments come from CGC's domestic feed grain table (a subset of elevator deliveries); CGC's licensed system handles only about 10–15% of feed grain use. Canola meal is estimated from CGC crush at ${A.canola_meal_yield} t of meal per t of seed; most is exported.`;
+  }
+
   function renderNotes() {
     const ul = $("notes-list");
     ul.replaceChildren();
     const li = (...parts) => { const l = document.createElement("li"); l.append(...parts); ul.appendChild(l); };
     const link = (t, h) => { const a = document.createElement("a"); a.href = h; if (/^https?:/.test(h)) { a.target = "_blank"; a.rel = "noopener"; } a.textContent = t; return a; };
-    const HF = DMM.hog_factors;
-    li("Feed demand model (src/feed_model.py): grain fed = animals × grain fed per animal, by province and livestock class, for barley, wheat (ex-durum), durum, oats and corn. It does not use StatCan's feed residual.");
-    li(`Durum: wheat and durum trade independently, so durum is its own grain. The 1999 study reports wheat with durum included, so in the West each class's wheat is split at durum's median share of western wheat and durum feed (${(DMM.durum_share_west * 100).toFixed(1)}%, StatCan's residual split, ${short(DMM.durum_share_years[0])} to ${short(DMM.durum_share_years[1])}), then each moves on its own price (Alberta durum vs non-milling wheat). No durum is fed in the East.`);
+    const HF = DMM.hog_factors, dof = DM[cur].meta.days_on_feed;
+    li("The model (src/feed_model.py, src/feed_data.py): grain fed = animals × grain fed per head (step 1), split across barley, wheat (ex-durum), durum, oats and corn by price and availability (step 2), with corn split into Canadian-grown and US imports (step 3), by province and livestock class, for every crop year from 2012-13. It does not use StatCan's feed figure for totals; StatCan's data set the price and availability elasticities, the durum split, western corn where published, and the corn import split.");
     li("Feeding rates: StatCan, ", link("Livestock Feed Requirements Study 1999–2001", "https://www150.statcan.gc.ca/n1/pub/23-501-x/23-501-x2003001-eng.pdf"), " (catalogue 23-501-X, table 7; its latest edition), grain fed per animal by class, province and ingredient, from provincial livestock specialists, the Animal Nutrition Association of Canada and feed mills. Updated where feeding has changed:");
-    li(`· Cattle on feed: `, link("Manitoba Agriculture, Cost of Production: Beef Feedlot Finishing (2026)", "https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-beef-feedlot-finishing.pdf"), `, ${DMM.feedlot_lb_day} lb of barley a day, per head on feeding operations; backgrounding (`, link("Backgrounding guide, 2026", "https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-beef-backgrounding.pdf"), `) ${DMM.background_lb_day} lb a day for ${DMM.background_days} days, per head on feeder and stocker operations at January 1. Western rations are ${Math.round(DMM.west_cattle_mix.barley * 100)}% barley, ${Math.round(DMM.west_cattle_mix.wheat * 100)}% wheat (incl. durum) and ${Math.round(DMM.west_cattle_mix.corn * 100)}% corn before price shifts; eastern feedlots keep the 1999 Ontario/Quebec mix (mostly corn).`);
-    li(`· Hogs: `, link("Manitoba Agriculture, Cost of Production: Swine Farrow-Finish (2025)", "https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-swine-farrow-finish.pdf"), `: 279 kg of feed per pig grown from 26 to 123 kg, 33 kg in the nursery, sows 3.0 kg a day dry and 6.5 lactating. Each stage's 1999 rate is scaled by the guide against Manitoba's 1999 rate (finishing ×${HF["Feeder Pigs"].toFixed(2)}, nursery ×${HF["Weaner Pigs"].toFixed(2)}, sows ×${HF["Sows & Bred Gilts"].toFixed(2)}): heavier pigs, better feed conversion. Pigs finished in each province = pig crop less live exports and deaths (StatCan 32-10-0200).`);
-    li(`· Dairy cows: the 1999 rate × milk sold per cow against 1999 (StatCan 32-10-0113 and 32-10-0130), because concentrate fed per litre of milk has stayed flat (`, link("Alberta Agriculture, Dairy Feed Costs, 2021", "https://open.alberta.ca/dataset/bd8da099-da84-4544-8613-bb64e79712ab/resource/019a53b4-3f5c-4a3d-b17c-55d0d823ef45/download/af-explained-in-brief-dairy-feed-costs-dairy-2-2021-01.pdf"), `: 2.2 litres of milk per kg of concentrate, 1997–2019).`);
-    li("· Broilers and turkeys: the 1999 rate per kilogram of meat produced (32-10-0117). Beef cows, bulls, replacement heifers, veal calves, layers (32-10-0121) and sheep (32-10-0129): the 1999 rates. Horses, other poultry and fish are left out (no current counts; under 0.4 Mt).");
-    li(`Grain mix: each class keeps its 1999 provincial mix, shifted each year by relative energy-adjusted prices (elasticity ${DMM.sigma}): Alberta farm prices and US corn delivered to southern Alberta in the West, Ontario farm prices in the East. The 1999 rations predate Manitoba's corn crop (about 0.5 Mt then, over 2 Mt now), so the West's corn is set to StatCan's measured corn use in the provinces outside Ontario and Quebec (production, imports and stock changes; 32-10-0014) where published, and projected from its recent share and price otherwise; the rest of the West's demand is split among barley, wheat and oats. The mix does not track crop quality, so a year with a lot of feed-grade wheat shows up only through its price, and western wheat is likely understated.`);
-    li("What the model counts: grain needed on 1999 feeding practice. Co-products fed in place of grain (distillers' grains from ethanol plants, wheat millfeeds, bakery waste) are not netted out, which matters most in Ontario and Quebec, where much of Canada's ethanol is made. Crop-year animal numbers average July 1 and January 1; for the current crop year January isn't out yet, and pig crop, poultry meat and milk use the latest full calendar year.");
-    li("StatCan's feed figure is \"animal feed, waste and dockage\" (table 32-10-0013; corn: 32-10-0014), what is left of supply after exports, processing, seed and stocks, so it also carries waste, dockage and balancing error. StatCan publishes it for Canada only (Aug–Dec, Aug–Mar and the full crop year). This page splits it into West and East: barley, wheat, durum and oats as each region's on-farm feed (32-10-0015) plus a share of the rest in proportion to production (32-10-0359); corn from the regional corn balance, which groups the Atlantic provinces with the West (West = their domestic use less seed and the Atlantic crop; it includes any western industrial use).");
-    li(`StatCan residual forecast (lower section): model fitted on ${short(MODEL.fit.train_years[0])} to ${short(MODEL.fit.train_years[1])} over barley, wheat, durum, oats and corn fed in the West: log(share of grain ÷ share of barley) = crop constant + ${MODEL.fit.a.toFixed(2)} × log(availability ratio) ${MODEL.fit.b < 0 ? "−" : "+"} ${Math.abs(MODEL.fit.b).toFixed(2)} × log(energy-adjusted price ratio), averaged with each grain's 5-year average; eastern corn is its 5-year average. Backtested year by year on earlier years only.`);
-    li("The weekly flash, the feed-grade share of deliveries and US corn receipts are CGC data, which cover Western Canada only. CGC notes the licensed elevator system handles only about 10–15% of feed grain use. The wheat feed-grade share fell sharply after 2020-21, likely because more feed wheat moves outside licensed elevators rather than because quality improved.");
-    li("Prices: StatCan farm product prices (32-10-0077). Alberta: feed barley, non-milling (\"other\") wheat, durum and oats. Ontario: corn, barley, oats and all Ontario wheat (excluding payments). CBOT corn and USD/CAD are weekly closes from Yahoo Finance; the corn basis and freight to southern Alberta is an editable assumption on the page, but the model uses the default.");
-    li("Livestock: StatCan cattle (32-10-0130), hog (32-10-0160, 32-10-0200), sheep (32-10-0129), poultry (32-10-0117) and egg (32-10-0121) tables; slaughter and meat production (32-10-0125, 32-10-0126).");
-    li("* Corn figures for the latest complete crop year are estimated where StatCan has not yet published August: the March figure scaled by the usual March-to-August ratio.");
-    li("Harvest-sample grade distributions (CGC Harvest Sample Program) would add a direct quality measure, but CGC publishes them in inconsistent formats across years, so they are not included yet.");
+    li(`· Cattle on feed: fed cattle marketed × days on feed × ${DMM.feedlot_lb_day} lb of barley a day (`, link("Manitoba Agriculture, Cost of Production: Beef Feedlot Finishing (2026)", "https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-beef-feedlot-finishing.pdf"), `). Fed cattle marketed = cattle slaughter + live international exports, July to June, by province (StatCan 32-10-0139) × the steer and heifer share of slaughter (AAFC federally inspected slaughter, January 1 to June 7, 2025: West ${Math.round(DMM.fed_share.west * 1000) / 10}%, East ${Math.round(DMM.fed_share.east * 1000) / 10}%). Days on feed = average cattle on feeding operations × 365 ÷ fed cattle marketed over the years with both (West ${Math.round(dof.west)}, East ${Math.round(dof.east)}). When marketings for a crop year aren't out yet, last year's move with the July 1 cattle on feeding operations, province by province.`);
+    li(`· Backgrounding (`, link("Manitoba backgrounding guide, 2026", "https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-beef-backgrounding.pdf"), `): ${DMM.background_lb_day} lb a day for ${DMM.background_days} days, per head on feeder and stocker operations at January 1. Western cattle rations are ${Math.round(DMM.west_cattle_mix.barley * 100)}% barley, ${Math.round(DMM.west_cattle_mix.wheat * 100)}% wheat (incl. durum) and ${Math.round(DMM.west_cattle_mix.corn * 100)}% corn before price and availability shifts; eastern feedlots keep the 1999 Ontario/Quebec mix (mostly corn).`);
+    li(`· Hogs: `, link("Manitoba Agriculture, Cost of Production: Swine Farrow-Finish (2025)", "https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-swine-farrow-finish.pdf"), `: 279 kg of feed per pig grown from 26 to 123 kg, 33 kg in the nursery, sows 3.0 kg a day dry and 6.5 lactating. Each stage's 1999 rate is scaled by the guide against Manitoba's 1999 rate (finishing ×${HF["Feeder Pigs"].toFixed(2)}, nursery ×${HF["Weaner Pigs"].toFixed(2)}, sows ×${HF["Sows & Bred Gilts"].toFixed(2)}). Pigs finished in each province = pig crop less live exports and deaths (StatCan 32-10-0200).`);
+    li(`· Dairy cows: the 1999 rate × milk sold per cow against 1999 (StatCan 32-10-0113 and 32-10-0130), because concentrate fed per litre has stayed flat (`, link("Alberta Agriculture, Dairy Feed Costs, 2021", "https://open.alberta.ca/dataset/bd8da099-da84-4544-8613-bb64e79712ab/resource/019a53b4-3f5c-4a3d-b17c-55d0d823ef45/download/af-explained-in-brief-dairy-feed-costs-dairy-2-2021-01.pdf"), `: 2.2 litres of milk per kg of concentrate, 1997–2019).`);
+    li("· Broilers and turkeys: the 1999 rate per kilogram of meat produced (32-10-0117). Beef cows, bulls, replacement heifers, veal calves (Canada calf slaughter, 32-10-0125), layers (32-10-0121) and sheep (32-10-0129): the 1999 rates. Horses, other poultry and fish are left out (no current counts; under 0.4 Mt).");
+    li(`Grain mix: share ∝ ration share × price index^−σ × availability index^α, with σ = ${DMM.sigma.toFixed(2)} and α = ${DMM.alpha.toFixed(2)}, the elasticities of a pooled regression of StatCan's year-to-year grain shares (log share relative to barley on log availability and log energy-adjusted price ratios, with grain constants), ${short(MODEL.fit.train_years[0])} to ${short(MODEL.fit.train_years[1])}. Price index = energy-adjusted crop-year price over its average (West: Alberta farm prices and US corn delivered to southern Alberta; East: Ontario farm prices). Availability index = Canada supply (carry-in + production + imports, 32-10-0013) over its average; the current year uses last July's stocks, StatCan's latest production estimate and last year's imports. Availability is applied in the West only: the elasticity is fitted on Canada-wide shares, which western grain drives, and eastern feeders buy the local crop at Ontario prices.`);
+    li(`Durum: the 1999 study reports wheat with durum included, so in the West each class's wheat is split at durum's median share of western wheat and durum feed (${(DMM.durum_share_west * 100).toFixed(1)}%, StatCan, ${short(DMM.durum_share_years[0])} to ${short(DMM.durum_share_years[1])}), then each moves on its own price and availability. No durum is fed in the East.`);
+    li("Corn: the 1999 rations predate Manitoba's corn crop (about 0.5 Mt then, over 2 Mt now), so the West's corn is set to StatCan's measured corn use in the provinces outside Ontario and Quebec (production, imports and stock changes; 32-10-0014) where published, and projected from its recent share and price otherwise. Origin: West US corn = StatCan imports into those provinces (32-10-0014), capped at corn fed; East US corn = Ontario and Quebec imports as a share of their crop plus imports, applied to corn fed. Years not yet published are projected (see step 3).");
+    li("What the model counts: grain needed on 1999 feeding practice. Co-products fed in place of grain (distillers' grains from ethanol plants, wheat millfeeds, bakery waste) are not netted out, which matters most in Ontario and Quebec. The mix does not track crop quality directly: a year with a lot of feed-grade wheat shows up through supply and price, and western wheat is likely understated against StatCan.");
+    li("StatCan's feed figure is \"animal feed, waste and dockage\" (32-10-0013; corn 32-10-0014), what is left of supply after exports, processing, seed and stocks, so it also carries waste, dockage and balancing error. Published for Canada only (Aug–Dec, Aug–Mar and the full crop year); this page's regional split is in the crop-year notes. * Corn for the latest complete crop year is estimated until StatCan publishes August: March scaled by the usual March-to-August ratio.");
+    li(`StatCan forecast (lower section): fitted on ${short(MODEL.fit.train_years[0])} to ${short(MODEL.fit.train_years[1])}: log(share of grain ÷ share of barley) = crop constant + ${MODEL.fit.a.toFixed(2)} × log(availability ratio) ${MODEL.fit.b < 0 ? "−" : "+"} ${Math.abs(MODEL.fit.b).toFixed(2)} × log(energy-adjusted price ratio), averaged with each grain's 5-year average; eastern corn is its 5-year average. Backtested year by year on earlier years only.`);
+    li("Prices: StatCan farm product prices (32-10-0077). Alberta: feed barley, non-milling (\"other\") wheat, durum and oats. Ontario: corn, barley, oats and all Ontario wheat (excluding payments). CBOT corn and USD/CAD are weekly closes from Yahoo Finance.");
+    li("The weekly flash, the feed-grade share of deliveries and US corn receipts are CGC data, Western Canada only. The wheat feed-grade share fell sharply after 2020-21, likely because more feed wheat moves outside licensed elevators rather than because quality improved.");
     li("Related pages: ", link("Overview", "../"), ", ", link("Barley Pipeline", "../barley/"), ", ",
       link("Wheat Pipeline", "../wheat/"), ", ", link("Durum Pipeline", "../durum/"), ", ", link("Oats Pipeline", "../oats/"), ", ",
       link("Corn Pipeline", "../corn/"), ", ", link("Canola Pipeline", "../canola/"), " (canola meal).");
@@ -1525,13 +1356,12 @@
   });
   $("toggle-table").addEventListener("click", (e) => {
     const t = $("hist-table"), open = t.hidden;
-    t.hidden = !open; e.target.setAttribute("aria-expanded", open); e.target.textContent = open ? "Hide data table" : "Show data table";
+    t.hidden = !open; e.target.setAttribute("aria-expanded", open); e.target.textContent = open ? "Hide StatCan history" : "Show StatCan history";
   });
 
   // ---------- boot ----------
-  $("asof").textContent = `Crop year ${short(cur)} · CGC week ${W_NOW} · compared with ${short(ref[0])} to ${short(lastYr)} · StatCan tables as published`;
-  const renderAll = () => { renderSummary(); renderFlash(); renderDemand(); renderHistEstimates(); renderRegions(); renderEstimate(); renderEconomics(); renderHistory(); renderLivestock(); };
-  renderCalc();
+  $("asof").textContent = `Crop year ${short(cur)} · CGC week ${W_NOW} · StatCan tables as published · model years ${short(dmYears[0])} to ${short(cur)}`;
+  const renderAll = () => { renderSummary(); renderDemand(); renderSteps(); renderHistEstimates(); renderDrivers(); renderLivestock(); renderEstimate(); renderFlash(); };
   renderAll();
   renderNotes();
   let rt;
