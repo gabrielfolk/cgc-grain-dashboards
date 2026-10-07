@@ -35,18 +35,13 @@
   a public Pages site.
 - [ ] **Consider a GitHub no-reply commit email** (Settings → Emails) so the personal email isn't shown in the
   public commit history.
-- [ ] **Add CGC harvest-sample grade distributions to the feed page** (share of CWRS, durum, barley and oats samples
-  grading feed). CGC publishes them in different formats each year (HTML tables, spreadsheets, PDFs), and the
-  2023-2025 reports have moved on CGC's site, so each year needs its own parser.
-- [ ] **Add AAFC weekly slaughter data** to the feed page for a timelier livestock signal than StatCan's annual figures.
+- [ ] **Feed-model quality term** once a consistent feed-grade series exists. CGC's harvest-sample feed shares are
+  published only from 2021 (2024+ under /grain-harvest-export-quality/); 2012–2020 reports give top-grade sample
+  counts only. Terminal receipts by grade and the Alberta milling/feed wheat spread both break in 2020-21 (tried
+  2026-10-06). Could start a 2021+ series and use it once there are enough years.
 - [ ] **Update the western hog and feedlot grain mix** from a published current diet survey. The 1999 Manitoba hog
   rations have no wheat; the 2025 Manitoba swine guide gives feed amounts but no ingredients, and no Prairie source
   with current grain shares was found (2026-10-06). This is the main suspect for western wheat being understated.
-- [ ] **Feed-model quality term:** share of each crop grading feed (CGC harvest samples, above) as a feed-grade supply
-  index in the grain mix. The right fix for wheat in bad-quality years.
-- [ ] **Feed-model forage term:** hay production per head of cattle, applied to cow-herd and backgrounding grain
-  (drought years feed more grain).
-- [ ] **Split feeder from fed-cattle live exports** (AAFC weekly exports by class); live exports now count as fed.
 - [ ] **Add AAFC's Outlook for Principal Field Crops** (feed, waste and dockage by crop) to the feed page as a second
   reference next to StatCan.
 - [ ] **Show an uncertainty band** on the feed estimate from plausible ranges on rates and elasticities.

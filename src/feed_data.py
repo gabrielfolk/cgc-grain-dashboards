@@ -14,6 +14,7 @@ price and availability (step 2). This module assembles its inputs and adds step 
     durum split     durum's median share of the West's wheat and durum feed (durum_share())
     western corn    StatCan's measured corn use in the West where published
     corn origin     StatCan corn imports by region (corn_origin())
+    forage          extra grain fed to cattle when hay is short, West (forage())
     co-products     distillers' grains and corn gluten feed from grain processed by industry,
                     netted out of each region's grain energy (coproducts())
 
@@ -457,6 +458,47 @@ def coproducts(sd: dict, cornd: dict, years: list[str]) -> tuple[dict, dict]:
     return rd(beq), rd(grain)
 
 
+def hay_shortfall(demand: dict, years: list[str]) -> tuple[dict, dict]:
+    """Western hay shortfall by crop year, kt: (average hay per beef cow - this year's) x beef cows,
+    zero when hay is at or above average. Tame hay production, MB, SK, AB, BC (32-10-0359), harvested
+    in the crop year's first calendar year; beef cows from the model's animal numbers. A year whose
+    hay isn't published yet repeats the latest year's hay per cow. Returns (shortfall kt, detail)."""
+    p = external.statcan("32100359")
+    h = p[(p["Type of crop"] == "Tame hay") & (p["Harvest disposition"] == "Production (metric tonnes)") & p["GEO"].isin(WEST)].dropna(subset=["VALUE"])
+    n = h.groupby("REF_DATE")["GEO"].nunique()
+    hay = (h.groupby("REF_DATE")["VALUE"].sum() / 1000)[n == len(WEST)]
+    per_cow, detail = {}, {}
+    for cy in years:
+        cows = demand[cy]["drivers"]["west"]["Beef Cows"]
+        y = int(cy[:4])
+        src = y if y in hay.index else max(i for i in hay.index if i < y)
+        per_cow[cy] = hay[src] / (demand[cy]["drivers"]["west"]["Beef Cows"] if src == y else
+                                  demand[f"{src}-{src + 1}"]["drivers"]["west"]["Beef Cows"])
+        detail[cy] = {"hay_kt": round(float(hay[src]) * (cows / demand[f"{src}-{src + 1}"]["drivers"]["west"]["Beef Cows"] if src != y else 1), 1),
+                      "hay_year": int(src), "beef_cows": cows}
+    avg = float(np.mean([v for cy, v in per_cow.items() if int(cy[:4]) in hay.index]))
+    out = {cy: max(0.0, (avg - v) * demand[cy]["drivers"]["west"]["Beef Cows"]) for cy, v in per_cow.items()}
+    for cy in years:
+        detail[cy] |= {"t_per_cow": round(per_cow[cy], 3), "avg_t_per_cow": round(avg, 3), "shortfall_kt": round(out[cy], 1)}
+    return out, detail
+
+
+def fit_forage(demand: dict, regional: dict, short: dict) -> dict:
+    """Grain fed per tonne of hay shortfall: least squares of StatCan's western feed use less the
+    model's (before this term) on the shortfall, with a constant (dockage, waste and the rest of
+    the level gap), over the crop years StatCan has published."""
+    X, y = [], []
+    for cy, s in short.items():
+        if cy in regional and all(g in regional[cy] for g in GRAINS):
+            X.append([1.0, s])
+            y.append(sum(regional[cy][g]["west"] for g in GRAINS) - sum(demand[cy]["by_region"]["west"][g] for g in GRAINS))
+    X, y = np.array(X), np.array(y)
+    b, *_ = np.linalg.lstsq(X, y, rcond=None)
+    e = y - X @ b
+    se = np.sqrt(np.diag(e @ e / (len(y) - 2) * np.linalg.inv(X.T @ X)))
+    return {"rate": float(b[1]), "se": float(se[1]), "n": len(y)}
+
+
 def durum_share(regional: dict) -> tuple[float, list[str]]:
     """Durum's median share (tonnes) of the wheat and durum fed in the West, over the crop years
     StatCan has published; the median keeps out quality years like 2016-17, when a wet harvest
@@ -466,7 +508,8 @@ def durum_share(regional: dict) -> tuple[float, list[str]]:
     return float(np.median(shares)), [yrs[0], yrs[-1]]
 
 
-def model_demand(pr: dict, years: list[str], corn_west: dict, durum: float, avail: dict, sigma: float, alpha: float, cop: dict) -> dict:
+def model_demand(pr: dict, years: list[str], corn_west: dict, durum: float, avail: dict, sigma: float, alpha: float, cop: dict,
+                 forage: dict | None = None) -> dict:
     """Feed demand from animal numbers (src/feed_model.py), priced off each region's grains:
     West = Alberta farm prices and US corn delivered to southern Alberta; East = Ontario.
     durum: durum's base share of the West's wheat and durum (see durum_share); avail: the
@@ -487,7 +530,7 @@ def model_demand(pr: dict, years: list[str], corn_west: dict, durum: float, avai
             if cur not in prices[r][g] and s:
                 prices[r][g][cur] = list(s.values())[-1]
     prices["west"]["corn"] = us
-    out = feed_model.demand([int(cy[:4]) for cy in years], prices, corn_west, durum, avail, sigma, alpha, cop)
+    out = feed_model.demand([int(cy[:4]) for cy in years], prices, corn_west, durum, avail, sigma, alpha, cop, forage)
     r1 = lambda d: {k: round(v, 1) for k, v in d.items()}
     r4 = lambda d: {k: round(v, 4) for k, v in d.items()}
     return {cy: {"by_region": {r: r1(v) for r, v in rec["by_region"].items()},
@@ -517,8 +560,13 @@ def main() -> None:
     durum, durum_years = durum_share(regional)
     avail, supply = availability(sd, prod, all_years + [cur], cur)
     cop, processed = coproducts(sd, cornd, all_years + [cur])
-    demand = model_demand(pr, all_years + [cur], {cy: r["corn"]["west"] for cy, r in regional.items() if "corn" in r and not r["corn"]["estimated"]},
-                          durum, avail, sigma, alpha, cop)
+    corn_w = {cy: r["corn"]["west"] for cy, r in regional.items() if "corn" in r and not r["corn"]["estimated"]}
+    # forage: fit the grain fed per tonne of hay shortfall on the model without it, then rerun
+    base = model_demand(pr, all_years + [cur], corn_w, durum, avail, sigma, alpha, cop)
+    short, hay = hay_shortfall(base, sorted(base))
+    ffit = fit_forage(base, regional, short)
+    forage = {"west": {cy: max(0.0, ffit["rate"]) * s for cy, s in short.items()}}
+    demand = model_demand(pr, all_years + [cur], corn_w, durum, avail, sigma, alpha, cop, forage)
     origin = corn_origin(demand, cornd, prod)
     for cy, o in origin.items():
         for r in REGIONS:
@@ -538,7 +586,8 @@ def main() -> None:
                               "durum_share_west": round(durum, 4), "durum_share_years": durum_years,
                               "sigma": round(sigma, 3), "alpha": round(alpha, 3), "fed_share": feed_model.FED_SHARE,
                               "energy": feed_model.ENERGY, "supply": supply,
-                              "coproduct_yield": COPRODUCT_YIELD, "coproduct_energy": COPRODUCT_ENERGY, "processed": processed},
+                              "coproduct_yield": COPRODUCT_YIELD, "coproduct_energy": COPRODUCT_ENERGY, "processed": processed,
+                              "forage_fit": {k: round(v, 3) for k, v in ffit.items()}, "hay": hay},
         "model": {"fit": fit},
         "panel": panel.round(1).reset_index().to_dict(orient="records"),
     }
@@ -547,6 +596,7 @@ def main() -> None:
     OUT_PATH.write_text(text)
     print(f"Wrote {OUT_PATH.relative_to(ROOT)} ({len(text) / 1e3:.0f} KB)")
     print(f"elasticities: price {-sigma:.3f}, availability {alpha:.3f} ({fit['train_years'][0]} to {fit['train_years'][1]})")
+    print(f"forage: {ffit['rate']:.3f} t grain per t hay short (se {ffit['se']:.3f}, n {ffit['n']});", {cy: hay[cy]['shortfall_kt'] for cy in list(hay)[-4:]})
     dm = demand[cur]
     for r in REGIONS:
         print(f"{cur} {r}:", {g: round(dm['by_region'][r][g]) for g in GRAINS + ['corn_ca', 'corn_us']})

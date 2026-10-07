@@ -22,6 +22,10 @@ Other pages:
     yahoo_weekly(symbol)    any Yahoo Finance weekly series (feed page: ZC=F CBOT corn)
     western_production()    production summed over the western provinces (crop pages)
     cgc_grade_distribution  CGC harvest-sample grades for CWRS and CWAD (not used on a page yet)
+    open_csv(name)          other open-data CSVs (feed model), cached like the StatCan tables:
+                              aafc_red_meat  AAFC weekly federally inspected red meat slaughter, by class
+                              aafc_poultry   AAFC weekly poultry slaughter, by region (head, eviscerated weight)
+                              ers_cattle     USDA ERS monthly US cattle trade, by country and class
 
     python src/external.py --refresh   # re-download every cached StatCan table and Yahoo series
     python src/external.py --markets   # re-download the Yahoo series only (quick; for the weekly refresh)
@@ -47,6 +51,11 @@ VINTAGES = ROOT / "reference" / "statcan_canola_vintages.csv"
 UA = {"User-Agent": "Mozilla/5.0"}
 
 STATCAN_TABLES = {"production": "32100359", "prices": "32100077"}
+OPEN_CSV = {
+    "aafc_red_meat": "https://od-do.agr.gc.ca/WeeklyRedMeatSlaughter_AbattageAnimauxViandeRougeHebdomadaire.csv",
+    "aafc_poultry": "https://od-do.agr.gc.ca/WeeklyPoultrySlaughter_AbattageVolailleHebdomadaire.csv",
+    "ers_cattle": "https://www.ers.usda.gov/media/29545/cattle-monthly-us-trade-head.csv",
+}
 YAHOO = {"soyoil": "ZL=F", "soymeal": "ZM=F", "soybeans": "ZS=F", "usdcad": "CAD=X"}
 DECEMBER_RELEASE = (12, 4)      # StatCan's November survey, published in early December
 FARM_PRICE_LAG_DAYS = 52        # month M's farm price is usable ~52 days after month end
@@ -179,6 +188,16 @@ CGC_QUALITY = "https://www.grainscanada.gc.ca/en/grain-research/export-quality/c
 CGC_CLASSES = {"cwrs": "canada-western-red-spring", "cwad": "canada-western-amber-durum"}
 
 
+def open_csv(name: str, refresh: bool = False) -> pd.DataFrame:
+    """One of the OPEN_CSV files, downloaded once and cached as data/raw/external/<name>.csv."""
+    path = RAW / f"{name}.csv"
+    if refresh or not path.exists():
+        r = requests.get(OPEN_CSV[name], headers=UA, timeout=120)
+        r.raise_for_status()
+        path.write_bytes(r.content)
+    return pd.read_csv(path, encoding="utf-8-sig")
+
+
 def cgc_grade_distribution(cls: str, years: range, refresh: bool = False) -> pd.DataFrame:
     """Share of CGC Harvest Sample Program samples by grade, per harvest year.
 
@@ -218,6 +237,9 @@ def refresh_cache(markets_only: bool = False) -> None:
         print(f"Yahoo {sym}: to {s.index.max().date()}")
     if markets_only:
         return
+    for name in OPEN_CSV:
+        d = open_csv(name, refresh=True)
+        print(f"{name}: {len(d)} rows")
     tables = {p.stem for p in RAW.glob("[0-9]*.csv")} | set(STATCAN_TABLES.values())
     for t in sorted(tables):
         d = _statcan_csv(t, refresh=True)

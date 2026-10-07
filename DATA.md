@@ -63,7 +63,7 @@ StatCan data is published with a lag; `src/external.py --refresh` picks up new r
 
 | Table | Contents | Used for |
 |---|---|---|
-| [32-10-0359](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210035901) | Area, yield and production of field crops, by province | Crop pages ("sized to crop", western production); margins (trend yield, area); canola forecast; feed page (production by region) |
+| [32-10-0359](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210035901) | Area, yield and production of field crops, by province | Crop pages ("sized to crop", western production); margins (trend yield, area); canola forecast; feed page (production by region, western tame hay for the hay-shortfall term) |
 | [32-10-0077](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210007701) | Monthly farm product prices, by province | Margins (Saskatchewan); canola forecast (Saskatchewan canola); feed model (Alberta and Ontario grain prices) |
 | [32-10-0013](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210001301) | Supply and disposition of grains, Canada | Feed page: StatCan feed use (the reference) and the model's availability index (supply = carry-in + production + imports) for barley, wheat, durum, oats |
 | [32-10-0014](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210001401) | Supply and disposition of corn: Canada, Ontario, Quebec, other provinces | Feed page: corn feed by region (western corn in the model), and corn imports by region (corn by origin) |
@@ -78,6 +78,14 @@ StatCan data is published with a lag; `src/external.py --refresh` picks up new r
 | [32-10-0117](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210011701) | Poultry production, by province | Feed model: chicken and turkey meat |
 
 | [32-10-0139](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210013901) | Cattle supply and disposition, by province, half-yearly | Feed model: cattle slaughter and live exports (fed cattle marketed) |
+
+Other open data (feed model; cached as `data/raw/external/<name>.csv` by `external.open_csv`):
+
+| Name | Source | Used for |
+|---|---|---|
+| `aafc_red_meat` | [AAFC weekly red meat slaughter](https://open.canada.ca/data/en/dataset/3c981dfe-30ac-44cb-b9a3-0fb450913d1b) (federally inspected, by class, Canada) | Steer and heifer share of cattle slaughter by crop year; current-year hog slaughter |
+| `aafc_poultry` | [AAFC weekly poultry slaughter](https://open.canada.ca/data/en/dataset/abf0347f-637b-4542-8d0b-d6f3496094f1) (by region, eviscerated weight) | Poultry meat on crop years and to the latest week |
+| `ers_cattle` | [USDA ERS livestock trade](https://www.ers.usda.gov/data-products/livestock-and-meat-international-trade-data) (monthly US cattle imports from Canada, by class) | Share of live cattle exports going to US slaughter (not feeders) |
 
 Table 32-10-0007 (stocks) is in the cache but not used yet.
 

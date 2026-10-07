@@ -36,6 +36,11 @@ Finishing weights
     days on feed are calibrated on that average), finishing pigs against 2025, the year of the
     Manitoba hog guide. Heavier finished animals eat more.
 
+Forage
+    When hay is short, cows and backgrounders get grain instead. The caller passes the extra
+    barley-equivalent grain for the West (feed_data.forage(): hay below normal per beef cow x a
+    fitted rate); it is fed at the western cattle mix and reported as its own livestock group.
+
 Co-products
     Distillers' grains and corn gluten feed from ethanol and corn processing replace grain in
     rations. The caller passes the barley-equivalent tonnes to net out of each region's grain
@@ -77,6 +82,7 @@ annual flows (pig crop, poultry meat, milk) use the calendar year the crop year 
 
 from __future__ import annotations
 
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -194,43 +200,63 @@ def populations(years: list[int]) -> dict:
                 for k, v in s.items():
                     inventories[kind].setdefault(geo, {})[k] = inventories[kind].get(geo, {}).get(k, 0.0) + v
 
-    # annual flows, {(geo, item, year): value}
-    flows: dict = {}
-    sd = hog_sd.groupby(["GEO", "Supply and disposition of hogs", "REF_DATE"])["VALUE"].sum(min_count=2)
-    flows.update({k: float(v) for k, v in sd.items() if not pd.isna(v)})
-    pw = poultry[(poultry["Production and disposition"] == "Production, total") & (poultry["Estimates"] == "Weight (kilograms)")]
-    flows.update({(g, c, int(y)): float(v) for g, c, y, v in zip(pw["GEO"], pw["Commodity"], pw["REF_DATE"], pw["VALUE"]) if not pd.isna(v)})
-    lay = eggs[eggs["Production and disposition"] == "Average number of layers"].assign(y=lambda d: d["REF_DATE"].str[:4].astype(int))
-    flows.update({(g, "layers", y): float(v) for (g, y), v in lay.groupby(["GEO", "y"])["VALUE"].mean().items()})
-    ms = milk[milk["Dairy distribution"] == "Milk sold off farms, total"].assign(y=lambda d: d["REF_DATE"].str[:4].astype(int))
-    full = ms.groupby(["GEO", "y"])["VALUE"].agg(["sum", "count"])
-    flows.update({(g, "milk", y): float(r["sum"]) for (g, y), r in full.iterrows() if r["count"] == 12})
+    # ---- flows on crop-year windows (August to July, or July to June for half-yearly tables).
+    # Where a crop year isn't published yet, the latest complete 12 months, moved by AAFC's weekly
+    # slaughter where that is more current (hogs, poultry).
+    cal = {}
     cs = calves[(calves["Livestock"] == "Calves") & (calves["Livestock estimates"] == "Total slaughter") & (calves["GEO"] == "Canada")]
-    flows.update({("Canada", "calf slaughter", int(y)): float(v) for y, v in zip(cs["REF_DATE"], cs["VALUE"]) if not pd.isna(v)})
-
-    # cattle slaughter and live international exports by province, half-years
-    half = cattle_sd[cattle_sd["Supply and disposition of cattle"].isin(["Slaughter of cattle", "International exports of cattle"])]
-    half = {(g, i, int(y), s.startswith("July")): float(v) for g, i, y, s, v in
-            zip(half["GEO"], half["Supply and disposition of cattle"], half["REF_DATE"], half["Survey date"], half["VALUE"]) if not pd.isna(v)}
-
-    def crop_year_flow(geo, item, y0):
-        """July to December of y0 plus January to June of y0 + 1; None until both are out."""
-        a, b = half.get((geo, item, y0, True)), half.get((geo, item, y0 + 1, False))
-        return a + b if a is not None and b is not None else None
+    cal.update({("Canada", "calf slaughter", int(y)): float(v) for y, v in zip(cs["REF_DATE"], cs["VALUE"]) if not pd.isna(v)})
 
     def latest(geo, item, y):
         """(value, year) for calendar year y, or the latest of the two years before it."""
         for yy in (y, y - 1, y - 2):
-            if (geo, item, yy) in flows:
-                return flows[(geo, item, yy)], yy
+            if (geo, item, yy) in cal:
+                return cal[(geo, item, yy)], yy
         return None, None
 
-    def milk_per_cow(y):
-        kl, yy = latest("Canada", "milk", y)
-        cows = crop_year_avg(inventories["Dairy Cows"]["Canada"], yy - 1) if kl else None
-        return kl / cows if cows else None
+    # half-yearly tables (hogs, cattle): {(geo, item, year, is_july_to_december): value}
+    def halves(table, col):
+        return {(g, i, int(y), sd.startswith("July")): float(v) for g, i, y, sd, v in
+                zip(table["GEO"], table[col], table["REF_DATE"], table["Survey date"], table["VALUE"]) if not pd.isna(v)}
+    hh = halves(hog_sd, "Supply and disposition of hogs")
+    ch = halves(cattle_sd[cattle_sd["Supply and disposition of cattle"].isin(["Slaughter of cattle", "International exports of cattle"])],
+                "Supply and disposition of cattle")
 
-    milk_1999 = milk_per_cow(1999)
+    def window(h, geo, item, y0, fallback=False):
+        """July y0 to June y0 + 1 from half-years; with fallback, the latest complete July-June
+        window before it. Returns (value, first year of the window)."""
+        for yy in ([y0] + ([y0 - 1, y0 - 2] if fallback else [])):
+            a, b = h.get((geo, item, yy, True)), h.get((geo, item, yy + 1, False))
+            if a is not None and b is not None:
+                return a + b, yy
+        return None, None
+
+    # monthly tables (milk, layers): {(geo, "YYYY-MM"): value}
+    ms = milk[milk["Dairy distribution"] == "Milk sold off farms, total"]
+    milk_m = {(g, r): float(v) for g, r, v in zip(ms["GEO"], ms["REF_DATE"], ms["VALUE"]) if not pd.isna(v)}
+    lay = eggs[eggs["Production and disposition"] == "Average number of layers"]
+    lay_m = {(g, r): float(v) for g, r, v in zip(lay["GEO"], lay["REF_DATE"], lay["VALUE"]) if not pd.isna(v)}
+
+    def months(y0):
+        return [f"{y0}-{m:02d}" for m in range(8, 13)] + [f"{y0 + 1}-{m:02d}" for m in range(1, 8)]
+
+    def monthly(m, geo, y0, how):
+        """Aug y0 - Jul y0 + 1, or the latest complete 12 months before it. (value, last month)."""
+        have = sorted(r for g, r in m if g == geo)
+        for end in [months(y0)[-1]] + [r for r in reversed(have) if r < months(y0)[-1]][:12]:
+            y, mo = int(end[:4]), int(end[5:])
+            ms12 = [f"{y - (1 if k > mo - 1 else 0)}-{((mo - 1 - k) % 12) + 1:02d}" for k in range(12)]
+            vals = [m.get((geo, r)) for r in ms12]
+            if all(v is not None for v in vals):
+                return (sum(vals) if how == "sum" else sum(vals) / 12), end
+        return None, None
+
+    def milk_per_cow(y0):
+        kl, end = monthly(milk_m, "Canada", y0, "sum")
+        cows = crop_year_avg(inventories["Dairy Cows"]["Canada"], int(end[:4]) - (0 if int(end[5:]) >= 8 else 1)) if kl else None
+        return (kl / cows if cows else None), end
+
+    milk_1999 = milk_per_cow(1999)[0]
 
     def carcass(table, livestock, estimate):
         t = table[(table["Livestock"] == livestock) & (table["Livestock estimates"] == estimate) & (table["GEO"] == "Canada")]
@@ -245,6 +271,37 @@ def populations(years: list[int]) -> dict:
             return sum(v) / len(v)
         prior = [y for y in w if y <= y0 + 1]
         return w[max(prior)] if prior else None
+
+    # poultry meat (StatCan, calendar years, by province; Atlantic published only as a total since
+    # 2011, split at New Brunswick's and Nova Scotia's 2010 shares) put on crop years with AAFC's
+    # weekly slaughter by region: crop year = StatCan's calendar year x AAFC crop year / AAFC
+    # calendar year
+    pw = poultry[(poultry["Production and disposition"] == "Production, total") & (poultry["Estimates"] == "Weight (kilograms)")]
+    pmeat = {(g, c, int(y)): float(v) for g, c, y, v in zip(pw["GEO"], pw["Commodity"], pw["REF_DATE"], pw["VALUE"]) if not pd.isna(v)}
+    for com in ("Chicken (including stewing hen)", "Turkey"):
+        nb, ns = pmeat.get(("New Brunswick", com, 2010)), pmeat.get(("Nova Scotia", com, 2010))
+        for (g, c, y), v in list(pmeat.items()):
+            if g == "Atlantic" and c == com and nb and ns and ("Nova Scotia", com, y) not in pmeat:
+                pmeat[("Nova Scotia", com, y)], pmeat[("New Brunswick", com, y)] = v * ns / (nb + ns), v * nb / (nb + ns)
+    aafc = aafc_weekly()
+
+    def poultry_meat(p, com, y0):
+        """(t, label): crop year Aug y0 - Jul y0 + 1."""
+        kind = "Chicken" if com.startswith("Chicken") else "Turkey"
+        region = aafc_region(p, kind)
+        years = [y for (g, c, y) in pmeat if g == p and c == com]
+        if not years:
+            return None, None
+        base = min(y0 + 1, max(years))
+        v = pmeat[(p, com, base)]
+        wk = aafc["poultry"].get((kind, region))
+        if wk is None:
+            return v, str(base)
+        num, end = crop_year_weekly(wk, y0)
+        den = wk[(wk.index >= f"{base}-01-01") & (wk.index <= f"{base}-12-31")].sum()
+        return (v * num / den if num and den else v), (f"{base} x AAFC to {end}" if end else str(base))
+
+    hog_week = aafc["hogs"]
     out: dict = {}
     for y0 in years:
         rec: dict = {}
@@ -253,31 +310,113 @@ def populations(years: list[int]) -> dict:
             # backgrounding is a winter program: cattle on feeder and stocker operations at January 1
             bg = inventories["background"].get(p, {})
             a["background"] = bg.get((y0 + 1, "jan"), bg.get((y0, "jan")))
-            pc, hy = latest(p, "Pig crop", y0)
-            a["Weaner Pigs"] = pc
+            # hogs: July-June window; if not published, the latest window x AAFC slaughter growth
+            pc, hy = window(hh, p, "Pig crop", y0, fallback=True)
+            scale = 1.0
+            if pc is not None and hy != y0:
+                num, _ = crop_year_weekly(hog_week, y0)
+                den = hog_week[(hog_week.index >= f"{hy}-07-01") & (hog_week.index <= f"{hy + 1}-06-30")].sum()
+                scale = num / den if num and den else 1.0
+            a["Weaner Pigs"] = pc * scale if pc is not None else None
             if pc is not None:
-                g = lambda item: latest(p, item, hy)[0] or 0.0
-                a["Feeder Pigs"] = pc + g("Interprovincial imports of hogs") - g("Interprovincial exports of hogs") \
-                    - g("International exports of hogs") - g("Deaths and condemnations of hogs")
-            a["Chickens t"], py = latest(p, "Chicken (including stewing hen)", y0)
-            a["Turkeys t"], _ = latest(p, "Turkey", y0)
-            a["Layers"], _ = latest(p, "layers", y0)
-            sl, ex = crop_year_flow(p, "Slaughter of cattle", y0), crop_year_flow(p, "International exports of cattle", y0)
+                g = lambda item: window(hh, p, item, hy)[0] or 0.0
+                a["Feeder Pigs"] = (pc + g("Interprovincial imports of hogs") - g("Interprovincial exports of hogs")
+                                    - g("International exports of hogs") - g("Deaths and condemnations of hogs")) * scale
+            a["Chickens t"], plab = poultry_meat(p, "Chicken (including stewing hen)", y0)
+            a["Turkeys t"], _ = poultry_meat(p, "Turkey", y0)
+            a["Layers"], _ = monthly(lay_m, p, y0, "mean")
+            sl, _ = window(ch, p, "Slaughter of cattle", y0)
+            ex, _ = window(ch, p, "International exports of cattle", y0)
             a["cattle_slaughter"], a["cattle_exports"] = sl, ex
-            a["fed_marketed"] = (sl + ex) * FED_SHARE["west" if p in WEST else "east"] if sl is not None and ex is not None else None
+            reg = "west" if p in WEST else "east"
+            fshare = fed_share(reg, y0, aafc)
+            xshare = export_slaughter_share(y0)
+            a["fed_marketed"] = (sl + ex * xshare) * fshare if sl is not None and ex is not None else None
             a["feedlot_jul"] = inventories["feedlot"].get(p, {}).get((y0, "jul"))
             rec[p] = a
-        mpc = milk_per_cow(y0)
+        mpc, mend = milk_per_cow(y0)
         calf, _ = latest("Canada", "calf slaughter", y0)
         cattle_dates = sorted(k for k in inventories["Beef Cows"]["Canada"] if k[0] in (y0, y0 + 1) and k != (y0, "jan"))
+        _, hy = window(hh, "Canada", "Pig crop", y0, fallback=True)
+        _, hog_end = crop_year_weekly(hog_week, y0)
         rec["_meta"] = {"milk_factor": mpc / milk_1999 if mpc else None, "calf_slaughter": calf,
                         "inventory_dates": [f"{y}-{'01' if s == 'jan' else '07'}" for y, s in cattle_dates],
-                        "hog_year": latest("Canada", "Pig crop", y0)[1], "poultry_year": latest("Canada", "Chicken (including stewing hen)", y0)[1],
-                        "milk_year": latest("Canada", "milk", y0)[1],
+                        "hog_period": f"Jul {hy}-Jun {hy + 1}" + ("" if hy == y0 else f", moved by AAFC hog slaughter to {hog_end}") if hy else None,
+                        "poultry_period": poultry_meat("Ontario", "Chicken (including stewing hen)", y0)[1],
+                        "milk_period": f"12 months to {mend}" if mend else None,
+                        "fed_share": {r: round(fed_share(r, y0, aafc), 4) for r in ("west", "east")},
+                        "export_slaughter_share": round(export_slaughter_share(y0), 4),
                         "cattle_weight": crop_year_weight("cattle", y0), "hog_weight": crop_year_weight("hogs", y0),
                         "hog_weight_guide": weights["hogs"].get(HOG_GUIDE_YEAR)}
         out[y0] = rec
     return out
+
+
+# ------------------------------------------------------------------ AAFC and USDA weekly / monthly
+
+AAFC_REGION = {"Alberta": "AB", "British Columbia": "BC", "Saskatchewan": "SK/MB", "Manitoba": "SK/MB", "Ontario": "ON", "Quebec": "QC",
+               "New Brunswick": "Atl", "Nova Scotia": "Atl", "Prince Edward Island": "Atl", "Newfoundland and Labrador": "Atl"}
+
+
+def aafc_region(p: str, kind: str) -> str:
+    """AAFC's poultry reporting region for a province (turkeys: the West is one region)."""
+    r = AAFC_REGION[p]
+    return "West/Ouest" if kind == "Turkey" and r in ("AB", "BC", "SK/MB") else r
+
+
+@lru_cache(maxsize=1)
+def aafc_weekly() -> dict:
+    """AAFC weekly slaughter: {"hogs": Series (market hogs, federally inspected, Canada),
+    "cattle": DataFrame (head by class), "poultry": {(kind, region): Series eviscerated kg}},
+    indexed by week-ending date."""
+    r = external.open_csv("aafc_red_meat")
+    r["d"] = pd.to_datetime(r["EndDt_DtFin"])
+    hogs = r[(r["MjrCmdtyEn_PrdtPrncplAn"] == "Hogs") & (r["CtgryEn_CtgrieAn"] == "Market Hogs")].groupby("d")["NumHd_NmbTetes"].sum()
+    cattle = r[r["MjrCmdtyEn_PrdtPrncplAn"] == "Cattle"].pivot_table(index="d", columns="CtgryEn_CtgrieAn", values="NumHd_NmbTetes", aggfunc="sum")
+    p = external.open_csv("aafc_poultry")
+    p["d"] = pd.to_datetime(p["EndDt_DtFin"])
+    poultry = {(k, reg): g.groupby("d")["EviWt_PdsEvi"].sum() for (k, reg), g in p.groupby(["MjrCmdtyEn_PrdtPrncplAn", "Org_Region"])}
+    return {"hogs": hogs, "cattle": cattle, "poultry": poultry}
+
+
+def crop_year_weekly(s: pd.Series, y0: int) -> tuple[float | None, str | None]:
+    """Sum over the weeks ending August 1, y0 to July 31, y0 + 1; if that isn't complete, the
+    latest 52 weeks. Returns (sum, last week-ending date)."""
+    if s is None or s.empty:
+        return None, None
+    w = s[(s.index >= f"{y0}-08-01") & (s.index <= f"{y0 + 1}-07-31")]
+    if len(w) >= 52:
+        return float(w.sum()), str(w.index.max().date())
+    last = s.index.max()
+    w = s[s.index > last - pd.Timedelta(days=364)]
+    return float(w.sum()), str(last.date())
+
+
+def fed_share(region: str, y0: int, aafc: dict) -> float:
+    """Steers and heifers' share of cattle slaughter in a crop year (July to June): the region's
+    AAFC reference share (FED_SHARE, January 1 to June 7, 2025) moved by the national share in
+    AAFC's weekly federally inspected slaughter against the same reference period."""
+    c = aafc["cattle"]
+    share = lambda w: (w["Steers"].sum() + w["Heifers"].sum()) / w[["Steers", "Heifers", "Cows", "Bulls"]].sum().sum()
+    ref = share(c[(c.index >= "2025-01-01") & (c.index <= "2025-06-07")])
+    w = c[(c.index >= f"{y0}-07-01") & (c.index <= f"{y0 + 1}-06-30")]
+    if len(w) < 40:
+        w = c[c.index > c.index.max() - pd.Timedelta(days=364)]
+    return FED_SHARE[region] * share(w) / ref
+
+
+@lru_cache(maxsize=None)
+def export_slaughter_share(y0: int) -> float:
+    """Share of Canada's live cattle exports that go to the US for immediate slaughter (the rest is
+    feeder and breeding cattle), July y0 to June y0 + 1, from USDA ERS US imports from Canada; the
+    latest 12 months where the window isn't complete."""
+    e = external.open_csv("ers_cattle")
+    e = e[(e["GEOGRAPHY_DESC"] == "Canada") & (e["TRADE_FLOW"] == "Imports")]
+    e = e.assign(m=pd.to_datetime(dict(year=e["YEAR_ID"], month=e["TIMEPERIOD_ID"], day=1))).pivot_table(index="m", columns="COMMODITY_DESC", values="AMOUNT", aggfunc="sum")
+    w = e[(e.index >= f"{y0}-07-01") & (e.index <= f"{y0 + 1}-06-01")]
+    if len(w) < 12:
+        w = e.iloc[-12:]
+    return float(w["Cattle for immediate slaughter"].sum() / w["Cattle, total"].sum())
 
 
 def poultry_kg_per_bird_1999() -> dict:
@@ -418,7 +557,8 @@ def project_marketings(pops: dict) -> None:
 
 
 def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_share: float = 0.0,
-           availability: dict | None = None, sigma: float = SIGMA, alpha: float = 0.0, coproducts: dict | None = None) -> dict:
+           availability: dict | None = None, sigma: float = SIGMA, alpha: float = 0.0, coproducts: dict | None = None,
+           forage: dict | None = None) -> dict:
     """Feed grain demand by crop year: {crop_year: {"by_region": {region: {grain: kt}},
     "by_group": {region: {group: kt barley-eq}}, ...}}.
 
@@ -429,6 +569,7 @@ def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_
     shift it, e.g. its usual share of StatCan's western feed use.
     availability: {region: {grain: {crop_year: supply / its average}}}; missing = 1.
     coproducts: {region: {crop_year: barley-equivalent kt}} netted out of the region's grain energy.
+    forage: {region: {crop_year: barley-equivalent kt}} extra grain fed for a hay shortfall.
     corn_west: {crop_year: kt} corn used in the West (StatCan's corn balance for the provinces
     other than Ontario and Quebec: production, imports and stock changes, all measured). The
     1999 rations predate Manitoba's corn crop (about 0.5 Mt then, over 2 Mt now), so where it is
@@ -448,6 +589,7 @@ def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_
         m["cattle_weight_factor"] = m["cattle_weight"] / cattle_w_avg if m["cattle_weight"] and cattle_w_avg else 1.0
         m["hog_weight_factor"] = m["hog_weight"] / m["hog_weight_guide"] if m["hog_weight"] and m["hog_weight_guide"] else 1.0
     coproducts = coproducts or {}
+    forage = forage or {}
     corn_west = corn_west or {}
     availability = availability or {}
     region_of = lambda p: "west" if p in WEST else "east"
@@ -456,6 +598,12 @@ def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_
     for y0 in years:
         cy = crop_year_label(y0)
         rows = class_demand(pops[y0], coef, kgpb, region_of, durum_share, dof)
+        for r in ("west", "east"):
+            extra = forage.get(r, {}).get(cy, 0.0)
+            if extra > 0:
+                mix = {g: WEST_CATTLE_MIX.get(g, 0.0) for g in FEED_GRAINS}
+                rows.append({"province": r, "region": r, "class": "forage", "group": "forage", "beq": extra,
+                             "base_mix": split_durum(mix, durum_share) if r == "west" else mix})
         rec = {"by_region": {r: {g: 0.0 for g in FEED_GRAINS} for r in ("west", "east")},
                "by_group": {r: {} for r in ("west", "east")},
                "beq": {r: 0.0 for r in ("west", "east")}, "beq_gross": {}, "coproducts": {}, "relative_price": {}, "availability": {},

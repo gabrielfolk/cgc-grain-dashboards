@@ -52,24 +52,30 @@ changed more (see below).
 |---|---|---|
 | Cattle by class, cattle on feeding and on feeder/stocker operations | 32-10-0130 | crop-year average of July 1 and January 1 (backgrounders: January 1) |
 | Sows, boars | 32-10-0160 | July 1 and January 1 |
-| Pig crop; pigs finished in province = pig crop + interprovincial imports − interprovincial and international exports − deaths | 32-10-0200 | calendar year |
-| Chicken and turkey meat | 32-10-0117 | calendar year |
-| Layers | 32-10-0121 | calendar-year average |
+| Pig crop; pigs finished in province = pig crop + interprovincial imports − interprovincial and international exports − deaths | 32-10-0200 | July to June (half-years); not yet published: the latest July–June × AAFC weekly hog slaughter growth |
+| Chicken and turkey meat | 32-10-0117 | calendar year put on the crop year with AAFC weekly poultry slaughter by region (eviscerated weight); Atlantic split NB/NS at 2010 shares |
+| Milk sold per dairy cow | 32-10-0113 | August to July, or the latest twelve months |
+| Layers | 32-10-0121 | August-to-July average, or the latest twelve months |
 | Veal calves | 32-10-0125 (Canada), split by the 1999 provincial shares | calendar year |
 | Sheep | 32-10-0129 | July 1 and January 1 |
 
-**Cattle on feed from slaughter.** Fed cattle marketed = cattle slaughter + live international exports, July to June,
-by province (StatCan 32-10-0139), × the steer and heifer share of slaughter: West 85.8%, East 82.6% (AAFC federally
-inspected slaughter, January 1 to June 7, 2025: West 984,649 steers and heifers and 163,245 cows and bulls; East
-254,965 and 53,634). Days on feed = average cattle on feeding operations × 365 ÷ fed cattle marketed, averaged over
-2012-13 to 2025-26: **160 days in the West** (between 140 and 182 in any one year, in line with prairie feedlot
-turnover), 133 in the East. That gives 1.34 t of barley per fed animal in the West. The level matches StatCan's
+**Cattle on feed from slaughter.** Fed cattle marketed = cattle slaughter + the live exports that go to US slaughter,
+July to June, by province (StatCan 32-10-0139), × the steer and heifer share of slaughter.
+- **Exports:** only the share going to US slaughter counts; feeder and breeding cattle sent south are finished
+  there. The share is from USDA ERS monthly US imports from Canada by class: 59% in 2013-14 (a heavy feeder-export
+  year), 78% in 2025-26.
+- **Steer and heifer share:** West 85.8%, East 82.6% (AAFC federally inspected slaughter, January 1 to June 7, 2025:
+  West 984,649 steers and heifers and 163,245 cows and bulls; East 254,965 and 53,634), moved each crop year by the
+  national share in AAFC's weekly federally inspected slaughter against the same period.
+- **Days on feed** = average cattle on feeding operations × 365 ÷ fed cattle marketed, averaged over 2012-13 to
+  2025-26: **172 days in the West**, 141 in the East (160 and 133 before feeder exports were taken out). That gives
+  1.44 t of barley per fed animal in the West. The level matches StatCan's
 inventories; the year-to-year change follows marketings. When a crop year's marketings aren't out yet, last year's
 are moved by the July 1 cattle on feeding operations, province by province. For 2026-27 that is +15% in the West:
 Alberta reported 900k head on feeding operations at July 1, 2026, against 777k a year earlier.
 
-For the current crop year, January inventories aren't out yet (July only), and the pig crop, poultry meat and milk use
-the latest full calendar year.
+For the current crop year, January inventories aren't out yet (July only). Hogs and poultry run to AAFC's latest weekly
+slaughter (late September 2026 in this build); milk and layers to the latest StatCan month.
 
 ## Finishing weights
 
@@ -83,6 +89,33 @@ Grain per fed animal moves with carcass weight (StatCan average cold dressed wei
 - A crop year uses the average of its two calendar years where published, else the latest year.
 - Proportional scaling is conservative: the extra weight is put on at the end of the feeding period, when
   feed per kg of gain is highest.
+
+## Hay shortfall
+
+When hay is short, cows and backgrounders are fed grain instead. Western tame hay (32-10-0359, MB, SK, AB, BC) per
+beef cow averages 3.9 t; in 2021-22 it fell to 2.2 t.
+
+- Extra grain = (average hay per cow − this year's) × beef cows × **0.47 t of grain per t of hay short**, at the
+  western cattle mix, reported as its own livestock group. Nothing is added when hay is at or above average.
+- The rate is fitted each build: StatCan's western feed use less the model's (before this term), on the shortfall,
+  with a constant, 2012-13 to 2025-26: 0.47 (s.e. 0.15). It holds without 2021-22 (0.46) and is 0.33 with a time
+  trend. It sits below the roughly two-thirds of a tonne of barley that would replace all of a tonne of hay's
+  energy: herds are also culled, and straw and greenfeed fill part of the gap.
+- 2021-22 gets 2.7 Mt of extra grain; 2026-27, 0.9 Mt. **The 2026 hay crop isn't published yet**, so 2026-27
+  repeats 2025's hay per cow (3.3 t, short); StatCan's November survey will replace it.
+- Western only. The East's cow herd is small (0.4 million beef cows against 3.1 million).
+
+## Crop quality: not added
+
+A feed-grade supply index (the share of each crop grading feed) is the right fix for wheat in bad-quality years, but
+no consistent series exists for 2012 onward:
+- CGC's harvest-sample feed shares are published only from 2021 (degrading-factors pages; the 2024+ reports moved).
+  The 2012–2020 reports give sample counts for the top grades only.
+- CGC terminal receipts by grade: the low-grade share of western wheat falls from 10–19% to about 1% after 2020-21,
+  a break in grading or handling, not better crops; durum misses 2016-17. Downgraded grain is fed at home and
+  doesn't reach export terminals.
+- Alberta's milling-against-feed wheat price spread breaks the same way: "other" wheat has been priced above milling
+  wheat since 2021-22.
 
 ## Co-products
 
@@ -145,28 +178,29 @@ out of each region's grain energy, in proportion across livestock classes, befor
 
 | Crop year | Model, Canada | West | East | StatCan residual | West (est. split) | East (est. split) |
 |---|---|---|---|---|---|---|
-| 2021-22 | 17.3 Mt | 9.3 | 8.0 | 22.1 | 15.3 | 6.7 |
-| 2022-23 | 17.4 | 9.3 | 8.2 | 19.8 | 12.8 | 7.0 |
-| 2023-24 | 17.3 | 9.3 | 8.0 | 20.1 | 14.3 | 5.7 |
-| 2024-25 | 17.3 | 9.2 | 8.1 | 18.0 | 12.1 | 5.9 |
-| 2025-26 | 17.4 | 9.1 | 8.3 | 20.7* | 14.0 | 6.7 |
-| **2026-27** | **17.9** | **9.7** | **8.2** | not yet published | | |
+| 2021-22 | 20.1 Mt | 11.9 | 8.2 | 22.1 | 15.3 | 6.7 |
+| 2022-23 | 18.1 | 9.7 | 8.4 | 19.8 | 12.8 | 7.0 |
+| 2023-24 | 19.0 | 10.8 | 8.1 | 20.1 | 14.3 | 5.7 |
+| 2024-25 | 18.3 | 10.0 | 8.4 | 18.0 | 12.1 | 5.9 |
+| 2025-26 | 18.7 | 10.2 | 8.5 | 20.7* | 14.0 | 6.7 |
+| **2026-27** | **19.3** | **10.8** | **8.5** | not yet published | | |
 
 \* corn estimated until StatCan publishes August.
 
-- **Below StatCan, and much less noisy.** From 2012-13 to 2025-26 the model averages 16.7 Mt and StatCan's residual
-  19.6 Mt. The residual's standard deviation is 1.54 Mt against the model's 0.80 Mt: it swings about twice as much
-  as livestock numbers can explain. Those swings are waste, dockage and balancing error, not feeding.
-- **Most of the gap is western.** The West's model averages 8.9 Mt against a residual of 12.6 Mt. The residual carries
+- **Below StatCan, and less noisy.** From 2012-13 to 2025-26 the model averages 17.4 Mt and StatCan's residual
+  19.6 Mt. The residual's standard deviation is 1.54 Mt against the model's 1.41 Mt; most of the model's swing is now
+  drought years (hay shortfall). The rest of the residual's swings are waste, dockage and balancing error.
+- **Most of the gap is western.** The West's model averages 9.4 Mt against a residual of 12.6 Mt (barley is now
+  within 0.24 Mt on average; wheat is still 2.0 Mt short). The residual carries
   dockage and waste, and the 1999 rations miss the feed wheat feedlots and hog barns buy (on-farm wheat feed in
   StatCan's survey is only 0.3 to 1.2 Mt against 2.6 to 3.4 Mt in the residual). The East's model averages 7.8 Mt
   against 7.0 Mt, after netting out co-products.
 - **The year-to-year moves track StatCan's farm survey.** Correlation of y/y changes in western feed, model against
-  on-farm feed: barley +0.84, wheat +0.66, durum +0.64, oats +0.72.
-- **2026-27 by grain:** corn 11.0 Mt (Canadian-grown 9.3, US 1.7; West 4.3, East 6.7), barley 4.9, wheat
-  (ex-durum) 1.6, durum 0.1 (all in the West), oats 0.3. By livestock (barley equivalent, before co-products):
-  hogs 34%, feedlot and backgrounding cattle 26%, dairy 19%, poultry 16%, cow herd 5%. The West is up 6% on last
-  year, mostly from more cattle on feed.
+  on-farm feed: barley +0.79, wheat +0.61, durum +0.65, oats +0.66.
+- **2026-27 by grain:** corn 11.3 Mt (Canadian-grown 9.5, US 1.7; West 4.4, East 6.9), barley 5.9, wheat
+  (ex-durum) 1.8, durum 0.1 (all in the West), oats 0.3. By livestock (barley equivalent, before co-products):
+  hogs 32%, feedlot and backgrounding cattle 25%, dairy 18%, poultry 17%, cow herd 4%, hay shortfall 4%. The West
+  is up 6% on last year, mostly from more cattle on feed.
 
 ## Limits
 
