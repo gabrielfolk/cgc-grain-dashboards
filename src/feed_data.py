@@ -514,17 +514,23 @@ def western_corn(cornd: dict, prod: dict, years: list[str]) -> dict:
     return out
 
 
+def durum_shares(farm: dict) -> dict:
+    """Durum's share (tonnes) of the wheat and durum fed on western farms (StatCan's farm survey,
+    32-10-0015), by crop year from 2012-13."""
+    yrs = sorted(cy for cy in farm.get("durum", {}) if cy >= "2012-2013" and cy in farm.get("wheat", {})
+                 and farm["wheat"][cy]["west"] + farm["durum"][cy]["west"] > 0)
+    return {cy: farm["durum"][cy]["west"] / (farm["wheat"][cy]["west"] + farm["durum"][cy]["west"]) for cy in yrs}
+
+
 def durum_share(farm: dict) -> tuple[float, list[str]]:
-    """Durum's median share (tonnes) of the wheat and durum fed on western farms (StatCan's farm
-    survey, 32-10-0015); the median keeps out quality years like 2016-17. Returns (share, [first,
-    last crop year])."""
-    yrs = sorted(cy for cy in farm.get("durum", {}) if cy in farm.get("wheat", {}) and farm["wheat"][cy]["west"] + farm["durum"][cy]["west"] > 0)
-    shares = [farm["durum"][cy]["west"] / (farm["wheat"][cy]["west"] + farm["durum"][cy]["west"]) for cy in yrs]
-    return float(np.median(shares)), [yrs[0], yrs[-1]]
+    """The median of durum_shares(); the median keeps out quality years like 2016-17. Returns
+    (share, [first, last crop year])."""
+    sh = durum_shares(farm)
+    return float(np.median(list(sh.values()))), [min(sh), max(sh)]
 
 
 def model_demand(pr: dict, years: list[str], corn_west: dict, durum: float, avail: dict, sigma: float, alpha: float, cop: dict,
-                 forage: dict | None = None) -> dict:
+                 forage: dict | None = None, basis_usd_bu: float = CORN_BASIS_USD_BU) -> dict:
     """Feed demand from animal numbers (src/feed_model.py), priced off each region's grains:
     West = Alberta farm prices and US corn delivered to southern Alberta; East = Ontario.
     durum: durum's base share of the West's wheat and durum (see durum_share); avail: the
@@ -534,7 +540,7 @@ def model_demand(pr: dict, years: list[str], corn_west: dict, durum: float, avai
     for cy in years:
         zc, fx = crop_year_price(pr["cbot_corn"]["values"], cy), crop_year_price(pr["usdcad"]["values"], cy)
         if zc and fx:
-            us[cy] = corn_delivered(zc, fx)
+            us[cy] = corn_delivered(zc, fx, basis_usd_bu)
     series = {"west": {g: pr[g]["values"] for g in ("barley", "wheat", "durum", "oats")},
               "east": {g: pr["ontario"][g]["values"] for g in ("corn", "barley", "wheat", "oats")}}
     prices = {r: {g: {cy: v for cy in years if (v := crop_year_price(s, cy))} for g, s in gs.items()} for r, gs in series.items()}
@@ -564,6 +570,55 @@ def model_demand(pr: dict, years: list[str], corn_west: dict, durum: float, avai
 
 # ------------------------------------------------------------------ main
 
+# The judgment inputs and their plausible ranges (low, high) for the uncertainty range. Each is
+# moved on its own, the rest held at base; see uncertainty().
+def ranges(alpha: float, alpha_se: float, durum_q: tuple) -> dict:
+    hay_full = (0.600 * 0.874) / (0.831 * 0.885)  # alfalfa-grass hay vs barley, TDN x dry matter (Saskatchewan guide)
+    return {
+        "price_elasticity": {"label": "Price elasticity", "base": PRICE_ELASTICITY, "low": 0.5, "high": 1.5,
+                             "why": "an assumption; no published Canadian estimate"},
+        "alpha": {"label": "Availability elasticity", "base": alpha, "low": max(0.0, alpha - alpha_se), "high": alpha + alpha_se,
+                  "why": "± 1 standard error of the farm-survey fit"},
+        "hay_rate": {"label": "Grain per t of hay short", "base": HAY_GRAIN_RATE, "low": 0.0, "high": hay_full,
+                     "why": "straw covers it all, to grain replacing all of the hay's energy"},
+        "coproduct_yield": {"label": "Co-product yield, t/t processed", "base": COPRODUCT_YIELD, "low": COPRODUCT_YIELD * 0.8,
+                            "high": COPRODUCT_YIELD * 1.2, "why": "± 20%"},
+        "durum_share": {"label": "Durum share of western wheat feed", "base": None, "low": durum_q[0], "high": durum_q[2],
+                        "why": "middle half of the farm-survey years"},
+        "corn_basis": {"label": "US corn basis + freight, US$/bu", "base": CORN_BASIS_USD_BU, "low": CORN_BASIS_USD_BU - 0.4,
+                       "high": CORN_BASIS_USD_BU + 0.4, "why": "an assumption, ± US$0.40"},
+    }
+
+
+def totals(demand: dict) -> dict:
+    """{cy: {region: {grain: kt}}} for the grains, corn by origin and the total; regions + Canada."""
+    keys = GRAINS + ["corn_ca", "corn_us"]
+    out = {}
+    for cy, rec in demand.items():
+        b = rec["by_region"]
+        reg = {r: {k: b[r].get(k, 0.0) for k in keys} | {"total": sum(b[r][g] for g in GRAINS)} for r in REGIONS}
+        reg["canada"] = {k: reg["west"][k] + reg["east"][k] for k in reg["west"]}
+        out[cy] = reg
+    return out
+
+
+def uncertainty(base: dict, runs: dict) -> tuple[dict, dict]:
+    """Range per crop year, region and grain: base - sqrt(sum of squared falls) to base + sqrt(sum of
+    squared rises) over the one-at-a-time runs, treating the inputs as independent. Also each
+    input's (low run, high run) values, for the sensitivity table."""
+    rng, sens = {}, {}
+    for cy, regs in base.items():
+        rng[cy] = {}
+        for r, gs in regs.items():
+            rng[cy][r] = {}
+            for g, v in gs.items():
+                d = [run[cy][r][g] - v for pair in runs.values() for run in pair]
+                up, dn = np.sqrt(sum(x * x for x in d if x > 0)), np.sqrt(sum(x * x for x in d if x < 0))
+                rng[cy][r][g] = [round(v - dn, 1), round(v + up, 1)]
+        sens[cy] = {k: {r: {g: [round(pair[0][cy][r][g], 1), round(pair[1][cy][r][g], 1)] for g in regs[r]} for r in regs} for k, pair in runs.items()}
+    return rng, sens
+
+
 def main() -> None:
     con = connect()
     years = [y for (y,) in con.execute("select distinct crop_year from gsw order by 1").fetchall()]
@@ -580,17 +635,31 @@ def main() -> None:
     avail, supply = availability(sd, prod, all_years + [cur], cur)
     cop, processed = coproducts(sd, cornd, all_years + [cur])
     corn_w = western_corn(cornd, prod, all_years)
-    # forage: hay shortfall needs the model's beef cow numbers, so run once without it, then rerun
-    base = model_demand(pr, all_years + [cur], corn_w, durum, avail, sigma, alpha, cop)
-    short, hay = hay_shortfall(base, sorted(base))
-    forage = {"west": {cy: HAY_GRAIN_RATE * v for cy, v in short.items()}}
-    demand = model_demand(pr, all_years + [cur], corn_w, durum, avail, sigma, alpha, cop, forage)
-    origin = corn_origin(demand, cornd, prod)
-    for cy, o in origin.items():
-        for r in REGIONS:
-            demand[cy]["by_region"][r]["corn_ca"] = o[r]["ca"]
-            demand[cy]["by_region"][r]["corn_us"] = o[r]["us"]
-        demand[cy]["corn_origin"] = o
+    yrs = all_years + [cur]
+    # forage: hay shortfall needs the model's beef cow numbers, so run once without it
+    short, hay = hay_shortfall(model_demand(pr, yrs, corn_w, durum, avail, sigma, alpha, cop), yrs)
+
+    def run(sigma=sigma, alpha=alpha, hay_rate=HAY_GRAIN_RATE, cop_yield=COPRODUCT_YIELD, durum=durum, basis=CORN_BASIS_USD_BU):
+        """One full model run (steps 1-3) at the given judgment inputs."""
+        av = {r: {g: s_ for g, s_ in gs.items()} for r, gs in avail.items()}
+        c = {r: {cy: v * cop_yield / COPRODUCT_YIELD for cy, v in g.items()} for r, g in cop.items()}
+        d = model_demand(pr, yrs, corn_w, durum, av, sigma, alpha, c, {"west": {cy: hay_rate * v for cy, v in short.items()}}, basis)
+        for cy, o in corn_origin(d, cornd, prod).items():
+            for r in REGIONS:
+                d[cy]["by_region"][r]["corn_ca"] = o[r]["ca"]
+                d[cy]["by_region"][r]["corn_us"] = o[r]["us"]
+            d[cy]["corn_origin"] = o
+        return d
+
+    demand = run()
+    R = ranges(alpha, fit["a_se"], tuple(np.percentile(list(durum_shares(farm).values()), [25, 50, 75])))
+    R["durum_share"]["base"] = durum
+    arg = {"price_elasticity": "sigma", "alpha": "alpha", "hay_rate": "hay_rate", "coproduct_yield": "cop_yield",
+           "durum_share": "durum", "corn_basis": "basis"}
+    runs = {k: (totals(run(**{arg[k]: v["low"]})), totals(run(**{arg[k]: v["high"]}))) for k, v in R.items()}
+    rng, sens = uncertainty(totals(demand), runs)
+    for cy in demand:
+        demand[cy]["range"] = rng[cy]
 
     data = {
         "meta": {"current_year": cur, "generated": dt.date.today().isoformat(),
@@ -609,6 +678,8 @@ def main() -> None:
                               "hay_grain_rate": round(HAY_GRAIN_RATE, 4), "hay": hay, "price_elasticity": PRICE_ELASTICITY,
                               "alpha_se": round(fit["a_se"], 3), "corn_west_measured": {cy: round(v, 1) for cy, v in corn_w.items()}},
         "model": {"fit": fit},
+        "uncertainty": {"inputs": {k: {kk: (round(vv, 4) if isinstance(vv, float) else vv) for kk, vv in v.items()} for k, v in R.items()},
+                        "sensitivity": {cur: sens[cur]}},
         "panel": panel.round(1).reset_index().to_dict(orient="records"),
     }
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -618,6 +689,7 @@ def main() -> None:
     print(f"elasticities: price {-sigma:.3f}, availability {alpha:.3f} ({fit['train_years'][0]} to {fit['train_years'][1]})")
     print(f"availability elasticity (farm survey): {alpha:.2f} (se {fit['a_se']:.2f}, n {fit['n']}); hay shortfall:", {cy: hay[cy]['shortfall_kt'] for cy in list(hay)[-4:]})
     dm = demand[cur]
+    print("range, Canada:", {g: dm["range"]["canada"][g] for g in ["total"] + GRAINS})
     for r in REGIONS:
         print(f"{cur} {r}:", {g: round(dm['by_region'][r][g]) for g in GRAINS + ['corn_ca', 'corn_us']})
     print("meta:", dm["meta"])

@@ -202,6 +202,30 @@ out of each region's grain energy, in proportion across livestock classes, befor
   hogs 33%, feedlot and backgrounding cattle 26%, dairy 18%, poultry 17%, cow herd 4%, hay shortfall 2%. The West
   is up 6% on last year, mostly from more cattle on feed.
 
+## Uncertainty range
+
+The model is rerun with each judgment input at a low and a high value, the others at base (one at a time). Each
+grain's range, for every crop year and region, is base − √(Σ falls²) to base + √(Σ rises²), treating the inputs as
+independent. 2026-27, Canada (kt):
+
+| Input | Low to high | Total | Barley | Wheat | Durum | Corn, Canadian | Corn, US |
+|---|---|---|---|---|---|---|---|
+| Price elasticity (assumption) | 0.5 to 1.5 | ±1 | +41 / −34 | −18 / +18 | −34 / +38 | ±3 | +24 / −35 |
+| Availability elasticity (± 1 s.e. of the farm-survey fit) | 0.72 to 2.48 | ±6 | ±6 | ±18 | ±7 | – | – |
+| Grain per t of hay short | 0 to 0.71 | −365 / +999 | −339 / +917 | −38 / +99 | −15 / +39 | – | +33 / −71 |
+| Co-product yield (± 20%) | 0.24 to 0.36 | ±351 | ±44 | ±36 | ±1 | ±256 | ±9 |
+| Durum share (farm-survey middle half) | 17.9% to 29.1% | ±2 | ±2 | +67 / −48 | −78 / +56 | – | +8 / −6 |
+| US corn basis + freight (assumption) | US$1.20 to 2.00 | ±1 | ±7 | ±1 | – | – | ±8 |
+| **Combined range** | | **18.3–19.9 Mt** | **5.14–6.41 Mt** | **1.54–1.74 Mt** | **206–371 kt** | **8.97–9.48 Mt** | **1.81–1.94 Mt** |
+
+- **The hay rule dominates** barley and the western total: 0 (straw covers it all) to 0.71 t (grain replaces all of
+  the hay's energy, Saskatchewan guide feed values: hay 60.0% TDN at 87.4% dry matter, barley 83.1% at 88.5%).
+  It is widest in drought years (2021-22).
+- **Co-products** set most of the range on eastern corn and the eastern total.
+- **Prices hardly move the totals;** they shift tens of kilotonnes between grains.
+- **Not in the range:** feeding rates, animal numbers and prices (published data), and the western wheat gap (feed
+  wheat bought off the farm), which the model doesn't capture.
+
 ## Limits
 
 - **Co-products are netted out at fixed rates** (0.30 t per t processed, barley's energy). Millfeeds, bakery waste

@@ -82,6 +82,7 @@ annual flows (pig crop, poultry meat, milk) use the calendar year the crop year 
 
 from __future__ import annotations
 
+import copy
 from functools import lru_cache
 from pathlib import Path
 
@@ -419,6 +420,12 @@ def export_slaughter_share(y0: int) -> float:
     return float(w["Cattle for immediate slaughter"].sum() / w["Cattle, total"].sum())
 
 
+@lru_cache(maxsize=4)
+def _populations(years: tuple) -> dict:
+    """populations(), cached: the uncertainty range reruns the model with the same animals."""
+    return populations(list(years))
+
+
 def poultry_kg_per_bird_1999() -> dict:
     """1999 kg of meat per bird by province (StatCan 32-10-0117), to turn the 1999 per-bird
     feed rates into feed per kg of meat."""
@@ -578,7 +585,7 @@ def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_
     shifted by price."""
     coef = coefficients()
     kgpb = poultry_kg_per_bird_1999()
-    pops = populations(sorted(set(years) | {min(years) - 1}))
+    pops = copy.deepcopy(_populations(tuple(sorted(set(years) | {min(years) - 1}))))
     project_marketings(pops)
     dof = days_on_feed(pops)
     # grain per head finished moves with carcass weight

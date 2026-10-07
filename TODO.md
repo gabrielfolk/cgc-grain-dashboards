@@ -44,5 +44,4 @@
   with current grain shares was found (2026-10-06). This is the main suspect for western wheat being understated.
 - [ ] **Add AAFC's Outlook for Principal Field Crops** (feed, waste and dockage by crop) to the feed page as a second
   reference next to StatCan.
-- [ ] **Show an uncertainty band** on the feed estimate from plausible ranges on rates and elasticities (σ = 1 is an assumption; α s.e. about 0.9; hay rate 0.19 to 0.7).
 - [ ] **Net out millfeeds and imported US distillers' grains** if a source turns up.

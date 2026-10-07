@@ -279,6 +279,11 @@
       </div>
       <div class="flash-wrap" style="border:0"><table class="flash" id="bridge-table"></table></div>
     </div>
+    <div class="panel">
+      <div class="panel-head"><h3 id="sens-h">How sure is this?</h3><p id="sens-p"></p></div>
+      <div class="flash-wrap" style="border:0"><table class="flash" id="sens-table"></table></div>
+      <p class="flash-note" id="sens-note"></p>
+    </div>
   </section>
 
   <section aria-labelledby="how-h">
@@ -521,7 +526,8 @@
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
     const totals = ys.map((yr) => { const v = opts.getVals(yr); return opts.keys.reduce((s, k) => s + (v[k.key] || 0), 0); });
     const marks = opts.marker ? ys.map((yr) => opts.marker.get(yr)) : [];
-    let max = Math.max(1, ...totals, ...marks.filter((v) => v != null));
+    const highs = opts.range ? ys.map((yr) => opts.range.get(yr)?.[1]).filter((v) => v != null) : [];
+    let max = Math.max(1, ...totals, ...marks.filter((v) => v != null), ...highs);
     const step = niceStep(max, 4);
     max = Math.ceil(max / step) * step;
     const y = (v) => m.t + ih - (v / max) * ih;
@@ -548,6 +554,12 @@
       });
       // above the bar or the marker, whichever is higher; skipped when bars are too narrow for it
       if (opts.capLabel && band >= 30) svgText(svg, { x: cx, y: y(Math.max(totals[i], marks[i] ?? 0)) - 6, "text-anchor": "middle", "font-size": 10, "font-weight": 500, fill: css("--ink-2") }, opts.capLabel(yr));
+      const rg = opts.range ? opts.range.get(yr) : null;
+      if (rg) {
+        const w = Math.min(8, bw / 3);
+        for (const [a, b] of [[rg[0], rg[1]]]) el("line", { x1: cx, x2: cx, y1: y(a), y2: y(b), stroke: css("--ink-2"), "stroke-width": 1.25 }, svg);
+        for (const v of rg) el("line", { x1: cx - w, x2: cx + w, y1: y(v), y2: y(v), stroke: css("--ink-2"), "stroke-width": 1.25 }, svg);
+      }
       if (opts.marker && marks[i] != null) {
         const my = y(marks[i]);
         el("line", { x1: x0 - 5, x2: x0 + bw + 5, y1: my, y2: my, stroke: css("--ink"), "stroke-width": 2, "stroke-linecap": "round" }, svg);
@@ -557,6 +569,7 @@
         ...opts.keys.slice().reverse().map((k) => ({ value: fmtKt(vals[k.key]), label: k.label, color: k.color, kind: "rect" })),
         { value: fmtKt(totals[i]), label: "Total", em: true },
         ...(opts.marker && marks[i] != null ? [{ value: fmtKt(marks[i]), label: opts.marker.label, kind: "mark" }] : []),
+        ...(opts.range && opts.range.get(yr) ? [{ value: `${fmtKt(opts.range.get(yr)[0])}–${fmtKt(opts.range.get(yr)[1])}`, label: "model range" }] : []),
         ...(opts.tipExtra ? opts.tipExtra(yr) : []),
       ];
       hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, short(yr), rows()));
@@ -592,6 +605,9 @@
     ["hogs", "Hogs"], ["poultry", "Poultry and eggs"], ["sheep", "Sheep"], ["forage", "Hay shortfall (cattle)"]];
   const dmv = (cy, r, g) => { const x = DM[cy]?.by_region; if (!x) return null; return r === "canada" ? x.west[g] + x.east[g] : x[r][g]; };
   const dmTot = (cy, r) => DM[cy] ? sumOf(MG.map((g) => dmv(cy, r, g.key))) : null;
+  // uncertainty range [low, high], kt, for a grain key (or "total") and region (west, east, canada)
+  const dmRange = (cy, r, g) => DM[cy]?.range?.[r]?.[g || "total"] || null;
+  const rangeTxt = (rg) => rg ? `${n1(rg[0])}–${n1(rg[1])}` : "–";
   const dmPrev = (cy) => dmYears[dmYears.indexOf(cy) - 1];
   const dmAvg = (cy, r, g) => { const i = dmYears.indexOf(cy); const ys = dmYears.slice(Math.max(0, i - 5), i); return ys.length ? mean(ys.map((y) => g ? dmv(y, r, g) : dmTot(y, r))) : null; };
   // StatCan's "animal feed, waste and dockage"; regional values are this page's estimated split.
@@ -738,6 +754,7 @@
     const t1 = tile(`Feed estimate, Canada, ${short(cur)}`);
     big(t1, (tot / 1000).toFixed(1), "million t", "hero-value");
     deltas(t1, [[pct(tot, dmTot(ly, "canada")), `vs ${short(ly)}`], [pct(tot, dmAvg(cur, "canada")), "vs 5-yr average"]]);
+    { const rg = dmRange(cur, "canada"); note(t1, `Range ${(rg[0] / 1000).toFixed(1)}–${(rg[1] / 1000).toFixed(1)} Mt (see How sure is this?)`); }
     note(t1, byGrain("canada", 6));
 
     for (const r of REG) {
@@ -745,7 +762,8 @@
       const t = tile(`${r.long}, ${short(cur)}`, r.color);
       big(t, (e / 1000).toFixed(1), "million t");
       deltas(t, [[pct(e, dmTot(ly, r.key)), `vs ${short(ly)}`], [pct(e, dmAvg(cur, r.key)), "vs 5-yr avg"]]);
-      note(t, `${Math.round(100 * e / tot)}% of Canada · ` + byGrain(r.key, 3));
+      { const rg = dmRange(cur, r.key); note(t, `Range ${(rg[0] / 1000).toFixed(1)}–${(rg[1] / 1000).toFixed(1)} Mt · ${Math.round(100 * e / tot)}% of Canada`); }
+      note(t, byGrain(r.key, 3));
     }
 
     const sc = residual(scYear, "canada"), m = dmTot(scYear, "canada");
@@ -760,19 +778,19 @@
     const cy = cur, meta = DM[cy].meta;
     $("dm-eyebrow").textContent = `Model · ${short(cy)} · thousand tonnes`;
     $("dm-sub").textContent = `What livestock in each region will eat this crop year, by grain, from the model below. Corn is split into Canadian-grown corn and US imports. StatCan's figure for the last complete year is shown for reference.`;
-    const head = ["Thousand tonnes", `${short(cy)} Canada`, "West", "East", short(ly), "y/y", "5-yr avg", "vs 5-yr", `Model ${short(scYear)}`, `StatCan ${short(scYear)}`, "StatCan − model"];
+    const head = ["Thousand tonnes", `${short(cy)} Canada`, "Range", "West", "East", short(ly), "y/y", "5-yr avg", "vs 5-yr", `Model ${short(scYear)}`, `StatCan ${short(scYear)}`, "StatCan − model"];
     const row = (g, cls, label) => {
       const now = dmv(cy, "canada", g.key), last = dmv(ly, "canada", g.key), a5 = dmAvg(cy, "canada", g.key);
       const ms = dmv(scYear, "canada", g.key), sc = residual(scYear, "canada", g.key);
-      return { label: label || g.label, color: cls ? null : g.color, cls, cells: [n1(now), n1(dmv(cy, "west", g.key)), n1(dmv(cy, "east", g.key)), n1(last), fmtPct(pct(now, last)), n1(a5), fmtPct(pct(now, a5)),
+      return { label: label || g.label, color: cls ? null : g.color, cls, cells: [n1(now), rangeTxt(dmRange(cy, "canada", g.key)), n1(dmv(cy, "west", g.key)), n1(dmv(cy, "east", g.key)), n1(last), fmtPct(pct(now, last)), n1(a5), fmtPct(pct(now, a5)),
         n1(ms), sc == null ? "" : n1(sc) + (g.key === "corn" ? cornStar(scYear) : ""), sc == null ? "" : chg(sc - ms)] };
     };
     const tNow = dmTot(cy, "canada"), tLy = dmTot(ly, "canada"), tA5 = dmAvg(cy, "canada"), tM = dmTot(scYear, "canada"), tSc = residual(scYear, "canada");
-    const tot = { label: "Total", cls: "total", cells: [n1(tNow), n1(dmTot(cy, "west")), n1(dmTot(cy, "east")), n1(tLy), fmtPct(pct(tNow, tLy)), n1(tA5), fmtPct(pct(tNow, tA5)), n1(tM), n1(tSc), chg(tSc - tM)] };
+    const tot = { label: "Total", cls: "total", cells: [n1(tNow), rangeTxt(dmRange(cy, "canada")), n1(dmTot(cy, "west")), n1(dmTot(cy, "east")), n1(tLy), fmtPct(pct(tNow, tLy)), n1(tA5), fmtPct(pct(tNow, tA5)), n1(tM), n1(tSc), chg(tSc - tM)] };
     const regs = REG.map((r) => { const now = dmTot(cy, r.key), last = dmTot(ly, r.key), a5 = dmAvg(cy, r.key), ms = dmTot(scYear, r.key), sc = residual(scYear, r.key);
-      return { label: r.long, cells: [n1(now), "", "", n1(last), fmtPct(pct(now, last)), n1(a5), fmtPct(pct(now, a5)), n1(ms), n1(sc), chg(sc - ms)] }; });
+      return { label: r.long, cells: [n1(now), rangeTxt(dmRange(cy, r.key)), "", "", n1(last), fmtPct(pct(now, last)), n1(a5), fmtPct(pct(now, a5)), n1(ms), n1(sc), chg(sc - ms)] }; });
     buildTable($("dm-table"), head, [[null, [...GR.slice(0, 4).map((g) => row(g)), row(GR[4]), row(CORN_CA, "sub", "Canadian-grown"), row(CORN_US, "sub", "US imports"), tot]],
-      ["By region", regs]], { seps: [1, 4, 8] });
+      ["By region", regs]], { seps: [1, 2, 5, 9] });
     const proj = meta.cattle_source === "projected";
     $("dm-note").textContent = `${short(cy)} inputs: animal inventories at ${meta.inventory_dates.map(monthName).join(" and ")}${meta.inventory_dates.length < 2 ? " (January not yet published)" : ""}; hogs ${meta.hog_period}; poultry meat StatCan ${meta.poultry_period}; milk ${meta.milk_period}; ${proj ? "fed cattle marketings projected from July 1 cattle on feed" : "fed cattle marketings as published"}; western hay ${DMM.hay[cy].hay_year}${DMM.hay[cy].hay_year < +cy.slice(0, 4) ? " (this year's not yet published)" : ""}; prices to ${monthName(Object.keys(PR.barley.values).pop())}; production as StatCan's latest estimate. StatCan = "animal feed, waste and dockage", a residual of its supply and disposition balance; regional figures are this page's estimated split, and it does not split corn by origin.${cornStar(scYear) ? " * August corn not yet published: March scaled by the usual ratio." : ""}`;
 
@@ -794,6 +812,23 @@
     buildTable($("bridge-table"), [`Thousand tonnes, ${bridgeRegion === "canada" ? "Canada" : REG.find((r) => r.key === bridgeRegion).long}`, short(ly), "Animal numbers", "Co-products", "Grain mix", short(cur), "Change", "%"],
       [[null, [...keys.map(bRow), bTot]]], { seps: [1, 5] });
     $("bridge-p").textContent += ` Grain energy needed: ${animalsNote}.`;
+  }
+
+  // ---------- how sure is this? (one-at-a-time sensitivity runs) ----------
+  function renderSensitivity() {
+    const U = D.uncertainty, S = U.sensitivity[cur], cy = cur;
+    if (!S) return;
+    $("sens-h").textContent = `How sure is this? ${short(cy)}, Canada`;
+    $("sens-p").textContent = "The model rerun with each judgment input at a low and a high value, the others held at base. Cells: change from the estimate at the low / high value, kt. The range in the main table combines them (square root of the summed squared moves up, and down).";
+    const keys = [["total", "Total"], ...GR.slice(0, 4).map((g) => [g.key, g.label]), ["corn_ca", "Corn, Canadian"], ["corn_us", "Corn, US"]];
+    const base = (g) => g === "total" ? dmTot(cy, "canada") : dmv(cy, "canada", g);
+    const fmtIn = (k, v) => k === "durum_share" ? pctTxt(v, 1) : k === "corn_basis" ? "US$" + v.toFixed(2) : v.toFixed(2);
+    const rows = Object.entries(U.inputs).map(([k, inp]) => ({ label: `${inp.label}: ${fmtIn(k, inp.low)} to ${fmtIn(k, inp.high)} (base ${fmtIn(k, inp.base)})`,
+      cells: keys.map(([g]) => { const [lo, hi] = S[k].canada[g]; const b = base(g); const d0 = lo - b, d1 = hi - b;
+        return Math.abs(d0) < 0.5 && Math.abs(d1) < 0.5 ? "·" : `${chg(d0)} / ${chg(d1)}`; }) }));
+    const rgRow = { label: "Combined range", cls: "total", cells: keys.map(([g]) => rangeTxt(dmRange(cy, "canada", g === "total" ? null : g))) };
+    buildTable($("sens-table"), ["Input: low to high", ...keys.map((k) => k[1])], [[null, [...rows, rgRow]]], { seps: [1] });
+    $("sens-note").textContent = "Why these ranges: " + Object.values(U.inputs).map((i) => `${i.label}: ${i.why}`).join("; ") + ". Not in the range: the feeding rates themselves (1999 study and provincial guides), animal numbers and prices, which are published data; and the western wheat gap (feed wheat bought off the farm), which the model doesn't capture.";
   }
 
   let bridgeRegion = "canada";
@@ -900,31 +935,33 @@
     $("hist-est-sub").textContent = `The model for every crop year, by commodity and region, next to StatCan. StatCan's figure is what is left over after exports, processing, seed and stocks, so it also carries waste, dockage and balancing error.`;
     $("hist-est-ch-h").textContent = `Model versus StatCan: ${pick.label}`;
     const w = REG[0], e = REG[1];
-    legend($("leg-hist-est"), [{ label: "Model, West", color: w.color, kind: "rect" }, { label: "Model, East", color: e.color, kind: "rect" }, ...(byOrigin ? [] : [{ label: "StatCan, Canada", kind: "mark" }])]);
+    legend($("leg-hist-est"), [{ label: "Model, West", color: w.color, kind: "rect" }, { label: "Model, East", color: e.color, kind: "rect" }, ...(byOrigin ? [] : [{ label: "StatCan, Canada", kind: "mark" }]), { label: "Model range", kind: "line", color: "var(--ink-2)" }]);
     yearStack($("ch-hist-est"), { years: dmYears, maxBar: 40, aria: `Feed model by crop year, ${pick.label}`,
       keys: [{ key: "west", label: "Model, West", color: w.color }, { key: "east", label: "Model, East", color: e.color }],
       getVals: (y) => ({ west: val(y, "west"), east: val(y, "east") }),
       marker: { label: "StatCan", get: (y) => residual(y, "canada", gk) },
+      range: { get: (y) => dmRange(y, "canada", gk) },
       tipExtra: (y) => { if (byOrigin) return []; const sc = residual(y, "canada", gk), m = val(y, "canada"); return sc == null ? [{ value: "–", label: "StatCan not published yet" }] : [{ value: chg(sc - m), label: "StatCan minus model" }]; } });
     const body = dmYears.slice().reverse().map((y) => {
       const m = val(y, "canada"), sc = residual(y, "canada", gk), prev = dmPrev(y);
       return { label: short(y) + (y === cur ? " (current)" : ""), cls: y === cur ? "total" : "",
-        cells: [n1(m), fmtPct(prev ? pct(m, val(prev, "canada")) : null), n1(val(y, "west")), n1(val(y, "east")), n1(sc) + (sc != null && (!gk || gk === "corn") ? cornStar(y) : ""),
+        cells: [n1(m), rangeTxt(dmRange(y, "canada", gk)), fmtPct(prev ? pct(m, val(prev, "canada")) : null), n1(val(y, "west")), n1(val(y, "east")), n1(sc) + (sc != null && (!gk || gk === "corn") ? cornStar(y) : ""),
           sc == null ? "–" : chg(sc - m), sc == null ? "–" : fmtPct(pct(sc, m)), n1(residual(y, "west", gk)), n1(residual(y, "east", gk))] };
     });
     const both = dmYears.filter((y) => residual(y, "canada", gk) != null);
-    if (both.length) body.push({ label: `Average ${short(both[0])} to ${short(both[both.length - 1])}`, cls: "memo", cells: [n1(mean(both.map((y) => val(y, "canada")))), "", n1(mean(both.map((y) => val(y, "west")))), n1(mean(both.map((y) => val(y, "east")))),
+    if (both.length) body.push({ label: `Average ${short(both[0])} to ${short(both[both.length - 1])}`, cls: "memo", cells: [n1(mean(both.map((y) => val(y, "canada")))), "", "", n1(mean(both.map((y) => val(y, "west")))), n1(mean(both.map((y) => val(y, "east")))),
       n1(mean(both.map((y) => residual(y, "canada", gk)))), chg(mean(both.map((y) => residual(y, "canada", gk) - val(y, "canada")))), "", n1(mean(both.map((y) => residual(y, "west", gk)))), n1(mean(both.map((y) => residual(y, "east", gk))))] });
-    buildTable($("hist-est-table"), ["Crop year", "Model, Canada", "y/y", "Model, West", "Model, East", "StatCan", "StatCan − model", "%", "StatCan West", "StatCan East"],
-      [[pick.label, body]], { seps: [1, 3, 5, 8] });
+    buildTable($("hist-est-table"), ["Crop year", "Model, Canada", "Range", "y/y", "Model, West", "Model, East", "StatCan", "StatCan − model", "%", "StatCan West", "StatCan East"],
+      [[pick.label, body]], { seps: [1, 4, 6, 9] });
     $("hist-est-note").textContent = `StatCan: "animal feed, waste and dockage" (32-10-0013; corn 32-10-0014); its West/East figures are this page's estimated split: barley, wheat, durum and oats as each region's on-farm feed (32-10-0015) plus a share of the rest in proportion to production; corn from StatCan's regional corn balance. StatCan does not split corn by origin. The West's model runs below its StatCan figure (StatCan's western residual also carries dockage, waste and off-farm feed wheat the 1999 rations miss); the East's runs above it, partly from western grain shipped east. * Corn for the latest complete year is estimated until StatCan publishes August.`;
 
     for (const r of ["west", "east"]) {
       const keys = r === "east" ? MGX.filter((g) => g.key !== "durum") : MGX;
-      legend($("leg-" + r), [...keys.map((g) => ({ label: g.label, color: g.color, kind: "rect" })), { label: "StatCan (est. split)", kind: "mark" }]);
+      legend($("leg-" + r), [...keys.map((g) => ({ label: g.label, color: g.color, kind: "rect" })), { label: "StatCan (est. split)", kind: "mark" }, { label: "Model range", color: "var(--ink-2)" }]);
       yearStack($("ch-" + r), { years: dmYears, maxBar: 36, aria: `Feed model by grain, ${r === "west" ? "Western Canada" : "Eastern Canada"}`, keys,
         getVals: (yr) => Object.fromEntries(keys.map((g) => [g.key, dmv(yr, r, g.key) || 0])),
         marker: { label: "StatCan (est. split)", get: (yr) => residual(yr, r) },
+        range: { get: (yr) => dmRange(yr, r) },
         tipExtra: (yr) => [{ value: pctTxt(dmTot(yr, r) / dmTot(yr, "canada"), 0), label: "share of Canada" }] });
     }
   }
@@ -1050,7 +1087,7 @@
 
   // ---------- boot ----------
   $("asof").textContent = `Crop year ${short(cur)} · model years ${short(dmYears[0])} to ${short(cur)} · StatCan tables as published · built ${D.meta.generated}`;
-  const renderAll = () => { renderSummary(); renderDemand(); renderSteps(); renderInputs(); renderHistEstimates(); };
+  const renderAll = () => { renderSummary(); renderDemand(); renderSensitivity(); renderSteps(); renderInputs(); renderHistEstimates(); };
   renderAll();
   renderNotes();
   let rt;
