@@ -17,8 +17,10 @@ dockage", the residual of its supply and disposition balance, is shown next to i
    energy-adjusted price and by availability (supply).
 3. **Corn by origin:** Canadian-grown or US imports.
 
-Totals do not use StatCan's feed residual. StatCan data do set the mix elasticities, the durum split, western corn
-where published and the corn import split (below).
+**The model does not use StatCan's feed residual anywhere** (since 2026-10-06). StatCan's "animal feed, waste and
+dockage" is the balancing item of its supply and disposition tables, not a feed estimate, so it is shown only for
+comparison. Inputs are measured data (animal inventories, slaughter, trade, production, stocks, prices), published
+feeding rates and rations, and StatCan's farm survey of grain fed on farms (reported by farmers).
 
 ## Feeding rates
 
@@ -95,13 +97,13 @@ Grain per fed animal moves with carcass weight (StatCan average cold dressed wei
 When hay is short, cows and backgrounders are fed grain instead. Western tame hay (32-10-0359, MB, SK, AB, BC) per
 beef cow averages 3.9 t; in 2021-22 it fell to 2.2 t.
 
-- Extra grain = (average hay per cow − this year's) × beef cows × **0.47 t of grain per t of hay short**, at the
+- Extra grain = (average hay per cow − this year's) × beef cows × **0.19 t of barley per t of hay short**, at the
   western cattle mix, reported as its own livestock group. Nothing is added when hay is at or above average.
-- The rate is fitted each build: StatCan's western feed use less the model's (before this term), on the shortfall,
-  with a constant, 2012-13 to 2025-26: 0.47 (s.e. 0.15). It holds without 2021-22 (0.46) and is 0.33 with a time
-  trend. It sits below the roughly two-thirds of a tonne of barley that would replace all of a tonne of hay's
-  energy: herds are also culled, and straw and greenfeed fill part of the gap.
-- 2021-22 gets 2.7 Mt of extra grain; 2026-27, 0.9 Mt. **The 2026 hay crop isn't published yet**, so 2026-27
+- The rate is from Saskatchewan Agriculture's *Beef Cow Rations and Winter Feeding Guidelines* (2021): a 1,400 lb cow
+  in mid-pregnancy eats 30 lb of alfalfa-grass hay a day, or 9 lb of hay + 18 lb of straw + 4 lb of barley. So 21 lb
+  of hay is replaced by straw and 4 lb of barley (4/21 = 0.19). (Until 2026-10-06 the rate was fitted on StatCan's
+  residual, 0.47.) A drought that also cuts straw would push the real rate higher.
+- 2021-22 gets 1.1 Mt of extra grain; 2026-27, 0.4 Mt. **The 2026 hay crop isn't published yet**, so 2026-27
   repeats 2025's hay per cow (3.3 t, short); StatCan's November survey will replace it.
 - Western only. The East's cow herd is small (0.4 million beef cows against 3.1 million).
 
@@ -141,24 +143,22 @@ out of each region's grain energy, in proportion across livestock classes, befor
   delivered to southern Alberta in the West, Ontario prices in the East; a crop year with no StatCan prices yet
   takes the latest month). Availability index = Canada supply (carry-in + production + imports) over its average; the
   current year uses last July's stocks, StatCan's latest production estimate and last year's imports.
-- **σ = 0.52 and α = 2.40** are the elasticities of the pooled share regression in Part 2, fitted on how StatCan's
-  grain shares move from year to year (with grain constants, so they carry no level). Availability is applied in the
-  West only. The fit is on Canada-wide shares, which western grain drives.
-- **Refit on the farm survey (2026-10-06), not adopted.** StatCan's on-farm feed by region (32-10-0015) is a survey,
-  not a residual, so it shouldn't carry dockage and balancing error. Fitted on the West's on-farm feed shares
-  (barley, wheat, durum, oats; 2013-14 to 2025-26): availability 1.74 (s.e. 0.86), price +0.28 (s.e. 0.74, wrong
-  sign). Without durum both flip (−0.99 and −2.72). The survey supports a strong availability effect, but the small
-  grains alone don't identify a price effect; that comes from corn against barley. The residual fit is kept. Applied to eastern crops, it swung eastern
-  wheat from 0.4 to 1.2 Mt in a year, and eastern feeders buy the local crop at Ontario prices, which already reflect
-  its size.
-- **Western corn** is set to StatCan's measured corn use in the provinces outside Ontario and Quebec (production,
-  imports and stock changes, 32-10-0014) where published, because the 1999 rations predate Manitoba's corn crop
-  (about 0.5 Mt then, over 2 Mt now). For years not yet published, it is projected from the last three years' share,
-  shifted by price. The rest of the West's demand is split among barley, wheat, durum and oats.
+- **σ = 1.0, an assumption.** No published substitution elasticity for Canadian feeding was found; 1 means a grain's
+  share moves in inverse proportion to its relative energy-adjusted price. Fitting it on the farm survey gave no
+  stable sign.
+- **α ≈ 1.6, fitted each build on StatCan's farm survey** (32-10-0015: grain fed on the farm that grew it, West,
+  reported by farmers, not a residual): wheat, durum and oats against barley, with grain constants and σ fixed. It
+  comes out at 1.5 to 1.7 for any σ from 0.5 to 1.5 (s.e. about 0.9). Applied in the West only: eastern feeders buy
+  the local crop at Ontario prices, which already reflect its size.
+- (Until 2026-10-06 both were fitted on StatCan's residual grain shares: σ = 0.52, α = 2.40.)
+- **Western corn** is set to what the West has: the western corn crop (32-10-0359) + US corn imported into the
+  provinces outside Ontario and Quebec (32-10-0014, customs-based), because the 1999 rations predate Manitoba's corn
+  crop (about 0.5 Mt then, over 2 Mt now). Both are measured; stock changes are left out (it runs within 5 to 10% of
+  StatCan's western disappearance). Years whose imports aren't out yet are projected from the corn share of energy
+  in the last three years, shifted by price; US corn fills what the crop doesn't. The rest of the West's demand is split among barley, wheat, durum and oats.
 - **Durum** is its own grain, because durum and wheat trade independently. The 1999 study reports wheat with durum
-  included, so in the West each class's wheat is split at durum's median share of the West's wheat and durum feed in
-  StatCan's residual (11.9% over 2012-13 to 2025-26; the median keeps out 2016-17, when 2.1 Mt of weather-damaged
-  durum was fed). Durum then shifts on its own price and availability (Alberta durum, energy value 1.06 against
+  included, so in the West each class's wheat is split at durum's median share of the wheat and durum fed on western
+  farms in StatCan's farm survey (24.4% over 2012-13 to 2025-26; it was 11.9% from the residual's regional split). Durum then shifts on its own price and availability (Alberta durum, energy value 1.06 against
   wheat's 1.08). No durum is fed in the East.
 
 ## Corn by origin
@@ -178,28 +178,28 @@ out of each region's grain energy, in proportion across livestock classes, befor
 
 | Crop year | Model, Canada | West | East | StatCan residual | West (est. split) | East (est. split) |
 |---|---|---|---|---|---|---|
-| 2021-22 | 20.1 Mt | 11.9 | 8.2 | 22.1 | 15.3 | 6.7 |
-| 2022-23 | 18.1 | 9.7 | 8.4 | 19.8 | 12.8 | 7.0 |
-| 2023-24 | 19.0 | 10.8 | 8.1 | 20.1 | 14.3 | 5.7 |
-| 2024-25 | 18.3 | 10.0 | 8.4 | 18.0 | 12.1 | 5.9 |
-| 2025-26 | 18.7 | 10.2 | 8.5 | 20.7* | 14.0 | 6.7 |
-| **2026-27** | **19.3** | **10.8** | **8.5** | not yet published | | |
+| 2021-22 | 18.5 Mt | 10.3 | 8.2 | 22.1 | 15.3 | 6.7 |
+| 2022-23 | 17.9 | 9.6 | 8.4 | 19.8 | 12.8 | 7.0 |
+| 2023-24 | 18.1 | 10.0 | 8.1 | 20.1 | 14.3 | 5.7 |
+| 2024-25 | 18.0 | 9.6 | 8.4 | 18.0 | 12.1 | 5.9 |
+| 2025-26 | 18.3 | 9.8 | 8.5 | 20.7* | 14.0 | 6.7 |
+| **2026-27** | **18.8** | **10.3** | **8.5** | not yet published | | |
 
 \* corn estimated until StatCan publishes August.
 
-- **Below StatCan, and less noisy.** From 2012-13 to 2025-26 the model averages 17.4 Mt and StatCan's residual
-  19.6 Mt. The residual's standard deviation is 1.54 Mt against the model's 1.41 Mt; most of the model's swing is now
-  drought years (hay shortfall). The rest of the residual's swings are waste, dockage and balancing error.
-- **Most of the gap is western.** The West's model averages 9.4 Mt against a residual of 12.6 Mt (barley is now
-  within 0.24 Mt on average; wheat is still 2.0 Mt short). The residual carries
+- **Below StatCan, and less noisy.** From 2012-13 to 2025-26 the model averages 17.1 Mt and StatCan's residual
+  19.6 Mt. The residual's standard deviation is 1.54 Mt against the model's 1.10 Mt. The residual's extra swings
+  are waste, dockage and balancing error.
+- **Most of the gap is western.** The West's model averages 9.1 Mt against a residual of 12.6 Mt (barley within
+  0.3 Mt on average; wheat about 2.1 Mt short). The residual carries
   dockage and waste, and the 1999 rations miss the feed wheat feedlots and hog barns buy (on-farm wheat feed in
   StatCan's survey is only 0.3 to 1.2 Mt against 2.6 to 3.4 Mt in the residual). The East's model averages 7.8 Mt
   against 7.0 Mt, after netting out co-products.
 - **The year-to-year moves track StatCan's farm survey.** Correlation of y/y changes in western feed, model against
-  on-farm feed: barley +0.79, wheat +0.61, durum +0.65, oats +0.66.
-- **2026-27 by grain:** corn 11.3 Mt (Canadian-grown 9.5, US 1.7; West 4.4, East 6.9), barley 5.9, wheat
-  (ex-durum) 1.8, durum 0.1 (all in the West), oats 0.3. By livestock (barley equivalent, before co-products):
-  hogs 32%, feedlot and backgrounding cattle 25%, dairy 18%, poultry 17%, cow herd 4%, hay shortfall 4%. The West
+  on-farm feed: barley +0.79, wheat +0.68, durum +0.34, oats +0.70.
+- **2026-27 by grain:** corn 11.1 Mt (Canadian-grown 9.2, US 1.9; West 4.2, East 6.9), barley 5.5, wheat
+  (ex-durum) 1.6, durum 0.3 (all in the West), oats 0.3. By livestock (barley equivalent, before co-products):
+  hogs 33%, feedlot and backgrounding cattle 26%, dairy 18%, poultry 17%, cow herd 4%, hay shortfall 2%. The West
   is up 6% on last year, mostly from more cattle on feed.
 
 ## Limits
@@ -214,7 +214,7 @@ out of each region's grain energy, in proportion across livestock classes, befor
 - **No backtest:** there is no independent measure of feed actually fed to score the model against. StatCan's
   residual is shown next to it, not as a target.
 
-# Part 2: StatCan's residual (the reference) and the share regression
+# Part 2: StatCan's residual (comparison only)
 
 StatCan derives feed use as a residual of its supply and disposition balance, so it also absorbs waste, dockage
 and measurement error. It is published cumulatively for Aug–Dec, Aug–Mar and the full crop year, and **for Canada
@@ -238,44 +238,11 @@ West = MB, SK, AB, BC. East = Ontario, Quebec and the Atlantic provinces. West +
 
 2025-26: West 14.0 Mt, East 6.7 Mt (of which corn 5.9 Mt).
 
-### Share regression: where the model's elasticities come from
+### The old share regression (no longer used)
 
-The model's grain mix (Part 1, step 2) moves with price and availability at elasticities fitted on how StatCan's
-grain shares move from year to year:
-
-`log(share_i / share_barley) = crop constant + a × log(availability ratio) + b × log(energy-adjusted price ratio)`
-
-- Grains: barley, wheat (ex-durum), durum, oats and corn fed in the West. Shares are of their total StatCan feed use.
-- **Availability:** supply (carry-in + production + imports) relative to that grain's own average. Western corn is
-  treated as freely available through imports.
-- **Energy-adjusted price:** the crop-year average Alberta farm price divided by feeding value relative to barley
-  (wheat 1.08, durum 1.06, oats 0.85, corn 1.12). Western corn is US corn delivered to southern Alberta (CBOT +
-  US$1.60/bu basis and freight, at the monthly USD/CAD).
-- Fitted on 2013-14 to 2025-26: **a = 2.40**, **b = −0.52**. The grain constants absorb the level, so only the
-  year-to-year response carries into the model.
-- **Eastern corn is left out.** Putting all Canada corn in the regression flipped the price effect to the wrong sign
-  (b = +0.17 with Ontario corn prices, +0.13 with US corn). Eastern corn is fed from the local crop to hogs, poultry
-  and dairy and doesn't trade off against western barley on price.
-
-**Out-of-sample check.** Until 2026-10-06 the page also showed a forecast of StatCan's residual built on this
-regression (half its shares × the 5-year average total, half each grain's 5-year average). Estimating 2019-20 to
-2025-26 from earlier years only, mean absolute error in kt:
-| | Estimate (50/50) | Model only | 5-yr average | Last year |
-|---|---|---|---|---|
-| Barley | 467 | **463** | 713 | 960 |
-| Wheat (ex-durum) | 937 | 1,270 | **604** | 777 |
-| Durum | 157 | **108** | 276 | 146 |
-| Oats | **253** | 302 | 270 | 330 |
-| Corn, Canada | 1,031 | 1,257 | **804** | 1,385 |
-|   fed in the West | 1,014 | 1,367 | **908** | 1,772 |
-|   fed in the East | **527** | 527 | 527 | 621 |
-| Total | **1,436** | 1,436 | 1,436 | 1,586 |
-| Western Canada total | 1,355 | 1,356 | **1,351** | 1,749 |
-| East total | 654 | 692 | 610 | **482** |
-
-The regression alone ("model only") beat both baselines for barley and durum. It was weakest for wheat and
-western corn, where the five-year average did better. The forecast was taken off the page to keep it on the
-model's own estimate. The regression stays because it sets the elasticities.
+Until 2026-10-06 the grain-mix elasticities came from a pooled regression on StatCan's residual grain shares
+(a = 2.40, b = −0.52), and the page also showed a forecast of StatCan's residual built on it. Both were dropped: the
+model no longer takes any parameter from the residual. The regression is in git history (feed_data.fit_shares).
 
 ### Limits
 

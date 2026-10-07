@@ -6,15 +6,19 @@ Run after src/ingest.py:
     python src/feed_data.py
 
 The estimate is src/feed_model.py: animals x grain fed per head (step 1), split across grains by
-price and availability (step 2). This module assembles its inputs and adds step 3, corn by origin:
+price and availability (step 2). This module assembles its inputs and adds step 3, corn by origin.
+None of it uses StatCan's feed residual, which is a balancing item, not a feed estimate:
     prices          Alberta and Ontario farm prices (32-10-0077), US corn delivered to southern Alberta
-    availability    Canada supply over its average (32-10-0013), West only (availability())
-    elasticities    price and availability elasticities of a pooled regression of StatCan's
-                    year-to-year grain shares (fit_elasticities())
-    durum split     durum's median share of the West's wheat and durum feed (durum_share())
-    western corn    StatCan's measured corn use in the West where published
-    corn origin     StatCan corn imports by region (corn_origin())
-    forage          extra grain fed to cattle when hay is short, West (forage())
+    availability    Canada supply over its average (32-10-0013: stocks, production, imports), West only
+    elasticities    price: PRICE_ELASTICITY (an assumption); availability: fitted on StatCan's farm
+                    survey of grain fed on farms in the West (32-10-0015), not the residual
+                    (fit_elasticities())
+    durum split     durum's median share of western on-farm wheat and durum feed, same survey
+    western corn    the western corn crop (32-10-0359) + US corn imports into the West (32-10-0014,
+                    customs-based), both measured
+    corn origin     corn imports by region (corn_origin())
+    forage          extra grain fed to cattle when hay is short, West: the Saskatchewan ration guide's
+                    barley per tonne of hay replaced (hay_shortfall())
     co-products     distillers' grains and corn gluten feed from grain processed by industry,
                     netted out of each region's grain energy (coproducts())
 
@@ -72,6 +76,14 @@ ENERGY = feed_model.ENERGY
 # US corn delivered to southern Alberta = CBOT + this basis and freight (US$/bu)
 CORN_BASIS_USD_BU = 1.60
 BU_CORN_PER_T = 39.368
+# Substitution elasticity between grains on energy-adjusted price. No published estimate for
+# Canadian feeding was found; 1 (shares move in inverse proportion to relative price) is the
+# neutral assumption. Fitting it on the farm survey gave no stable sign.
+PRICE_ELASTICITY = 1.0
+# Grain fed per tonne of hay short: Saskatchewan Agriculture, Beef Cow Rations and Winter Feeding
+# Guidelines (2021), rations for a 1,400 lb cow in mid-pregnancy: 30 lb of alfalfa-grass hay a day,
+# or 9 lb of hay + 18 lb of straw + 4 lb of barley. 21 lb of hay is replaced by straw and 4 lb of barley.
+HAY_GRAIN_RATE = 4 / 21
 # Co-products fed in place of grain: tonnes of distillers' grains (dry-grind ethanol) or corn gluten
 # feed (wet milling) per tonne of grain processed. A bushel of corn (56 lb) yields about 17 lb of
 # distillers' grains, 0.30 t/t; wheat ethanol is similar. Fed at barley's energy: distillers' grains
@@ -314,37 +326,30 @@ def model_panel(sd, cornd, pr, regional, years) -> pd.DataFrame:
     return pd.DataFrame(rows).set_index("cy")
 
 
-def fit_shares(panel: pd.DataFrame, train: list[str]):
-    """Pooled least squares: log(s_i/s_b) = c_i + a log(avail_i/avail_b) + b log(price_i/price_b).
-    Availability is supply relative to the grain's own mean over the training years (western
-    corn: 1, freely available through imports)."""
-    others = ["wheat", "durum", "oats", "corn_west"]
-    means = {g: panel.loc[train, f"supply_{g}"].mean() for g in SMALL}
+def fit_elasticities(panel: pd.DataFrame, farm: dict, cur: str) -> dict:
+    """The grain mix's availability elasticity, fitted on StatCan's farm survey (grain fed on the
+    farm that grew it, West, 32-10-0015; reported by farmers, not a balancing residual), with the
+    price elasticity fixed at PRICE_ELASTICITY:
+        log(s_i / s_barley) + sigma x log(price ratio) = grain constant + a x log(availability ratio)
+    over wheat, durum and oats against barley. Availability is supply (carry-in + production +
+    imports) over its own average."""
+    grains = ["barley", "wheat", "durum", "oats"]
+    done = [cy for cy in panel.index if cy != cur and panel.loc[cy, [f"supply_{g}" for g in grains] + [f"price_{g}" for g in grains]].notna().all()
+            and all(farm.get(g, {}).get(cy, {}).get("west", 0) > 0 for g in grains)]
+    means = {g: panel.loc[done, f"supply_{g}"].mean() for g in grains}
     X, y = [], []
-    for cy in train:
+    for cy in done:
         r = panel.loc[cy]
-        for i, g in enumerate(others):
-            a_i = r[f"supply_{g}"] / means[g] if g != "corn_west" else 1.0
-            a_b = r["supply_barley"] / means["barley"]
-            p_i = r[f"price_{g}"] / ENERGY[g.removesuffix("_west")]
-            p_b = r["price_barley"] / ENERGY["barley"]
-            if min(r[f"feed_{g}"], r["feed_barley"]) <= 0:
-                continue
-            dummies = [1.0 if j == i else 0.0 for j in range(len(others))]
-            X.append(dummies + [np.log(a_i / a_b), np.log(p_i / p_b)])
-            y.append(np.log(r[f"feed_{g}"] / r["feed_barley"]))
+        for i, g in enumerate(grains[1:]):
+            a = np.log((r[f"supply_{g}"] / means[g]) / (r["supply_barley"] / means["barley"]))
+            p = np.log((r[f"price_{g}"] / ENERGY[g]) / (r["price_barley"] / ENERGY["barley"]))
+            X.append([1.0 if j == i else 0.0 for j in range(3)] + [a])
+            y.append(np.log(farm[g][cy]["west"] / farm["barley"][cy]["west"]) + PRICE_ELASTICITY * p)
     X, y = np.array(X), np.array(y)
-    coef, *_ = np.linalg.lstsq(X, y, rcond=None)
-    return {"const": dict(zip(others, coef[:4])), "a": float(coef[4]), "b": float(coef[5]), "means": means}
-
-
-def fit_elasticities(panel: pd.DataFrame, cur: str) -> dict:
-    """The price and availability elasticities for the model's grain mix: fit_shares over every
-    complete crop year with all inputs published."""
-    need = [f"feed_{g}" for g in SMALL + ["corn_west"]] + [f"price_{g}" for g in SMALL + ["corn_west"]] + [f"supply_{g}" for g in SMALL]
-    done = [cy for cy in panel.index if cy != cur and panel.loc[cy, need].notna().all()]
-    fit = fit_shares(panel, done)
-    return {"a": fit["a"], "b": fit["b"], "const": fit["const"], "train_years": [done[0], done[-1]]}
+    b, *_ = np.linalg.lstsq(X, y, rcond=None)
+    e = y - X @ b
+    se = np.sqrt(np.diag(e @ e / (len(y) - X.shape[1]) * np.linalg.inv(X.T @ X)))
+    return {"a": float(b[-1]), "a_se": float(se[-1]), "b": -PRICE_ELASTICITY, "train_years": [done[0], done[-1]], "n": len(y)}
 
 
 def clean_json(o):
@@ -483,28 +488,27 @@ def hay_shortfall(demand: dict, years: list[str]) -> tuple[dict, dict]:
     return out, detail
 
 
-def fit_forage(demand: dict, regional: dict, short: dict) -> dict:
-    """Grain fed per tonne of hay shortfall: least squares of StatCan's western feed use less the
-    model's (before this term) on the shortfall, with a constant (dockage, waste and the rest of
-    the level gap), over the crop years StatCan has published."""
-    X, y = [], []
-    for cy, s in short.items():
-        if cy in regional and all(g in regional[cy] for g in GRAINS):
-            X.append([1.0, s])
-            y.append(sum(regional[cy][g]["west"] for g in GRAINS) - sum(demand[cy]["by_region"]["west"][g] for g in GRAINS))
-    X, y = np.array(X), np.array(y)
-    b, *_ = np.linalg.lstsq(X, y, rcond=None)
-    e = y - X @ b
-    se = np.sqrt(np.diag(e @ e / (len(y) - 2) * np.linalg.inv(X.T @ X)))
-    return {"rate": float(b[1]), "se": float(se[1]), "n": len(y)}
+def western_corn(cornd: dict, prod: dict, years: list[str]) -> dict:
+    """Corn fed in the West, kt: the western corn crop (MB, SK, AB, BC; 32-10-0359, harvested in the
+    crop year's first year) + US corn imported into the provinces outside Ontario and Quebec over the
+    Sep-Aug corn year (32-10-0014, customs-based; March scaled to the full year until August is out).
+    Both are measured. Stock changes and the little western corn used by industry are left out.
+    Crop years whose imports aren't published yet are left to the model's projection."""
+    out = {}
+    for cy in years:
+        imp, _ = corn_full_year(cornd, cy, "imports_west")
+        crop = prod["corn"]["west"].get(cy[:4])
+        if imp is not None and crop is not None:
+            out[cy] = crop + imp
+    return out
 
 
-def durum_share(regional: dict) -> tuple[float, list[str]]:
-    """Durum's median share (tonnes) of the wheat and durum fed in the West, over the crop years
-    StatCan has published; the median keeps out quality years like 2016-17, when a wet harvest
-    sent 2.1 Mt of durum to feed. Returns (share, [first, last crop year])."""
-    yrs = sorted(cy for cy, r in regional.items() if "wheat" in r and "durum" in r and r["wheat"]["west"] + r["durum"]["west"] > 0)
-    shares = [regional[cy]["durum"]["west"] / (regional[cy]["wheat"]["west"] + regional[cy]["durum"]["west"]) for cy in yrs]
+def durum_share(farm: dict) -> tuple[float, list[str]]:
+    """Durum's median share (tonnes) of the wheat and durum fed on western farms (StatCan's farm
+    survey, 32-10-0015); the median keeps out quality years like 2016-17. Returns (share, [first,
+    last crop year])."""
+    yrs = sorted(cy for cy in farm.get("durum", {}) if cy in farm.get("wheat", {}) and farm["wheat"][cy]["west"] + farm["durum"][cy]["west"] > 0)
+    shares = [farm["durum"][cy]["west"] / (farm["wheat"][cy]["west"] + farm["durum"][cy]["west"]) for cy in yrs]
     return float(np.median(shares)), [yrs[0], yrs[-1]]
 
 
@@ -553,19 +557,17 @@ def main() -> None:
     all_years = [y for y in all_years if y >= "2012-2013"]
     regional = regional_feed(sd, farm, cornd, prod, all_years)
     panel = model_panel(sd, cornd, pr, regional, all_years)
-    # the model's grain mix moves with price and availability at the elasticities fitted on
-    # StatCan's year-to-year grain shares: share ~ price ^ b x availability ^ a
-    fit = fit_elasticities(panel, cur)
+    # the grain mix: share ~ price ^ -PRICE_ELASTICITY x availability ^ a (a from the farm survey)
+    fit = fit_elasticities(panel, farm, cur)
     sigma, alpha = -fit["b"], fit["a"]
-    durum, durum_years = durum_share(regional)
+    durum, durum_years = durum_share(farm)
     avail, supply = availability(sd, prod, all_years + [cur], cur)
     cop, processed = coproducts(sd, cornd, all_years + [cur])
-    corn_w = {cy: r["corn"]["west"] for cy, r in regional.items() if "corn" in r and not r["corn"]["estimated"]}
-    # forage: fit the grain fed per tonne of hay shortfall on the model without it, then rerun
+    corn_w = western_corn(cornd, prod, all_years)
+    # forage: hay shortfall needs the model's beef cow numbers, so run once without it, then rerun
     base = model_demand(pr, all_years + [cur], corn_w, durum, avail, sigma, alpha, cop)
     short, hay = hay_shortfall(base, sorted(base))
-    ffit = fit_forage(base, regional, short)
-    forage = {"west": {cy: max(0.0, ffit["rate"]) * s for cy, s in short.items()}}
+    forage = {"west": {cy: HAY_GRAIN_RATE * v for cy, v in short.items()}}
     demand = model_demand(pr, all_years + [cur], corn_w, durum, avail, sigma, alpha, cop, forage)
     origin = corn_origin(demand, cornd, prod)
     for cy, o in origin.items():
@@ -587,7 +589,8 @@ def main() -> None:
                               "sigma": round(sigma, 3), "alpha": round(alpha, 3), "fed_share": feed_model.FED_SHARE,
                               "energy": feed_model.ENERGY, "supply": supply,
                               "coproduct_yield": COPRODUCT_YIELD, "coproduct_energy": COPRODUCT_ENERGY, "processed": processed,
-                              "forage_fit": {k: round(v, 3) for k, v in ffit.items()}, "hay": hay},
+                              "hay_grain_rate": round(HAY_GRAIN_RATE, 4), "hay": hay, "price_elasticity": PRICE_ELASTICITY,
+                              "alpha_se": round(fit["a_se"], 3), "corn_west_measured": {cy: round(v, 1) for cy, v in corn_w.items()}},
         "model": {"fit": fit},
         "panel": panel.round(1).reset_index().to_dict(orient="records"),
     }
@@ -596,7 +599,7 @@ def main() -> None:
     OUT_PATH.write_text(text)
     print(f"Wrote {OUT_PATH.relative_to(ROOT)} ({len(text) / 1e3:.0f} KB)")
     print(f"elasticities: price {-sigma:.3f}, availability {alpha:.3f} ({fit['train_years'][0]} to {fit['train_years'][1]})")
-    print(f"forage: {ffit['rate']:.3f} t grain per t hay short (se {ffit['se']:.3f}, n {ffit['n']});", {cy: hay[cy]['shortfall_kt'] for cy in list(hay)[-4:]})
+    print(f"availability elasticity (farm survey): {alpha:.2f} (se {fit['a_se']:.2f}, n {fit['n']}); hay shortfall:", {cy: hay[cy]['shortfall_kt'] for cy in list(hay)[-4:]})
     dm = demand[cur]
     for r in REGIONS:
         print(f"{cur} {r}:", {g: round(dm['by_region'][r][g]) for g in GRAINS + ['corn_ca', 'corn_us']})
