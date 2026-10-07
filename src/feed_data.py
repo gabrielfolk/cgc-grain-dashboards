@@ -14,6 +14,8 @@ price and availability (step 2). This module assembles its inputs and adds step 
     durum split     durum's median share of the West's wheat and durum feed (durum_share())
     western corn    StatCan's measured corn use in the West where published
     corn origin     StatCan corn imports by region (corn_origin())
+    co-products     distillers' grains and corn gluten feed from grain processed by industry,
+                    netted out of each region's grain energy (coproducts())
 
 StatCan's "animal feed, waste and dockage", a residual of its supply and disposition balance
 (what is left after exports, processing, seed and stocks, so it also carries waste, dockage and
@@ -69,6 +71,12 @@ ENERGY = feed_model.ENERGY
 # US corn delivered to southern Alberta = CBOT + this basis and freight (US$/bu)
 CORN_BASIS_USD_BU = 1.60
 BU_CORN_PER_T = 39.368
+# Co-products fed in place of grain: tonnes of distillers' grains (dry-grind ethanol) or corn gluten
+# feed (wet milling) per tonne of grain processed. A bushel of corn (56 lb) yields about 17 lb of
+# distillers' grains, 0.30 t/t; wheat ethanol is similar. Fed at barley's energy: distillers' grains
+# have about corn's energy, but part of what is fed replaces protein meal rather than grain.
+COPRODUCT_YIELD = 0.30
+COPRODUCT_ENERGY = 1.0
 
 
 def crop_year_of(date: pd.Timestamp) -> str:
@@ -423,6 +431,32 @@ def corn_origin(demand: dict, cornd: dict, prod: dict) -> dict:
     return out
 
 
+def coproducts(sd: dict, cornd: dict, years: list[str]) -> tuple[dict, dict]:
+    """Co-products fed in place of grain, barley-equivalent kt by region and crop year.
+    East: Canada's corn for food and industrial use (32-10-0014: ethanol, wet milling; almost all
+    in Ontario and Quebec; March scaled to the full year until August is out). West: industrial use
+    of wheat excluding durum (32-10-0013: prairie ethanol plants). Each x COPRODUCT_YIELD x
+    COPRODUCT_ENERGY. A crop year not yet published repeats the latest one. Returns (barley-eq kt,
+    grain processed kt)."""
+    grain = {"west": {}, "east": {}}
+    for cy in years:
+        w = sd.get("wheat", {}).get(cy, {}).get("jul", {}).get("industrial")
+        e, _ = corn_full_year(cornd, cy, "industrial_canada")
+        if w is not None:
+            grain["west"][cy] = w
+        if e is not None:
+            grain["east"][cy] = e
+    for r, g in grain.items():
+        for cy in years:
+            if cy not in g:
+                prior = [k for k in sorted(g) if k < cy]
+                if prior:
+                    g[cy] = g[prior[-1]]
+    beq = {r: {cy: v * COPRODUCT_YIELD * COPRODUCT_ENERGY for cy, v in g.items()} for r, g in grain.items()}
+    rd = lambda d: {r: {cy: round(v, 1) for cy, v in g.items()} for r, g in d.items()}
+    return rd(beq), rd(grain)
+
+
 def durum_share(regional: dict) -> tuple[float, list[str]]:
     """Durum's median share (tonnes) of the wheat and durum fed in the West, over the crop years
     StatCan has published; the median keeps out quality years like 2016-17, when a wet harvest
@@ -432,7 +466,7 @@ def durum_share(regional: dict) -> tuple[float, list[str]]:
     return float(np.median(shares)), [yrs[0], yrs[-1]]
 
 
-def model_demand(pr: dict, years: list[str], corn_west: dict, durum: float, avail: dict, sigma: float, alpha: float) -> dict:
+def model_demand(pr: dict, years: list[str], corn_west: dict, durum: float, avail: dict, sigma: float, alpha: float, cop: dict) -> dict:
     """Feed demand from animal numbers (src/feed_model.py), priced off each region's grains:
     West = Alberta farm prices and US corn delivered to southern Alberta; East = Ontario.
     durum: durum's base share of the West's wheat and durum (see durum_share); avail: the
@@ -453,12 +487,12 @@ def model_demand(pr: dict, years: list[str], corn_west: dict, durum: float, avai
             if cur not in prices[r][g] and s:
                 prices[r][g][cur] = list(s.values())[-1]
     prices["west"]["corn"] = us
-    out = feed_model.demand([int(cy[:4]) for cy in years], prices, corn_west, durum, avail, sigma, alpha)
+    out = feed_model.demand([int(cy[:4]) for cy in years], prices, corn_west, durum, avail, sigma, alpha, cop)
     r1 = lambda d: {k: round(v, 1) for k, v in d.items()}
     r4 = lambda d: {k: round(v, 4) for k, v in d.items()}
     return {cy: {"by_region": {r: r1(v) for r, v in rec["by_region"].items()},
                  "by_group": {r: r1(v) for r, v in rec["by_group"].items()},
-                 "beq": r1(rec["beq"]), "relative_price": rec["relative_price"], "availability": rec["availability"],
+                 "beq": r1(rec["beq"]), "beq_gross": r1(rec["beq_gross"]), "coproducts": r1(rec["coproducts"]), "relative_price": rec["relative_price"], "availability": rec["availability"],
                  "base_mix": {r: r4(v) for r, v in rec["base_mix"].items()},
                  "prices": {r: {g: round(prices[r][g][cy], 1) for g in prices[r] if cy in prices[r][g]} for r in prices},
                  "drivers": rec["drivers"], "meta": rec["meta"], "corn_west": rec["corn_west"]}
@@ -482,8 +516,9 @@ def main() -> None:
     sigma, alpha = -fit["b"], fit["a"]
     durum, durum_years = durum_share(regional)
     avail, supply = availability(sd, prod, all_years + [cur], cur)
+    cop, processed = coproducts(sd, cornd, all_years + [cur])
     demand = model_demand(pr, all_years + [cur], {cy: r["corn"]["west"] for cy, r in regional.items() if "corn" in r and not r["corn"]["estimated"]},
-                          durum, avail, sigma, alpha)
+                          durum, avail, sigma, alpha, cop)
     origin = corn_origin(demand, cornd, prod)
     for cy, o in origin.items():
         for r in REGIONS:
@@ -502,7 +537,8 @@ def main() -> None:
                               "background_days": feed_model.BACKGROUND_DAYS, "hog_factors": feed_model.HOG_FACTORS,
                               "durum_share_west": round(durum, 4), "durum_share_years": durum_years,
                               "sigma": round(sigma, 3), "alpha": round(alpha, 3), "fed_share": feed_model.FED_SHARE,
-                              "energy": feed_model.ENERGY, "supply": supply},
+                              "energy": feed_model.ENERGY, "supply": supply,
+                              "coproduct_yield": COPRODUCT_YIELD, "coproduct_energy": COPRODUCT_ENERGY, "processed": processed},
         "model": {"fit": fit},
         "panel": panel.round(1).reset_index().to_dict(orient="records"),
     }

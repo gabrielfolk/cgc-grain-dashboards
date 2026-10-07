@@ -30,10 +30,17 @@ Feeding rates
     Other classes (beef cows, bulls, replacement heifers, layers, sheep, veal calves) use the
     1999 rate. Horses, other poultry and fish are left out (no current counts; under 0.4 Mt).
 
-What the model counts: grain an animal needs, on 1999 feeding practice. Co-products that replace
-grain in today's rations (distillers' grains from ethanol plants, millfeeds, bakery waste) are
-not netted out, so where they are fed, mostly in Ontario and Quebec, the model runs above the
-grain actually used.
+Finishing weights
+    Grain per head finished moves with carcass weight (StatCan 32-10-0125 cattle, 32-10-0126 hogs,
+    average cold dressed weight): feedlot cattle against the average over the model's years (the
+    days on feed are calibrated on that average), finishing pigs against 2025, the year of the
+    Manitoba hog guide. Heavier finished animals eat more.
+
+Co-products
+    Distillers' grains and corn gluten feed from ethanol and corn processing replace grain in
+    rations. The caller passes the barley-equivalent tonnes to net out of each region's grain
+    energy (feed_data.coproducts()); the livestock-group figures stay gross. Wheat millfeeds and
+    bakery waste are not netted out.
 
 Cattle on feed
     Grain fed to finishing cattle = fed cattle marketed x days on feed x 18.5 lb/day.
@@ -107,6 +114,7 @@ SIGMA = 1.0   # default substitution elasticity between grains on energy-adjuste
 # Steers and heifers as a share of cattle slaughter: AAFC federally inspected slaughter, January 1
 # to June 7, 2025 (West 984,649 steers and heifers, 163,245 cows and bulls; East 254,965 and 53,634)
 FED_SHARE = {"west": 0.858, "east": 0.826}
+HOG_GUIDE_YEAR = 2025  # the Manitoba farrow-finish guide's year: finishing feed is scaled from that year's carcass weight
 ENERGY = {"barley": 1.00, "wheat": 1.08, "durum": 1.06, "oats": 0.85, "corn": 1.12}
 
 
@@ -164,6 +172,7 @@ def populations(years: list[int]) -> dict:
     sheep = external.statcan("32100129")
     calves = external.statcan("32100125")
     cattle_sd = external.statcan("32100139")
+    hogs_meat = external.statcan("32100126")
 
     def cattle(livestock, farm_type):
         return _semiannual(cat, lambda d: (d["Livestock"] == livestock) & (d["Farm type"] == farm_type))
@@ -222,6 +231,20 @@ def populations(years: list[int]) -> dict:
         return kl / cows if cows else None
 
     milk_1999 = milk_per_cow(1999)
+
+    def carcass(table, livestock, estimate):
+        t = table[(table["Livestock"] == livestock) & (table["Livestock estimates"] == estimate) & (table["GEO"] == "Canada")]
+        return {int(y): float(v) for y, v in zip(t["REF_DATE"].astype(str).str[:4], t["VALUE"]) if not pd.isna(v)}
+    weights = {"cattle": carcass(calves, "Cattle", "Average cold dressed weight"), "hogs": carcass(hogs_meat, "Hogs", "Average cold weight")}
+
+    def crop_year_weight(kind, y0):
+        """Average of calendar years y0 and y0 + 1 where published, else the latest year before."""
+        w = weights[kind]
+        v = [w[y] for y in (y0, y0 + 1) if y in w]
+        if v:
+            return sum(v) / len(v)
+        prior = [y for y in w if y <= y0 + 1]
+        return w[max(prior)] if prior else None
     out: dict = {}
     for y0 in years:
         rec: dict = {}
@@ -250,7 +273,9 @@ def populations(years: list[int]) -> dict:
         rec["_meta"] = {"milk_factor": mpc / milk_1999 if mpc else None, "calf_slaughter": calf,
                         "inventory_dates": [f"{y}-{'01' if s == 'jan' else '07'}" for y, s in cattle_dates],
                         "hog_year": latest("Canada", "Pig crop", y0)[1], "poultry_year": latest("Canada", "Chicken (including stewing hen)", y0)[1],
-                        "milk_year": latest("Canada", "milk", y0)[1]}
+                        "milk_year": latest("Canada", "milk", y0)[1],
+                        "cattle_weight": crop_year_weight("cattle", y0), "hog_weight": crop_year_weight("hogs", y0),
+                        "hog_weight_guide": weights["hogs"].get(HOG_GUIDE_YEAR)}
         out[y0] = rec
     return out
 
@@ -322,7 +347,8 @@ def class_demand(pop: dict, coef: dict, kgpb: dict, region_of, durum_share: floa
             n = a.get(key)
             if not n:
                 continue
-            factor = HOG_FACTORS.get(key, 1.0) * (meta["milk_factor"] if key == "Dairy Cows" else 1.0)
+            factor = HOG_FACTORS.get(key, 1.0) * (meta["milk_factor"] if key == "Dairy Cows" else 1.0) \
+                * (meta.get("hog_weight_factor", 1.0) if key == "Feeder Pigs" else 1.0)
             add(p, key, {g: n * sum(c[s][g] for s in subs) * factor for g in STUDY_GRAINS})
         # bull calves are a third of bulls (study convention)
         if a.get("Bulls"):
@@ -342,6 +368,8 @@ def class_demand(pop: dict, coef: dict, kgpb: dict, region_of, durum_share: floa
             if not n:
                 continue
             beq = n * days * lb * LB  # '000 head x t = kt
+            if cls == "feedlot" and fed and days_on_feed:
+                beq *= meta.get("cattle_weight_factor", 1.0)
             if west:
                 mix = WEST_CATTLE_MIX
             else:
@@ -390,7 +418,7 @@ def project_marketings(pops: dict) -> None:
 
 
 def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_share: float = 0.0,
-           availability: dict | None = None, sigma: float = SIGMA, alpha: float = 0.0) -> dict:
+           availability: dict | None = None, sigma: float = SIGMA, alpha: float = 0.0, coproducts: dict | None = None) -> dict:
     """Feed grain demand by crop year: {crop_year: {"by_region": {region: {grain: kt}},
     "by_group": {region: {group: kt barley-eq}}, ...}}.
 
@@ -400,6 +428,7 @@ def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_
     durum_share: durum's share (tonnes) of the wheat and durum fed in the West before prices
     shift it, e.g. its usual share of StatCan's western feed use.
     availability: {region: {grain: {crop_year: supply / its average}}}; missing = 1.
+    coproducts: {region: {crop_year: barley-equivalent kt}} netted out of the region's grain energy.
     corn_west: {crop_year: kt} corn used in the West (StatCan's corn balance for the provinces
     other than Ontario and Quebec: production, imports and stock changes, all measured). The
     1999 rations predate Manitoba's corn crop (about 0.5 Mt then, over 2 Mt now), so where it is
@@ -411,6 +440,14 @@ def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_
     pops = populations(sorted(set(years) | {min(years) - 1}))
     project_marketings(pops)
     dof = days_on_feed(pops)
+    # grain per head finished moves with carcass weight
+    cw = [pop["_meta"]["cattle_weight"] for pop in pops.values() if pop["_meta"]["cattle_weight"]]
+    cattle_w_avg = float(np.mean(cw)) if cw else None
+    for pop in pops.values():
+        m = pop["_meta"]
+        m["cattle_weight_factor"] = m["cattle_weight"] / cattle_w_avg if m["cattle_weight"] and cattle_w_avg else 1.0
+        m["hog_weight_factor"] = m["hog_weight"] / m["hog_weight_guide"] if m["hog_weight"] and m["hog_weight_guide"] else 1.0
+    coproducts = coproducts or {}
     corn_west = corn_west or {}
     availability = availability or {}
     region_of = lambda p: "west" if p in WEST else "east"
@@ -421,7 +458,7 @@ def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_
         rows = class_demand(pops[y0], coef, kgpb, region_of, durum_share, dof)
         rec = {"by_region": {r: {g: 0.0 for g in FEED_GRAINS} for r in ("west", "east")},
                "by_group": {r: {} for r in ("west", "east")},
-               "beq": {r: 0.0 for r in ("west", "east")}, "relative_price": {}, "availability": {},
+               "beq": {r: 0.0 for r in ("west", "east")}, "beq_gross": {}, "coproducts": {}, "relative_price": {}, "availability": {},
                "base_mix": {r: {g: 0.0 for g in FEED_GRAINS} for r in ("west", "east")}, "corn_west": None}
         for r in ("west", "east"):
             pr = {g: prices[r].get(g, {}).get(cy) for g in FEED_GRAINS}
@@ -429,6 +466,11 @@ def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_
             av = {g: availability.get(r, {}).get(g, {}).get(cy, 1.0) for g in FEED_GRAINS}
             rec["relative_price"][r] = {g: round(v, 3) for g, v in rel.items()}
             rec["availability"][r] = {g: round(v, 3) for g, v in av.items()}
+            # co-products replace part of every class's grain, in proportion
+            gross = sum(row["beq"] for row in rows if row["region"] == r)
+            cop = min(coproducts.get(r, {}).get(cy, 0.0), gross)
+            net = (gross - cop) / gross if gross else 1.0
+            rec["beq_gross"][r], rec["coproducts"][r] = gross, cop
             for row in rows:
                 if row["region"] != r:
                     continue
@@ -436,10 +478,10 @@ def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_
                     rec["base_mix"][r][g] += row["beq"] * row["base_mix"][g]
                 mix = price_shift(row["base_mix"], rel, av, sigma, alpha)
                 for g in FEED_GRAINS:
-                    rec["by_region"][r][g] += row["beq"] * mix[g] / ENERGY[g]
+                    rec["by_region"][r][g] += row["beq"] * net * mix[g] / ENERGY[g]
                 rec["by_group"][r][row["group"]] = rec["by_group"][r].get(row["group"], 0.0) + row["beq"]
-                rec["beq"][r] += row["beq"]
-        rec["base_mix"] = {r: {g: v / rec["beq"][r] for g, v in m.items()} for r, m in rec["base_mix"].items()}
+                rec["beq"][r] += row["beq"] * net
+        rec["base_mix"] = {r: {g: v / rec["beq_gross"][r] for g, v in m.items()} for r, m in rec["base_mix"].items()}
         rec["meta"] = {k: v for k, v in pops[y0]["_meta"].items()} | {"days_on_feed": {r: round(v, 1) for r, v in dof.items()}}
         def region_sum(r, k):
             v = [pops[y0][p].get(k) for p in PROVINCES if region_of(p) == r]

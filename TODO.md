@@ -39,7 +39,15 @@
   grading feed). CGC publishes them in different formats each year (HTML tables, spreadsheets, PDFs), and the
   2023-2025 reports have moved on CGC's site, so each year needs its own parser.
 - [ ] **Add AAFC weekly slaughter data** to the feed page for a timelier livestock signal than StatCan's annual figures.
-- [ ] **Improve the feed demand model's grain mix.** It uses StatCan's 1999 rations, updated for feedlot cattle, hogs
-  and dairy, with western corn anchored to measured corn use. Next: net out co-products (distillers' grains from
-  Ontario and Quebec ethanol plants, wheat millfeeds), track feed-grade wheat in western rations (CGC harvest quality,
-  feed wheat deliveries), and swap in newer provincial ration surveys or cost-of-production guides as they come out.
+- [ ] **Update the western hog and feedlot grain mix** from a published current diet survey. The 1999 Manitoba hog
+  rations have no wheat; the 2025 Manitoba swine guide gives feed amounts but no ingredients, and no Prairie source
+  with current grain shares was found (2026-10-06). This is the main suspect for western wheat being understated.
+- [ ] **Feed-model quality term:** share of each crop grading feed (CGC harvest samples, above) as a feed-grade supply
+  index in the grain mix. The right fix for wheat in bad-quality years.
+- [ ] **Feed-model forage term:** hay production per head of cattle, applied to cow-herd and backgrounding grain
+  (drought years feed more grain).
+- [ ] **Split feeder from fed-cattle live exports** (AAFC weekly exports by class); live exports now count as fed.
+- [ ] **Add AAFC's Outlook for Principal Field Crops** (feed, waste and dockage by crop) to the feed page as a second
+  reference next to StatCan.
+- [ ] **Show an uncertainty band** on the feed estimate from plausible ranges on rates and elasticities.
+- [ ] **Net out millfeeds and imported US distillers' grains** if a source turns up.
