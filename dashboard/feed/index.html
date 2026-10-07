@@ -217,7 +217,10 @@
         <div class="panel-head"><h3>1. Animal numbers and slaughter set the grain energy needed</h3><p id="step1-p"></p></div>
         <div class="two">
           <div class="flash-wrap" style="border:0"><table class="flash" id="dm-drivers-table"></table></div>
-          <div class="flash-wrap" style="border:0"><table class="flash" id="dm-group-table"></table></div>
+          <div>
+            <div class="flash-wrap" style="border:0"><table class="flash" id="dm-group-table"></table></div>
+            <div class="flash-wrap" style="border:0;margin-top:12px"><table class="flash" id="dm-factors-table"></table></div>
+          </div>
         </div>
         <div class="section-head" style="margin-top:8px">
           <div class="panel-head"><h3 id="dem-h">Grain energy needed by livestock group</h3><p>Thousand tonnes of barley-equivalent grain per crop year</p></div>
@@ -250,7 +253,7 @@
             <div class="chart" id="ch-origin-west" style="height:240px"></div>
           </div>
           <div class="panel" style="border:0;padding:0">
-            <div class="panel-head"><h3>Corn fed in Eastern Canada, by origin</h3><p>Thousand tonnes per crop year (corn: Sep–Aug). Marker: the Ontario and Quebec corn crop, which also supplies ethanol plants and exports.</p></div>
+            <div class="panel-head"><h3>Corn fed in Eastern Canada, by origin</h3><p>Thousand tonnes per crop year (corn: Sep–Aug). Marker: the Ontario and Quebec corn crop.</p></div>
             <div class="legend" id="leg-origin-east"></div>
             <div class="chart" id="ch-origin-east" style="height:240px"></div>
           </div>
@@ -669,16 +672,15 @@
     const yy = (r, k) => fmtPct(pct(dv(cy, r, k), dv(ly, r, k)));
     const proj = meta.cattle_source === "projected";
     buildTable($("dm-drivers-table"), ["Animals", `West ${short(cy)}`, "y/y", "East", "y/y"], [[null, [...DRV.map(([k, label, unit]) => ({ label: `${label}${k === "fed_marketed" && proj ? ", projected" : ""} (${unit})`, cls: k === "fed_marketed" ? "total" : "",
-      cells: [dv(cy, "west", k) == null ? "n/a" : n1(dv(cy, "west", k)), yy("west", k), dv(cy, "east", k) == null ? "n/a" : n1(dv(cy, "east", k)), yy("east", k)] })),
-      ...(() => { const M = (c) => DM[c].meta, both = (lab, f, fmt, yyf) => ({ label: lab, cls: "sub", cells: [fmt(f(cy, "west")), yyf(f(cy, "west"), f(ly, "west")), fmt(f(cy, "east")), yyf(f(cy, "east"), f(ly, "east"))] });
-        const ppDiff = (a, b) => pp(a - b), pcDiff = (a, b) => fmtPct(pct(a, b));
-        return [
-          both("Steers and heifers, share of slaughter", (c, r) => M(c).fed_share[r], (v) => pctTxt(v, 1), ppDiff),
-          both("Live exports going to US slaughter", (c) => M(c).export_slaughter_share, (v) => pctTxt(v, 0), ppDiff),
-          both("Cattle carcass weight (kg)", (c) => M(c).cattle_weight, (v) => n1(v), pcDiff),
-          both("Hog carcass weight (kg)", (c) => M(c).hog_weight, (v) => n1(v), pcDiff),
-          { label: `Hay per beef cow, t (avg ${H.avg_t_per_cow.toFixed(2)})${H.hay_year < +cy.slice(0, 4) ? `, ${H.hay_year} hay` : ""}`, cls: "sub", cells: [H.t_per_cow.toFixed(2), fmtPct(pct(H.t_per_cow, DMM.hay[ly].t_per_cow)), "–", ""] },
-        ]; })()]]], { seps: [3] });
+      cells: [dv(cy, "west", k) == null ? "–" : n1(dv(cy, "west", k)), yy("west", k), dv(cy, "east", k) == null ? "–" : n1(dv(cy, "east", k)), yy("east", k)] }))]]], { seps: [3] });
+    const M = (c) => DM[c].meta, both = (lab, f, fmt, yyf) => ({ label: lab, cells: [fmt(f(cy, "west")), yyf(f(cy, "west"), f(ly, "west")), fmt(f(cy, "east")), yyf(f(cy, "east"), f(ly, "east"))] });
+    const ppDiff = (a, b) => pp(a - b), pcDiff = (a, b) => fmtPct(pct(a, b));
+    buildTable($("dm-factors-table"), ["Per-head factors", `West ${short(cy)}`, "y/y", "East", "y/y"], [[null, [
+      both("Steers and heifers, share of slaughter", (c, r) => M(c).fed_share[r], (v) => pctTxt(v, 1), ppDiff),
+      both("Live exports going to US slaughter", (c) => M(c).export_slaughter_share, (v) => pctTxt(v, 0), ppDiff),
+      both("Cattle carcass weight (kg)", (c) => M(c).cattle_weight, (v) => n1(v), pcDiff),
+      both("Hog carcass weight (kg)", (c) => M(c).hog_weight, (v) => n1(v), pcDiff),
+      { label: `Hay per beef cow, t (avg ${H.avg_t_per_cow.toFixed(2)})${H.hay_year < +cy.slice(0, 4) ? `, ${H.hay_year} hay` : ""}`, cells: [H.t_per_cow.toFixed(2), fmtPct(pct(H.t_per_cow, DMM.hay[ly].t_per_cow)), "–", ""] }]]], { seps: [3] });
     const g = (c, r, k) => DM[c]?.by_group[r][k] ?? 0;
     const canTot = DM[cy].beq_gross.west + DM[cy].beq_gross.east;
     buildTable($("dm-group-table"), ["Grain energy, barley-eq kt", "West", "y/y", "East", "y/y", "Share"], [[null, [...DGROUPS.map(([k, label]) => ({ label, cells: [n1(g(cy, "west", k)), fmtPct(pct(g(cy, "west", k), g(ly, "west", k))), n1(g(cy, "east", k)), fmtPct(pct(g(cy, "east", k), g(ly, "east", k))),
@@ -706,7 +708,7 @@
 
     // step 3: corn origin
     const O = (c) => DM[c].corn_origin;
-    $("step3-p").textContent = `West: corn fed = the western corn crop + US imports (StatCan's customs-based import figures for the provinces outside Ontario and Quebec), so Canadian-grown = the crop and US = the imports. When imports aren't out yet, US corn is the West's projected corn demand less its crop. East: Ontario and Quebec imports as a share of their crop plus imports, applied to the East's corn demand.`;
+    $("step3-p").textContent = `West: corn fed = the western corn crop + US imports (StatCan's customs-based import figures for the provinces outside Ontario and Quebec), so Canadian-grown = the crop and US = the imports. When imports aren't out yet, US corn is the West's projected corn demand less its crop. East: Ontario and Quebec imports as a share of their crop plus imports, applied to the East's corn demand. The Ontario and Quebec crop also supplies ethanol plants and exports, so it sits well above the corn fed.`;
     for (const r of REG) {
       const crop = r.key === "west" ? "Western corn crop" : "Ontario and Quebec crop";
       legend($("leg-origin-" + r.key), [{ ...CORN_CA, kind: "rect" }, { ...CORN_US, kind: "rect" }, { label: crop, kind: "mark" }]);
@@ -798,7 +800,7 @@
     const lp = latestPrices();
     const ELAB = { barley: "feed barley", wheat: "wheat (non-milling)", durum: "durum", oats: "oats", corn: "US corn delivered" };
     const ranked = GR.map((g) => ({ ...g, adj: eAdj(g.key, lp[g.key].price) })).sort((a, b) => a.adj - b.adj);
-    $("corn-note").textContent = `Cheapest energy in the West now: ${ranked.map((r) => `${ELAB[r.key]} ${money(r.adj)}`).join(", ")} per t barley-eq (StatCan prices to ${lp.barley.when}; corn at ${lp.corn.when}). US corn delivered = (CBOT ${lp.corn.zc.toFixed(2)}¢/bu ÷ 100 + US$${A.corn_basis_usd_bu.toFixed(2)} basis and freight) × ${A.bu_corn_per_t} bu/t × ${lp.corn.fx.toFixed(4)} USD/CAD = ${money(lp.corn.price)}/t.`;
+    $("corn-note").textContent = `Cheapest energy in the West now: ${ranked.map((r) => `${ELAB[r.key]} ${money(r.adj)}`).join(", ")} per t barley-eq (StatCan prices to ${lp.barley.when}; corn at ${lp.corn.when}).`;
   }
   for (const [id, set] of [["dem-region", (r) => { demRegion = r; try { localStorage.setItem("feed-dem-region", r); } catch (e) {} renderGroups(); }]]) {
     document.querySelectorAll(`#${id} button`).forEach((b) => b.addEventListener("click", () => set(b.dataset.region)));
