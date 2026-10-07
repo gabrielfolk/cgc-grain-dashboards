@@ -1,13 +1,11 @@
-# Feed use: demand model and StatCan residual
+# Feed use: our estimate by commodity, and StatCan's residual
 
 Built by `.venv/bin/python src/feed_data.py` (with `src/feed_model.py`) into `dashboard/feed/data.json` and shown
 on the Feed Grains page. Figures below are from the 2026-27 build (CGC week 8; StatCan tables as of October 2026).
 
-The page has two measures of feed use:
-
-1. **The feed demand model** (the headline): grain fed, built from animal numbers and feeding rates.
-2. **StatCan's "animal feed, waste and dockage"**, the residual of its supply and disposition balance, with a
-   forecast of what StatCan will print for the current year.
+The page has one estimate, the model in Part 1: domestic feed use by commodity (barley, wheat, durum, oats,
+Canadian and US corn) for Western and Eastern Canada, and how it is built. StatCan's "animal feed, waste and
+dockage", the residual of its supply and disposition balance, is shown next to it as the reference (Part 2).
 
 # Part 1: Feed demand model
 
@@ -149,22 +147,11 @@ the latest full calendar year.
 - **No backtest:** there is no independent measure of feed actually fed to score the model against. StatCan's
   residual is shown next to it, not as a target.
 
-# Part 2: StatCan's residual and a forecast of it
+# Part 2: StatCan's residual (the reference) and the share regression
 
 StatCan derives feed use as a residual of its supply and disposition balance, so it also absorbs waste, dockage
 and measurement error. It is published cumulatively for Aug–Dec, Aug–Mar and the full crop year, and **for Canada
-only**. The page forecasts it for the current crop year ("what StatCan will likely print") and splits it by region.
-
-### What is being forecast
-
-Crop-year feed use in Canada, with a West / East split:
-- **Barley, wheat (excluding durum), durum and oats:** StatCan's "animal feed, waste and dockage" for Canada
-  (table 32-10-0013).
-- **Corn:** StatCan's Canada corn feed (table 32-10-0014, Sep–Aug corn year).
-
-StatCan derives feed use as a residual of its supply and disposition balance, so it also absorbs waste, dockage
-and measurement error. It is published cumulatively for Aug–Dec, Aug–Mar and the full crop year, and **for Canada
-only**.
+only**. The page shows it next to the model for every crop year, split by region:
 
 ### Regional split (estimated)
 
@@ -184,40 +171,28 @@ West = MB, SK, AB, BC. East = Ontario, Quebec and the Atlantic provinces. West +
 
 2025-26: West 14.0 Mt, East 6.7 Mt (of which corn 5.9 Mt).
 
-### Method
+### Share regression: where the model's elasticities come from
 
-1. **Total:** the average total feed use (barley, wheat, durum, oats and corn fed in the West) of the last five
-   completed crop years.
-2. **Model shares:** the total is split across those grains with a model fitted on past crop years:
+The model's grain mix (Part 1, step 2) moves with price and availability at elasticities fitted on how StatCan's
+grain shares move from year to year:
 
-   `log(share_i / share_barley) = crop constant + a × log(availability ratio) + b × log(energy-adjusted price ratio)`
+`log(share_i / share_barley) = crop constant + a × log(availability ratio) + b × log(energy-adjusted price ratio)`
 
-   - **Availability:** supply (carry-in + production + imports) relative to that grain's own average.
-     Western corn is treated as freely available through imports.
-   - **Energy-adjusted price:** the crop-year average Alberta farm price divided by feeding value relative to barley:
-     wheat 1.08, durum 1.06, oats 0.85, corn 1.12. Western corn is US corn delivered to southern Alberta
-     (CBOT + US$1.60/bu basis and freight, at the monthly USD/CAD).
-   - Fitted on 2013-14 to 2025-26: **a = 2.40**, **b = −0.52**.
-3. **Estimate:** 50% model and 50% each grain's own five-year average.
-4. **Eastern corn:** its five-year average. Putting all Canada corn in the share model
-   flipped the price effect to the wrong sign (b = +0.17 with Ontario corn prices, +0.13 with US corn). Eastern
-   corn is fed from the local crop to hogs, poultry and dairy and doesn't trade off against western barley on price.
-   It was taken out on that economic ground, not on backtest score.
-5. **Regions:** each small grain's estimate × the region's five-year average share of it; western corn from the model,
-   eastern corn as above.
+- Grains: barley, wheat (ex-durum), durum, oats and corn fed in the West. Shares are of their total StatCan feed use.
+- **Availability:** supply (carry-in + production + imports) relative to that grain's own average. Western corn is
+  treated as freely available through imports.
+- **Energy-adjusted price:** the crop-year average Alberta farm price divided by feeding value relative to barley
+  (wheat 1.08, durum 1.06, oats 0.85, corn 1.12). Western corn is US corn delivered to southern Alberta (CBOT +
+  US$1.60/bu basis and freight, at the monthly USD/CAD).
+- Fitted on 2013-14 to 2025-26: **a = 2.40**, **b = −0.52**. The grain constants absorb the level, so only the
+  year-to-year response carries into the model.
+- **Eastern corn is left out.** Putting all Canada corn in the regression flipped the price effect to the wrong sign
+  (b = +0.17 with Ontario corn prices, +0.13 with US corn). Eastern corn is fed from the local crop to hogs, poultry
+  and dairy and doesn't trade off against western barley on price.
 
-**For the current crop year:**
-- Supply is carry-in from StatCan's July ending stocks, plus StatCan's latest production estimate (Canada), plus
-  last year's imports.
-- Prices are the latest month StatCan has published (about two months behind), and this week's CBOT close for corn.
-- Where StatCan hasn't yet published August corn for the latest complete year, the March figure is scaled by the
-  usual March-to-August ratio.
-
-### Backtest
-
-Each crop year from 2019-20 to 2025-26 was estimated using only earlier years. Mean absolute error against
-StatCan's published residual, kt:
-
+**Out-of-sample check.** Until 2026-10-06 the page also showed a forecast of StatCan's residual built on this
+regression (half its shares × the 5-year average total, half each grain's 5-year average). Estimating 2019-20 to
+2025-26 from earlier years only, mean absolute error in kt:
 | | Estimate (50/50) | Model only | 5-yr average | Last year |
 |---|---|---|---|---|
 | Barley | 467 | **463** | 713 | 960 |
@@ -231,20 +206,9 @@ StatCan's published residual, kt:
 | Western Canada total | 1,355 | 1,356 | **1,351** | 1,749 |
 | East total | 654 | 692 | 610 | **482** |
 
-- **The blend beats both baselines** for barley, durum and oats.
-- **Wheat and western corn are the weak spots;** the five-year average does better there.
-  - Wheat feed use swings with crop quality and export demand, which the model doesn't capture.
-  - Western corn now includes the Manitoba crop, not just imports. In the previous (imports-only) version the
-    blend beat the five-year average for corn.
-- **Regional totals:** in the West the estimate ties the five-year average. In the East last year's level is the
-  best guess: eastern feed use moves slowly.
-- **Scaling the total by a rough livestock index made the total less accurate.** The demand model in part 1 is the
-  proper livestock-based measure.
-
-### 2026-27 forecast (week 8 build)
-
-Total **20.1 Mt**: West 13.7 Mt, East 6.5 Mt. Corn 9.24 Mt, barley 5.56 Mt, wheat (ex-durum) 4.11 Mt, oats 0.82 Mt,
-durum 0.41 Mt.
+The regression alone ("model only") beat both baselines for barley and durum. It was weakest for wheat and
+western corn, where the five-year average did better. The forecast was taken off the page to keep it on the
+model's own estimate. The regression stays because it sets the elasticities.
 
 ### Limits
 
@@ -252,6 +216,5 @@ durum 0.41 Mt.
   off-farm feed. Ontario feed mills buying western grain, or western feedlots buying eastern grain, would move it.
 - **Crop quality** enters only through availability and price. CGC's harvest-sample grade distributions would add
   a direct measure; see TODO.md.
-- **The energy values and the corn basis are assumptions.** The page lets analysts change them for the price
-  comparison, but the estimate uses the defaults.
-- **Re-score each season.** Seven test years is a small sample.
+- **The energy values and the corn basis are assumptions.**
+- **Seven test years is a small sample.** Re-check the elasticities each season.

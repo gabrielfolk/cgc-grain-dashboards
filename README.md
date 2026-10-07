@@ -19,7 +19,7 @@ to the present.
 |---|---|---|
 | **Overview** | `/` | What are farmers doing across all 15 crops? Selling pace sized to the crop, cross-crop Things to watch (elevators, exports, stocks, ports, Thunder Bay), the all-crops weekly flash (deliveries, elevator shipments, exports, processing, stocks), pace cards, a 13-year heatmap, crop mix, all-crops deliveries by province, country elevator shipments and net build, and commercial stocks. |
 | **Crop pages** (15) | `/wheat/`, `/canola/`, `/durum/`, `/barley/`, `/peas/`, `/oats/`, `/lentils/`, `/soybeans/`, `/corn/`, `/flaxseed/`, `/rye/`, `/beans/`, `/canaryseed/`, `/chickpeas/`, `/mustard/` | One crop from farm to use: generated Things to watch cards, weekly flash, pace math, farmer selling (pace sized to the crop, rank, projection, direct-to-processor and province shares), deliveries by province this week, country elevator throughput (net build, weeks of cover), port terminals (Pacific receipts vs exports, weeks of cover, Thunder Bay before freeze-up, export grade mix), exports by port, processing, feed and stocks. Canola adds a backtested crush and export forecast. |
-| **Feed Grains** | `/feed/` | How much barley, wheat, durum, oats and Canadian and US corn Canada's livestock eat, from a feed model for West (MB, SK, AB, BC) and East (Ontario, Quebec and the Atlantic provinces), every crop year from 2012-13. The page walks through the three steps: animal numbers and slaughter set the grain energy needed, price and availability split it across grains, and corn is split by origin. It compares the result with StatCan's residual feed figure and a backtested forecast of it, and shows the drivers: energy-adjusted prices, supply, quality and livestock. |
+| **Feed Grains** | `/feed/` | Our own estimate of domestic feed use by commodity (barley, wheat, durum, oats, Canadian and US corn) for West (MB, SK, AB, BC) and East (Ontario, Quebec and the Atlantic provinces), every crop year from 2012-13, and how we got there: animal numbers and slaughter set the grain energy needed, price and availability split it across grains, and corn is split by origin. StatCan's residual feed figure is shown alongside for reference. |
 | **Producer Margins** | `/margins/` | What does an acre of each crop earn after variable costs, at seeding (April) and harvest (August) prices, and are farmers selling faster where margins are good? Saskatchewan budgets, 9 crops, 2017 on. Delivery detail is on the crop pages. |
 
 Every page has summary tiles or cards, a weekly flash table (with a copy-to-spreadsheet button) and charts.
@@ -126,7 +126,7 @@ src/
   dashboard_data.py  data for the overview page
   grain_data.py      data for the crop pages, plus crop settings (GRAINS), province/channel splits and production
   canola_forecast.py canola crush and export forecast, with backtest
-  feed_data.py       data for the feed page: StatCan residual, its regional split and forecast (with backtest)
+  feed_data.py       data for the feed page: model inputs (prices, availability, elasticities), corn by origin, StatCan's residual and its regional split
   feed_model.py      feed demand model: animals x feeding rates by province, class and grain
   crop_guide.py      parse the Saskatchewan Crop Planning Guide PDFs into per-acre budgets
   margins.py         producer margins by crop (price x trend yield - guide costs)
