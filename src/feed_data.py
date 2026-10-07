@@ -294,6 +294,17 @@ def corn_delivered(zc_cents: float, fx: float, basis_usd_bu: float = CORN_BASIS_
 
 # ------------------------------------------------------------------ price and availability elasticities
 
+def price_basis(series: dict, cy: str) -> str | None:
+    """Which months a crop-year price averages, e.g. "Aug 2024-Jul 2025 (12 months)"."""
+    y0 = int(cy[:4])
+    months = [f"{y0}-{m:02d}" for m in range(8, 13)] + [f"{y0 + 1}-{m:02d}" for m in range(1, 8)]
+    have = [m for m in months if m in series]
+    if not have:
+        return None
+    name = lambda m: pd.Timestamp(m + "-01").strftime("%b %Y")
+    return f"{name(have[0])}–{name(have[-1])} avg ({len(have)} mo)"
+
+
 def crop_year_price(series: dict, cy: str) -> float | None:
     """Average of the monthly prices in an Aug-Jul crop year (None if no months are published)."""
     y0 = int(cy[:4])
@@ -527,13 +538,17 @@ def model_demand(pr: dict, years: list[str], corn_west: dict, durum: float, avai
     series = {"west": {g: pr[g]["values"] for g in ("barley", "wheat", "durum", "oats")},
               "east": {g: pr["ontario"][g]["values"] for g in ("corn", "barley", "wheat", "oats")}}
     prices = {r: {g: {cy: v for cy in years if (v := crop_year_price(s, cy))} for g, s in gs.items()} for r, gs in series.items()}
+    basis = {r: {g: {cy: price_basis(s, cy) for cy in years} for g, s in gs.items()} for r, gs in series.items()}
     # a crop year with no farm prices yet (StatCan runs about two months behind) takes the latest month
     cur = years[-1]
     for r, gs in series.items():
         for g, s in gs.items():
             if cur not in prices[r][g] and s:
-                prices[r][g][cur] = list(s.values())[-1]
+                last = list(s)[-1]
+                prices[r][g][cur] = s[last]
+                basis[r][g][cur] = f"{pd.Timestamp(last + '-01').strftime('%b %Y')} (latest month)"
     prices["west"]["corn"] = us
+    basis["west"]["corn"] = {cy: price_basis(pr["cbot_corn"]["values"], cy) for cy in years}
     out = feed_model.demand([int(cy[:4]) for cy in years], prices, corn_west, durum, avail, sigma, alpha, cop, forage)
     r1 = lambda d: {k: round(v, 1) for k, v in d.items()}
     r4 = lambda d: {k: round(v, 4) for k, v in d.items()}
@@ -542,6 +557,7 @@ def model_demand(pr: dict, years: list[str], corn_west: dict, durum: float, avai
                  "beq": r1(rec["beq"]), "beq_gross": r1(rec["beq_gross"]), "coproducts": r1(rec["coproducts"]), "relative_price": rec["relative_price"], "availability": rec["availability"],
                  "base_mix": {r: r4(v) for r, v in rec["base_mix"].items()},
                  "prices": {r: {g: round(prices[r][g][cy], 1) for g in prices[r] if cy in prices[r][g]} for r in prices},
+                 "price_basis": {r: {g: basis[r][g][cy] for g in basis[r]} for r in basis},
                  "drivers": rec["drivers"], "meta": rec["meta"], "corn_west": rec["corn_west"]}
             for cy, rec in out.items()}
 
@@ -578,7 +594,8 @@ def main() -> None:
 
     data = {
         "meta": {"current_year": cur, "generated": dt.date.today().isoformat(),
-                 "assumptions": {"energy_vs_barley": ENERGY, "corn_basis_usd_bu": CORN_BASIS_USD_BU, "bu_corn_per_t": BU_CORN_PER_T}},
+                 "assumptions": {"energy_vs_barley": ENERGY, "corn_basis_usd_bu": CORN_BASIS_USD_BU, "bu_corn_per_t": BU_CORN_PER_T},
+                 "price_series": {"west": PRICE_SERIES, "east": EAST_PRICE_SERIES}},
         "regional_feed": regional,
         "prices": pr,
         "demand_model": demand,

@@ -152,6 +152,8 @@
   .flash tr.memo td { color: var(--muted); font-style: italic; }
   .flash td.sep, .flash th.sep { border-left: 1px solid var(--grid); }
   .flash-note { font-size: 12px; color: var(--muted); max-width: 110ch; }
+  #prices-table td:nth-child(2), #prices-table td:nth-child(3), #prices-table td:nth-child(4),
+  #prices-table th:nth-child(2), #prices-table th:nth-child(3), #prices-table th:nth-child(4) { text-align: left; }
   #tip { position: fixed; z-index: 10; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14); padding: 8px 10px; font-size: 12px; min-width: 150px; max-width: 280px; }
   #tip .tip-head { color: var(--muted); margin-bottom: 4px; }
   #tip .tip-row { display: grid; grid-template-columns: 14px auto 1fr; align-items: center; gap: 6px; }
@@ -234,6 +236,9 @@
           <div class="flash-wrap" style="border:0"><table class="flash" id="mix-east-table"></table></div>
         </div>
         <p class="flash-note" id="step2-note"></p>
+        <div class="panel-head" style="margin-top:8px"><h3 id="prices-h">Prices used</h3><p id="prices-p"></p></div>
+        <div class="flash-wrap" style="border:0"><table class="flash" id="prices-table"></table></div>
+        <p class="flash-note" id="prices-note"></p>
         <div class="two" style="margin-top:8px">
           <div class="panel" style="border:0;padding:0">
             <div class="section-head">
@@ -770,8 +775,9 @@
     };
     mixTable("west", "mix-west-table");
     mixTable("east", "mix-east-table");
+    renderPriceTable(cy);
     const cw = DM[cy].corn_west || "";
-    $("step2-note").textContent = `Shares are of grain energy (barley-equivalent). Prices are crop-year averages (${short(cy)}: the latest month until StatCan publishes the crop year's first): West = Alberta farm prices (feed barley, non-milling wheat, durum, oats) and US corn delivered to southern Alberta; East = Ontario farm prices. Western corn is then set to what the West has: its own corn crop plus US imports (both measured), because the 1999 rations predate Manitoba's corn crop; for ${short(cy)}, whose imports aren't out yet, it is ${cw.startsWith("projected") ? "projected from its share in " + cw.replace("projected from ", "").replace(/(\d{4})-\d{2}(\d{2})/g, "$1-$2") + ", shifted by price" : "StatCan's figure"}. The other western grains take the remaining energy in proportion.`;
+    $("step2-note").textContent = `Shares are of grain energy (barley-equivalent). Prices: see "Prices used" below. Western corn is then set to what the West has: its own corn crop plus US imports (both measured), because the 1999 rations predate Manitoba's corn crop; for ${short(cy)}, whose imports aren't out yet, it is ${cw.startsWith("projected") ? "projected from its share in " + cw.replace("projected from ", "").replace(/(\d{4})-\d{2}(\d{2})/g, "$1-$2") + ", shifted by price" : "StatCan's figure"}. The other western grains take the remaining energy in proportion.`;
 
     // step 3: corn origin
     const O = (c) => DM[c].corn_origin;
@@ -846,6 +852,27 @@
     }
   }
 
+  // ---------- prices used (step 2) ----------
+  function renderPriceTable(cy) {
+    const PS = D.meta.price_series, rec = DM[cy], lp = latestPrices();
+    const last = (vals) => { const e = Object.entries(vals); const [m, v] = e[e.length - 1]; return { m, v }; };
+    $("prices-h").textContent = `Prices used, ${short(cy)}`;
+    $("prices-p").textContent = "Where each price comes from, which months it covers, and how it enters the model. Prices matter only for the grain mix (step 2): each grain's energy-adjusted price against its own average.";
+    const statcan = "StatCan 32-10-0077";
+    const rows = (r) => (r === "west" ? ["barley", "wheat", "durum", "oats", "corn"] : ["corn", "barley", "wheat", "oats"]).map((g) => {
+      const isUS = r === "west" && g === "corn";
+      const series = isUS ? "US corn delivered, S. Alberta" : `${r === "west" ? "Alberta" : "Ontario"}: ${PS[r][g]}`;
+      const src = isUS ? "CBOT + basis, × USD/CAD" : statcan;
+      const lm = isUS ? { m: PR.latest_market.date, v: lp.corn.price } : last(r === "west" ? PR[g].values : ONT[g].values);
+      const price = rec.prices[r][g];
+      return { label: GR.find((x) => x.key === g).label, color: GR.find((x) => x.key === g).color,
+        cells: [series, src, rec.price_basis[r][g] || "–", money(price), ENERGY[g].toFixed(2), money(price / ENERGY[g]), idx(rec.relative_price[r][g]), `${money(lm.v)} (${isUS ? new Date(lm.m + "T12:00").toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" }) : monthName(lm.m)})`] };
+    });
+    buildTable($("prices-table"), ["Grain", "Price series", "Source", `Months used, ${short(cy)}`, "C$/t", "Energy", "Barley-eq", "Index", "Latest published"],
+      [["Western Canada", rows("west")], ["Eastern Canada", rows("east")]], { seps: [4, 7] });
+    $("prices-note").textContent = `StatCan 32-10-0077 = monthly farm product prices, by province (series names as published). US corn delivered = CBOT corn (Yahoo ZC=F, front-month weekly close) ÷ 100 + US$${A.corn_basis_usd_bu.toFixed(2)}/bu basis and freight to southern Alberta (an assumption), × ${A.bu_corn_per_t} bu/t × USD/CAD (Yahoo CAD=X); now (CBOT ${lp.corn.zc.toFixed(2)}¢/bu ÷ 100 + US$${A.corn_basis_usd_bu.toFixed(2)}) × ${A.bu_corn_per_t} × ${lp.corn.fx.toFixed(4)} = ${money(lp.corn.price)}/t. Energy = feeding value against barley; barley-eq = C$/t ÷ energy. Crop-year price = the average of the months published from August to July. StatCan publishes farm prices about two months after the month ends, so a new crop year starts on the latest month until its first month is out; US corn uses CBOT to the latest weekly close. Price index = the crop-year price per tonne of barley-equivalent over its average across ${short(dmYears[0])} to ${short(cur)}; above 1, the grain is dear against its own history and loses share. "Other" wheat is StatCan's non-milling wheat; durum and oats are all grades; Ontario wheat is all classes (StatCan has no Ontario feed-wheat series).`;
+  }
+
   // ---------- model inputs over time (steps 1 and 2) ----------
   let demRegion = "west", priceRegion = "west";
   try { const r = localStorage.getItem("feed-dem-region"); if (r === "west" || r === "east") demRegion = r; } catch (e) {}
@@ -887,7 +914,7 @@
     const lp = latestPrices();
     const ELAB = { barley: "feed barley", wheat: "wheat (non-milling)", durum: "durum", oats: "oats", corn: "US corn delivered" };
     const ranked = GR.map((g) => ({ ...g, adj: eAdj(g.key, lp[g.key].price) })).sort((a, b) => a.adj - b.adj);
-    $("corn-note").textContent = `Cheapest energy in the West now: ${ranked.map((r) => `${ELAB[r.key]} ${money(r.adj)}`).join(", ")} per t barley-eq (StatCan prices to ${lp.barley.when}; corn at ${lp.corn.when}). US corn delivered = (CBOT ${lp.corn.zc.toFixed(2)}¢/bu ÷ 100 + US$${A.corn_basis_usd_bu.toFixed(2)} basis and freight) × ${A.bu_corn_per_t} bu/t × ${lp.corn.fx.toFixed(4)} USD/CAD = ${money(lp.corn.price)}/t. Energy vs barley: wheat ${ENERGY.wheat}, durum ${ENERGY.durum}, oats ${ENERGY.oats}, corn ${ENERGY.corn}.`;
+    $("corn-note").textContent = `Cheapest energy in the West now: ${ranked.map((r) => `${ELAB[r.key]} ${money(r.adj)}`).join(", ")} per t barley-eq (StatCan prices to ${lp.barley.when}; corn at ${lp.corn.when}). US corn delivered = (CBOT ${lp.corn.zc.toFixed(2)}¢/bu ÷ 100 + US$${A.corn_basis_usd_bu.toFixed(2)} basis and freight) × ${A.bu_corn_per_t} bu/t × ${lp.corn.fx.toFixed(4)} USD/CAD = ${money(lp.corn.price)}/t.`;
     const AG = GR.slice(0, 4);
     legend($("leg-avail"), AG.map((g) => ({ label: g.label, color: g.color })));
     lineChart($("ch-avail"), {
