@@ -2,7 +2,7 @@
 
 Market analysis of Canadian grains, oilseeds and pulses for commodity analysts and traders. The dashboards are built
 from the Canadian Grain Commission's weekly
-[Grain Statistics Weekly](https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/)
+[Grain Statistics Weekly](https://www.canada.ca/en/grain-commission/services/statistics/grain-statistics-weekly.html)
 (Western Canada), with Statistics Canada crop, livestock and price data and CBOT futures. Crop years run from 2013-14
 to the present.
 

@@ -21,7 +21,7 @@ the pipeline, see [README.md](README.md). For forecast methods, see [reports/](r
 
 ## Canadian Grain Commission: Grain Statistics Weekly
 
-[Grain Statistics Weekly](https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/),
+[Grain Statistics Weekly](https://www.canada.ca/en/grain-commission/services/statistics/grain-statistics-weekly.html),
 one long-format CSV per crop year, re-published every Thursday. `src/ingest.py` loads them into
 `data/processed/gsw.parquet` (columns: crop year, grain week, week ending, worksheet, metric, period, grain, grade,
 region, kt); `src/db.py` adds DuckDB views on top.

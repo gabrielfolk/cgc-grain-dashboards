@@ -28,6 +28,10 @@ RAW_DIR = ROOT / "data" / "raw"
 OUT_PATH = ROOT / "data" / "processed" / "gsw.parquet"
 
 BASE_URL = "https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly"
+# CGC moved to canada.ca in autumn 2026; the grainscanada.gc.ca copy of 2026-27 stopped at week 9.
+CANADA_CA_URL = "https://www.canada.ca/content/dam/cgc-ccg/documents/statistiques-statistics/grain-statistics-weekly"
+FIRST_CANADA_CA_YEAR = 2021  # 2021-22 on are on canada.ca (earlier years only on the old site, verified 2026-11-12)
+FIRST_SHORT_NAME_YEAR = 2025  # canada.ca names files grain-stats-weekly-* from 2025-26, grain-statistics-weekly-* before
 FIRST_CROP_YEAR = 2013  # 2012-13 and earlier are PDF only
 LAST_LEGACY_YEAR = 2017  # 2013-14 .. 2017-18 live under a /csv/ subfolder
 
@@ -68,6 +72,10 @@ def current_crop_year_start(today: dt.date | None = None) -> int:
 
 
 def csv_url(start: int) -> str:
+    if start >= FIRST_CANADA_CA_YEAR:
+        years = f"{start}-{start + 1}"
+        name = "grain-stats-weekly" if start >= FIRST_SHORT_NAME_YEAR else "grain-statistics-weekly"
+        return f"{CANADA_CA_URL}/{years}/{name}-{years}.csv"
     sub = "csv/" if start <= LAST_LEGACY_YEAR else ""
     return f"{BASE_URL}/{crop_year_label(start)}/{sub}gsw-shg-en.csv"
 
@@ -80,6 +88,9 @@ def download(start: int, force: bool) -> Path | None:
 
     url = csv_url(start)
     resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=120)
+    if resp.status_code == 404:  # canada.ca answers a not-yet-published year with a real 404
+        print(f"  {crop_year_label(start)}: not available ({url})")
+        return None
     resp.raise_for_status()
     # Missing files come back as HTTP 200 with an HTML error page.
     if resp.content.lstrip()[:1] == b"<":
