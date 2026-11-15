@@ -85,6 +85,13 @@ CGC publishes on Thursdays.
 git add -A && git commit -m "Weekly refresh: week N" && git push
 ```
 
+`src/ingest.py` checks the current crop year before writing anything. It stops, and keeps the last good data, if
+CGC repeats a week, a week-ending date doesn't advance, a week is missing (other than the Christmas combined report),
+or deliveries, shipments, crush or exports fall by more than 2%. If that happens, compare the CSV with CGC's weekly
+Excel report and rerun once CGC fixes the file. It warns if the latest week is more than 11 days old, which usually
+means a missed week or a moved file. On the site, every page that uses CGC data shows a notice when its week is more
+than 11 days old.
+
 Before pushing, preview the site and check it (see [Checking a build](#checking-a-build)).
 
 ### Other updates

@@ -1,7 +1,7 @@
 {
- "generated": "2026-11-12",
+ "generated": "2026-11-14",
  "current_year": "2026-2027",
- "origin_week": 13,
+ "origin_week": 14,
  "test_years": [
   "2018-2019",
   "2019-2020",
@@ -19,147 +19,147 @@
      "last_year": 34.91116319444444,
      "recent_4wk": 25.93956023450649,
      "seasonal_4wk": 29.140192406150334,
-     "ridge[cgc]": 25.469734655674984,
-     "ridge[cgc+supply]": 25.735964235663204,
-     "ridge[cgc+supply+prices]": 27.234470287406396
+     "ridge[cgc]": 25.469734655674944,
+     "ridge[cgc+supply]": 25.7359642356632,
+     "ridge[cgc+supply+prices]": 27.234470287406225
     },
     "2": {
      "last_year": 35.0127304964539,
      "recent_4wk": 25.851497437808924,
      "seasonal_4wk": 28.688709829494517,
-     "ridge[cgc]": 25.674794056253766,
-     "ridge[cgc+supply]": 25.888091438380005,
-     "ridge[cgc+supply+prices]": 27.305246477898173
+     "ridge[cgc]": 25.67479405625375,
+     "ridge[cgc+supply]": 25.888091438380044,
+     "ridge[cgc+supply+prices]": 27.30524647789802
     },
     "3": {
      "last_year": 34.62903985507246,
      "recent_4wk": 25.897865286698483,
      "seasonal_4wk": 28.55757081462841,
-     "ridge[cgc]": 25.869664300009884,
-     "ridge[cgc+supply]": 26.103900161923736,
-     "ridge[cgc+supply+prices]": 27.342858455027013
+     "ridge[cgc]": 25.869664300009866,
+     "ridge[cgc+supply]": 26.103900161923786,
+     "ridge[cgc+supply+prices]": 27.34285845502692
     },
     "4": {
      "last_year": 34.985240740740736,
      "recent_4wk": 26.903529478815916,
      "seasonal_4wk": 29.38378223775102,
-     "ridge[cgc]": 26.01399268907044,
-     "ridge[cgc+supply]": 26.30918096199893,
-     "ridge[cgc+supply+prices]": 27.547339881561477
+     "ridge[cgc]": 26.013992689070413,
+     "ridge[cgc+supply]": 26.309180961998997,
+     "ridge[cgc+supply+prices]": 27.547339881561342
     }
    },
    "best": "ridge[cgc]",
    "forecast": [
     {
-     "week": 14,
-     "forecast": 222.8,
-     "low": 175.7,
-     "high": 271.1,
-     "last_year": 136.7,
-     "recent_4wk": 194.9,
-     "seasonal_4wk": 185.1
-    },
-    {
      "week": 15,
-     "forecast": 228.0,
-     "low": 179.7,
-     "high": 277.5,
+     "forecast": 224.5,
+     "low": 177.0,
+     "high": 273.2,
      "last_year": 272.8,
-     "recent_4wk": 194.9,
-     "seasonal_4wk": 206.6
+     "recent_4wk": 183.7,
+     "seasonal_4wk": 196.7
     },
     {
      "week": 16,
-     "forecast": 222.6,
-     "low": 172.0,
-     "high": 267.9,
+     "forecast": 219.2,
+     "low": 172.8,
+     "high": 266.9,
      "last_year": 197.5,
-     "recent_4wk": 194.9,
-     "seasonal_4wk": 185.7
+     "recent_4wk": 183.7,
+     "seasonal_4wk": 176.7
     },
     {
      "week": 17,
-     "forecast": 217.5,
-     "low": 167.7,
-     "high": 263.3,
+     "forecast": 214.1,
+     "low": 165.4,
+     "high": 257.7,
      "last_year": 219.0,
-     "recent_4wk": 194.9,
-     "seasonal_4wk": 167.0
+     "recent_4wk": 183.7,
+     "seasonal_4wk": 159.0
+    },
+    {
+     "week": 18,
+     "forecast": 223.1,
+     "low": 172.1,
+     "high": 270.0,
+     "last_year": 229.2,
+     "recent_4wk": 183.7,
+     "seasonal_4wk": 192.9
     }
    ]
   },
   "exports": {
    "mae_by_horizon": {
     "1": {
-     "last_year": 88.24828703703709,
-     "recent_4wk": 61.42315797953492,
-     "seasonal_4wk": 64.38700017223482,
-     "ridge[cgc]": 56.805126279040735,
-     "ridge[cgc+supply]": 56.3707601987949,
-     "ridge[cgc+supply+prices]": 59.29289871727419
+     "last_year": 88.24828703703702,
+     "recent_4wk": 61.42315797953489,
+     "seasonal_4wk": 64.38700017223476,
+     "ridge[cgc]": 56.80512627904022,
+     "ridge[cgc+supply]": 56.370760198794066,
+     "ridge[cgc+supply+prices]": 59.29289871727451
     },
     "2": {
-     "last_year": 89.12085697399533,
-     "recent_4wk": 62.70204065253596,
-     "seasonal_4wk": 65.66829303806544,
-     "ridge[cgc]": 58.63043136368049,
-     "ridge[cgc+supply]": 58.03295598714778,
-     "ridge[cgc+supply+prices]": 60.90228353155415
+     "last_year": 89.12085697399526,
+     "recent_4wk": 62.702040652535956,
+     "seasonal_4wk": 65.6682930380654,
+     "ridge[cgc]": 58.63043136367999,
+     "ridge[cgc+supply]": 58.03295598714677,
+     "ridge[cgc+supply+prices]": 60.90228353155442
     },
     "3": {
-     "last_year": 88.64495169082132,
-     "recent_4wk": 65.03921590222878,
-     "seasonal_4wk": 66.54291984963267,
-     "ridge[cgc]": 60.23788299146675,
-     "ridge[cgc+supply]": 59.03737495490607,
-     "ridge[cgc+supply+prices]": 62.04936290576824
+     "last_year": 88.64495169082126,
+     "recent_4wk": 65.03921590222875,
+     "seasonal_4wk": 66.5429198496326,
+     "ridge[cgc]": 60.23788299146647,
+     "ridge[cgc+supply]": 59.03737495490536,
+     "ridge[cgc+supply+prices]": 62.04936290576883
     },
     "4": {
-     "last_year": 88.60483950617291,
-     "recent_4wk": 66.13501511644219,
-     "seasonal_4wk": 65.82422651914005,
-     "ridge[cgc]": 61.51579949307741,
-     "ridge[cgc+supply]": 59.759215154675914,
-     "ridge[cgc+supply+prices]": 63.48828045192014
+     "last_year": 88.60483950617282,
+     "recent_4wk": 66.13501511644216,
+     "seasonal_4wk": 65.82422651914,
+     "ridge[cgc]": 61.51579949307726,
+     "ridge[cgc+supply]": 59.75921515467512,
+     "ridge[cgc+supply+prices]": 63.488280451920765
     }
    },
    "best": "ridge[cgc+supply]",
    "forecast": [
     {
-     "week": 14,
-     "forecast": 238.2,
-     "low": 116.4,
-     "high": 402.7,
-     "last_year": 121.1,
-     "recent_4wk": 241.3,
-     "seasonal_4wk": 194.1
-    },
-    {
      "week": 15,
-     "forecast": 255.2,
-     "low": 118.5,
-     "high": 441.3,
+     "forecast": 248.6,
+     "low": 121.6,
+     "high": 420.2,
      "last_year": 284.8,
-     "recent_4wk": 241.3,
-     "seasonal_4wk": 220.6
+     "recent_4wk": 285.1,
+     "seasonal_4wk": 275.5
     },
     {
      "week": 16,
-     "forecast": 234.4,
-     "low": 109.8,
-     "high": 399.5,
+     "forecast": 228.4,
+     "low": 105.8,
+     "high": 395.3,
      "last_year": 99.3,
-     "recent_4wk": 241.3,
-     "seasonal_4wk": 184.8
+     "recent_4wk": 285.1,
+     "seasonal_4wk": 230.8
     },
     {
      "week": 17,
-     "forecast": 245.8,
-     "low": 116.8,
-     "high": 411.6,
+     "forecast": 239.5,
+     "low": 112.2,
+     "high": 408.1,
      "last_year": 159.1,
-     "recent_4wk": 241.3,
-     "seasonal_4wk": 201.4
+     "recent_4wk": 285.1,
+     "seasonal_4wk": 251.4
+    },
+    {
+     "week": 18,
+     "forecast": 226.6,
+     "low": 107.5,
+     "high": 379.7,
+     "last_year": 288.9,
+     "recent_4wk": 285.1,
+     "seasonal_4wk": 223.3
     }
    ]
   }
@@ -229,9 +229,9 @@
     }
    },
    "best": "combo",
-   "forecast": 11218,
-   "low": 9756,
-   "high": 12107,
+   "forecast": 11074,
+   "low": 9698,
+   "high": 11954,
    "weights": {
     "last_year": 0.0,
     "trend": 0.1,
@@ -241,11 +241,11 @@
     "supply_residual": 0.1
    },
    "baselines": {
-    "pace": 11180,
+    "pace": 10975,
     "last_year": 10974,
     "trend": 11914,
-    "run_rate": 9795,
-    "blend": 10488,
+    "run_rate": 9450,
+    "blend": 10212,
     "supply_share": 11003,
     "supply_residual": 11003
    },
@@ -256,82 +256,82 @@
     "1-4": {
      "last_year": 27.281431301067816,
      "trend": 26.245657447033246,
-     "pace": 45.556224641432394,
-     "run_rate": 43.61792739673729,
-     "supply_share": 24.095261071249848,
+     "pace": 45.55622464143239,
+     "run_rate": 43.617927396737294,
+     "supply_share": 24.09526107124984,
      "supply_residual": 25.444842392912847,
-     "combo": 26.71974733363926,
-     "combo[no supply]": 26.410741847404918
+     "combo": 26.719747333639255,
+     "combo[no supply]": 26.41074184740491
     },
     "5-8": {
      "last_year": 27.281431301067816,
      "trend": 26.245657447033246,
      "pace": 37.591440994849194,
-     "run_rate": 40.156578566716014,
-     "supply_share": 12.55576857184244,
+     "run_rate": 40.15657856671603,
+     "supply_share": 12.555768571842435,
      "supply_residual": 13.710047743143514,
-     "combo": 20.397441136518637,
-     "combo[no supply]": 23.171905061994586
+     "combo": 20.397441136518633,
+     "combo[no supply]": 23.17190506199459
     },
     "9-13": {
-     "last_year": 27.281431301067823,
-     "trend": 26.24565744703325,
+     "last_year": 27.281431301067816,
+     "trend": 26.245657447033246,
      "pace": 25.57616100215879,
-     "run_rate": 27.602350303858397,
-     "supply_share": 11.27223466075065,
+     "run_rate": 27.6023503038584,
+     "supply_share": 11.272234660750646,
      "supply_residual": 15.525625950553929,
-     "combo": 20.155026365588014,
+     "combo": 20.155026365588007,
      "combo[no supply]": 24.149880228070366
     },
     "14-26": {
-     "last_year": 27.281431301067816,
+     "last_year": 27.28143130106781,
      "trend": 26.2412526001901,
      "pace": 19.39312979907456,
      "run_rate": 18.488009163216397,
-     "supply_share": 13.72412808123786,
+     "supply_share": 13.724128081237854,
      "supply_residual": 14.195824828720022,
-     "combo": 15.562987832194002,
+     "combo": 15.562987832194,
      "combo[no supply]": 21.767813851098257
     },
     "27-39": {
-     "last_year": 27.281431301067816,
-     "trend": 24.458540535590863,
-     "pace": 11.879759902507775,
-     "run_rate": 9.249689721059314,
-     "supply_share": 15.124531755840351,
+     "last_year": 27.28143130106781,
+     "trend": 24.458540535590856,
+     "pace": 11.879759902507779,
+     "run_rate": 9.249689721059315,
+     "supply_share": 15.124531755840346,
      "supply_residual": 13.906432826386435,
-     "combo": 6.198935530893494,
-     "combo[no supply]": 13.885064984314537
+     "combo": 6.198935530893497,
+     "combo[no supply]": 13.88506498431454
     },
     "40-51": {
      "last_year": 27.281431301067816,
-     "trend": 19.501006506406608,
-     "pace": 3.683379160378053,
-     "run_rate": 1.9126172079894337,
-     "supply_share": 14.395071142229876,
+     "trend": 19.501006506406597,
+     "pace": 3.6833791603780557,
+     "run_rate": 1.912617207989433,
+     "supply_share": 14.39507114222987,
      "supply_residual": 11.388151834361484,
-     "combo": 1.954678087240609,
-     "combo[no supply]": 2.952265425906551
+     "combo": 1.9546780872406102,
+     "combo[no supply]": 2.9522654259065524
     }
    },
    "best": "combo",
-   "forecast": 8951,
-   "low": 4523,
-   "high": 11051,
+   "forecast": 9065,
+   "low": 4563,
+   "high": 11375,
    "weights": {
     "last_year": 0.0,
     "trend": 0.1,
-    "pace": 0.4,
-    "run_rate": 0.0,
-    "supply_share": 0.1,
-    "supply_residual": 0.4
+    "pace": 0.3,
+    "run_rate": 0.1,
+    "supply_share": 0.0,
+    "supply_residual": 0.5
    },
    "baselines": {
-    "pace": 9118,
+    "pace": 9412,
     "last_year": 9140,
     "trend": 10569,
-    "run_rate": 8459,
-    "blend": 8789,
+    "run_rate": 10080,
+    "blend": 9746,
     "supply_share": 9063,
     "supply_residual": 8353
    },

@@ -11,6 +11,7 @@ dashboard/ locally. GitHub Pages serves docs/ from the main branch.
 
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 from urllib.parse import quote
@@ -30,6 +31,8 @@ LABELS = {"": "Overview", "margins": "Producer Margins", "feed": "Feed Grains",
 PAGES = [p for entry in NAV for p in (entry[1] if isinstance(entry, tuple) else [entry])]
 assert set(GRAINS) <= set(PAGES), "every crop page needs a place in NAV"
 DATA_FILES = ["data.json", "forecast.json"]
+NO_CGC_WEEKLY = {"feed"}  # pages that don't use CGC's weekly data get no stale-data notice
+STALE_DAYS = 11  # same threshold as src/ingest.py: CGC publishes Thursday for the week ending the Sunday before
 
 # Bar-chart favicons, embedded so every page has one without a separate file
 # The all-crops page uses multicoloured bars on dark; each crop page gets its own colour.
@@ -126,6 +129,10 @@ HEAD = """<!doctype html>
     .site-nav .menu a[aria-current="page"] { background: var(--chip); }
   }
   @media (max-width: 1320px) { .site-nav .site-name { display: none; } }
+  .stale-notice {
+    max-width: 1240px; margin: -8px auto 24px; padding: 10px 14px; border-radius: 8px; font-size: 13px;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-left: 4px solid #d99a00;
+  }
 </style>
 """
 
@@ -137,6 +144,25 @@ NAV_SCRIPT = """<script>
   document.addEventListener("click", (e) => { for (const d of menus) if (!d.contains(e.target)) d.open = false; });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") for (const d of menus) if (d.open) { d.open = false; d.querySelector("summary").focus(); } });
 })();
+</script>
+"""
+
+
+def stale_notice() -> str:
+    """A notice under the navigation bar that appears, by the viewer's clock, once the CGC week shown is
+    more than STALE_DAYS old, i.e. a weekly refresh was missed. The week comes from the overview's data."""
+    meta = json.loads((SRC / "data.json").read_text())["meta"]
+    week, ending = meta["latest_week"], meta["week_ending"]
+    return f"""<div class="stale-notice" hidden>CGC data on this page ends at week {week} (week ending
+<span class="stale-date"></span>). A newer week should have been published, so these numbers may be out of date.</div>
+<script>
+(function () {{
+  const end = new Date("{ending}T00:00:00"), days = (Date.now() - end) / 864e5;
+  if (days <= {STALE_DAYS}) return;
+  const el = document.querySelector(".stale-notice");
+  el.querySelector(".stale-date").textContent = end.toLocaleDateString("en-CA", {{ month: "short", day: "numeric", year: "numeric" }});
+  el.hidden = false;
+}})();
 </script>
 """
 
@@ -171,7 +197,8 @@ def main() -> None:
         out_dir.mkdir(parents=True, exist_ok=True)
         body = (src_dir / "index.html").read_text()
         assert body.count('<div class="wrap">') == 1, f"{page or 'overview'}: expected one content wrapper"
-        body = body.replace('<div class="wrap">', nav(page) + '<div class="wrap">')
+        notice = "" if page in NO_CGC_WEEKLY else stale_notice()
+        body = body.replace('<div class="wrap">', nav(page) + notice + '<div class="wrap">')
         (out_dir / "index.html").write_text(HEAD.replace("__FAVICON__", favicon(page)) + body + "\n</html>\n")
         for name in DATA_FILES:
             if (src_dir / name).exists():

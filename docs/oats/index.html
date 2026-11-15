@@ -66,6 +66,10 @@
     .site-nav .menu a[aria-current="page"] { background: var(--chip); }
   }
   @media (max-width: 1320px) { .site-nav .site-name { display: none; } }
+  .stale-notice {
+    max-width: 1240px; margin: -8px auto 24px; padding: 10px 14px; border-radius: 8px; font-size: 13px;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-left: 4px solid #d99a00;
+  }
 </style>
 <title>Oats Pipeline</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -257,6 +261,17 @@
   const menus = document.querySelectorAll(".site-nav details");
   document.addEventListener("click", (e) => { for (const d of menus) if (!d.contains(e.target)) d.open = false; });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") for (const d of menus) if (d.open) { d.open = false; d.querySelector("summary").focus(); } });
+})();
+</script>
+<div class="stale-notice" hidden>CGC data on this page ends at week 14 (week ending
+<span class="stale-date"></span>). A newer week should have been published, so these numbers may be out of date.</div>
+<script>
+(function () {
+  const end = new Date("2026-11-08T00:00:00"), days = (Date.now() - end) / 864e5;
+  if (days <= 11) return;
+  const el = document.querySelector(".stale-notice");
+  el.querySelector(".stale-date").textContent = end.toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
+  el.hidden = false;
 })();
 </script>
 <div class="wrap">

@@ -152,6 +152,65 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+# Main crop-year flows: CGC revisions move these by a fraction of a percent, never more than 2% down
+# (checked over 2013-14 to 2025-26). Smaller series (imports, producer cars) do drop.
+MAIN_FLOWS = [("Primary", "Deliveries"), ("Primary", "Shipments"), ("Process", "Producer Deliveries"),
+              ("Process", "Milled/Mfg Grain"), ("Terminal Exports", "Exports")]
+STALE_DAYS = 11  # CGC publishes Thursday for the week ending the Sunday before; older than this means a missed week
+
+
+def check(df: pd.DataFrame, current: str, today: dt.date | None = None) -> tuple[list[str], list[str]]:
+    """Sanity checks on the current crop year. Returns (errors, warnings).
+
+    Errors mean the published file is wrong (a repeated week, dates that don't advance, a missing
+    week that isn't the Christmas combined report, a main flow falling), so the refresh must stop.
+    """
+    errors, warnings = [], []
+    cur = df[df["crop_year"] == current]
+    if cur.empty:
+        return [f"{current}: no rows"], warnings
+    dates = cur.groupby("grain_week")["week_ending"].first().sort_index()
+    weeks = list(dates.index)
+
+    for prev, week in zip(weeks, weeks[1:]):
+        step = (dates[week] - dates[prev]).days
+        if step <= 0:
+            errors.append(f"week {week} ends {dates[week]:%Y-%m-%d}, not after week {prev} ({dates[prev]:%Y-%m-%d})")
+        elif week - prev > 1 and week == 52:  # 2014-15 folded week 51 into the final Jul 31 report
+            warnings.append(f"weeks {prev + 1}-{week - 1} missing before the final week")
+        elif week - prev > 1 and step != 7 * (week - prev):
+            errors.append(f"weeks {prev + 1}-{week - 1} missing and dates step {step} days")
+        elif week - prev > 1 and not (19 <= prev + 1 <= 23):  # the combined holiday report falls around week 21
+            errors.append(f"weeks {prev + 1}-{week - 1} missing")
+        elif week - prev == 1 and step != 7 and week != 52:  # week 52 always ends Jul 31
+            warnings.append(f"week {week}: dates step {step} days")
+    if weeks[0] != 1:
+        warnings.append(f"crop year starts at week {weeks[0]}")
+
+    key = ["worksheet", "metric", "period", "grain", "grade", "region"]
+    values = cur.pivot_table(index=key, columns="grain_week", values="ktonnes", aggfunc="first", observed=True)
+    for prev, week in zip(weeks, weeks[1:]):
+        both = values[prev].notna() & values[week].notna() & (values[prev] != 0)
+        if both.sum() > 100 and (values.loc[both, prev] == values.loc[both, week]).mean() > 0.95:
+            errors.append(f"week {week} repeats week {prev} (CGC published the same numbers twice)")
+
+    flows = cur[cur["period"] == "Crop Year"].groupby(["worksheet", "metric", "grain_week"], observed=True)["ktonnes"].sum()
+    for ws, metric in MAIN_FLOWS:
+        if (ws, metric) not in flows.index.droplevel(2):
+            errors.append(f"{ws} / {metric}: missing")
+            continue
+        series = flows.loc[(ws, metric)].sort_index()
+        change = series.diff() / series.shift()
+        for week, c in change[(change < -0.02) & (series.shift() > 50)].items():
+            errors.append(f"{ws} / {metric} crop-year total falls {c:.0%} in week {week}")
+
+    age = ((today or dt.date.today()) - dates.iloc[-1].date()).days
+    if age > STALE_DAYS:
+        warnings.append(f"latest week {weeks[-1]} ended {dates.iloc[-1]:%Y-%m-%d}, {age} days ago: CGC may have "
+                        f"missed a week or moved the file (check {CANADA_CA_URL.split('/content')[0]})")
+    return errors, warnings
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--refresh", action="store_true", help="re-download all crop years")
@@ -170,6 +229,16 @@ def main() -> int:
 
     print("Normalizing...")
     df = pd.concat([normalize(p) for p in paths], ignore_index=True)
+    errors, warnings = check(df, f"{current}-{current + 1}")
+    for w in warnings:
+        print(f"WARNING: {w}")
+    if errors:
+        for e in errors:
+            print(f"ERROR: {e}")
+        print(f"Not written: {OUT_PATH.relative_to(ROOT)} keeps the last good data. Check CGC's weekly Excel "
+              "reports, and rerun once CGC fixes the file.")
+        return 1
+
     for col in LABEL_COLUMNS:
         df[col] = df[col].astype("category")
     df.to_parquet(OUT_PATH, index=False)
