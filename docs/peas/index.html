@@ -263,11 +263,11 @@
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") for (const d of menus) if (d.open) { d.open = false; d.querySelector("summary").focus(); } });
 })();
 </script>
-<div class="stale-notice" hidden>CGC data on this page ends at week 14 (week ending
+<div class="stale-notice" hidden>CGC data on this page ends at week 15 (week ending
 <span class="stale-date"></span>). A newer week should have been published, so these numbers may be out of date.</div>
 <script>
 (function () {
-  const end = new Date("2026-11-08T00:00:00"), days = (Date.now() - end) / 864e5;
+  const end = new Date("2026-11-15T00:00:00"), days = (Date.now() - end) / 864e5;
   if (days <= 11) return;
   const el = document.querySelector(".stale-notice");
   el.querySelector(".stale-date").textContent = end.toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
