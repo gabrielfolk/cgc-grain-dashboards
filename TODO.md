@@ -24,6 +24,11 @@
 
 ### Other
 
+- [ ] **Download only new StatCan data (maybe).** Each scheduled refresh re-downloads all 19 cached StatCan tables
+  (~130 MB of its ~140 MB), three runs a week, to catch a few releases a month. StatCan's Web Data Service
+  `getCubeMetadata` returns each table's `releaseTime`; `src/external.py --refresh` could fetch only tables released
+  since the cached copy (most weeks none, ~10 MB a run). Kept as is for now (2026-11-24): simple, and it can't
+  miss a release.
 - [ ] **Share the chart code between pages.** The overview, margins and crop template each carry their own copy of
   the chart helpers; move them into one shared script if more pages are added.
 - [ ] **Ports & Logistics dashboard (deferred).** Sources: Quorum's weekly Grain Monitoring Program PDF (Vancouver and
