@@ -171,6 +171,7 @@ src/
   build_site.py      builds docs/ (HTML wrapper, navigation bar, favicons)
   check_site.py      render check: every page in headless Chrome, at desktop and phone width
   weekly_refresh.py  the whole refresh (downloads, build, check); what the scheduled GitHub Action runs
+  mlb.py             builds reference/mlb_seasons.csv (MLB games, attendance, Blue Jays in Toronto) for the mustard page
 dashboard/
   index.html         overview page (edited directly)
   pipeline.html      crop page template: edit this, not dashboard/<crop>/index.html

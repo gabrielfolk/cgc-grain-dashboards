@@ -95,8 +95,10 @@ def trade(tr: dict) -> list[str]:
     d = external.comtrade_canada_us(tr["hs"], tr["first_year"])
     done = [y for y, v in d.items() if v.get("to_us") and v.get("to_world")]
     out = [f"UN Comtrade, {tr['hs_label']}, calendar years {min(done)}–{max(done)}"] if done else []
+    if tr.get("statcan_crop"):
+        out.append(statcan("StatCan supply and disposition", "32100013"))
     if tr.get("mlb"):
         import csv
-        seasons = [int(r["season"]) for r in csv.DictReader((external.ROOT / "reference" / "mlb_regular_season_games.csv").open())]
-        out.append(f"MLB regular-season games (MLB Stats API), {min(seasons)}–{max(seasons)}")
+        seasons = [int(r["season"]) for r in csv.DictReader((external.ROOT / "reference" / "mlb_seasons.csv").open())]
+        out.append(f"MLB games and attendance, Blue Jays in Toronto (MLB Stats API), {min(seasons)}–{max(seasons)} seasons")
     return out

@@ -1,0 +1,12 @@
+season,games,league_attendance,jays_toronto_games,jays_toronto_attendance,source
+2016,2427,73159044,81,3392099,"MLB Stats API (statsapi.mlb.com): standings, attendance, schedule, box scores"
+2017,2430,72670425,81,3203886,"MLB Stats API (statsapi.mlb.com): standings, attendance, schedule, box scores"
+2018,2431,69671272,81,2325281,"MLB Stats API (statsapi.mlb.com): standings, attendance, schedule, box scores"
+2019,2429,68494895,81,1750144,"MLB Stats API (statsapi.mlb.com): standings, attendance, schedule, box scores"
+2020,898,0,0,0,"MLB Stats API (statsapi.mlb.com): standings, attendance, schedule, box scores"
+2021,2429,45304709,36,604835,"MLB Stats API (statsapi.mlb.com): standings, attendance, schedule, box scores"
+2022,2430,64556658,81,2653830,"MLB Stats API (statsapi.mlb.com): standings, attendance, schedule, box scores"
+2023,2430,70747365,81,3021904,"MLB Stats API (statsapi.mlb.com): standings, attendance, schedule, box scores"
+2024,2429,71348413,81,2681236,"MLB Stats API (statsapi.mlb.com): standings, attendance, schedule, box scores"
+2025,2430,71410526,81,2849935,"MLB Stats API (statsapi.mlb.com): standings, attendance, schedule, box scores"
+2026,2429,71752722,81,3338878,"MLB Stats API (statsapi.mlb.com): standings, attendance, schedule, box scores"

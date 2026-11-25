@@ -45,6 +45,7 @@ import sys
 from pathlib import Path
 
 import external
+import pandas as pd
 import inputs
 from db import EASTERN_GRADE, connect
 
@@ -213,13 +214,32 @@ GRAINS = {
         "process": None, "feed": False, "hero": "exports",
         "notes": ["CGC reports no mustard seed processing at licensed facilities and virtually no terminal exports. Mustard exports are shipped from country elevators, split between containers and direct shipments to export destinations."],
         # annual exports to the US (UN Comtrade), set against MLB games played (reference/mlb_regular_season_games.csv)
-        "trade": {"hs": "120750", "hs_label": "HS 1207.50 mustard seeds", "first_year": 2016, "mlb": True},
+        "trade": {"hs": "120750", "hs_label": "HS 1207.50 mustard seeds", "first_year": 2016, "mlb": True,
+                  "statcan_crop": "Mustard seed"},
     },
 }
 
 # Ballpark mustard, for the mustard page's MLB comparison. Assumptions, not data: shown on the page as such.
 BALLPARK = {"hot_dogs_per_season": 20e6, "g_mustard_per_hot_dog": 8, "seed_share_of_prepared_mustard": 0.2}
-MLB_GAMES = ROOT / "reference" / "mlb_regular_season_games.csv"
+MLB_SEASONS = ROOT / "reference" / "mlb_seasons.csv"  # built by src/mlb.py
+
+
+def domestic_use(crop: str, years: list[int]) -> dict:
+    """Canada's domestic use by calendar year, kt: StatCan 32-10-0013 "Other domestic disappearance", a residual
+    (food, industrial, feed, waste, dockage and balancing error). The table is cumulative within the crop year
+    (Aug-Dec, Aug-Mar, Aug-Jul), so calendar year Y = (Jul Y - Dec Y-1) + Dec Y. Also the production of the
+    harvest that supplies most of each calendar year (the previous one). None where StatCan suppresses the data."""
+    sd = external.statcan("32100013")
+    sd = sd[(sd["Type of crop"] == crop) & (sd["GEO"] == "Canada")]
+    get = lambda item: sd[sd["Supply and disposition of grains"] == item].set_index("REF_DATE")["VALUE"]
+    use, prod = get("Other domestic disappearance"), get("Production")
+    v = lambda s, k: float(s[k]) if k in s.index and not pd.isna(s[k]) else None
+    out = {"use_kt": [], "prod_prev_kt": []}
+    for y in years:
+        a, b, c = v(use, f"{y}-07"), v(use, f"{y - 1}-12"), v(use, f"{y}-12")
+        out["use_kt"].append(round(a - b + c, 1) if None not in (a, b, c) else None)
+        out["prod_prev_kt"].append(v(prod, f"{y}-07"))  # crop year (Y-1)/Y production = harvest Y-1
+    return out
 
 
 def trade_data(cfg: dict) -> dict | None:
@@ -239,10 +259,16 @@ def trade_data(cfg: dict) -> dict | None:
         "to_us_usd": [round(raw[y]["to_us"]["usd"]) for y in years],
         "us_reported_kt": [kt(raw[y].get("us_reported")) for y in years],
     }
+    if tr.get("statcan_crop"):
+        out["domestic"] = domestic_use(tr["statcan_crop"], years)
     if tr.get("mlb"):
         import csv
-        games = {int(r["season"]): int(r["games"]) for r in csv.DictReader(MLB_GAMES.open())}
-        out["mlb_games"] = [games.get(y) for y in years]
+        mlb = {int(r["season"]): r for r in csv.DictReader(MLB_SEASONS.open())}
+        col = lambda k: [int(mlb[y][k]) if y in mlb else None for y in years]
+        out["mlb_games"] = col("games")
+        out["mlb_attendance"] = col("league_attendance")
+        out["jays_toronto_games"] = col("jays_toronto_games")
+        out["jays_toronto_attendance"] = col("jays_toronto_attendance")
         out["ballpark"] = BALLPARK
     return out
 

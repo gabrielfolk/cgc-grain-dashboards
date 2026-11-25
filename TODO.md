@@ -1,5 +1,7 @@
 # TODO
 
+- [ ] **Each October: add the MLB season.** After the regular season ends, run `.venv/bin/python src/mlb.py`, then
+  `src/grain_data.py` and `src/build_site.py` (mustard page, Exports to the United States).
 - [ ] **January 2027: add the 2027 Crop Planning Guide.** When Saskatchewan Agriculture publishes it, add its format
   id to `FORMAT_IDS` in `src/crop_guide.py` (Publications Centre archive, product 122661), run
   `.venv/bin/python src/crop_guide.py`, then `src/margins_data.py` and `src/build_site.py`.

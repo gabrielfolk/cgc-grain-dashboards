@@ -481,6 +481,15 @@
         <div class="panel-head"><h3 id="trade-find-h">What the numbers show</h3><p id="trade-find-p"></p></div>
         <ul class="findings" id="trade-findings"></ul>
       </div>
+      <div class="panel" id="jays-ch-panel" hidden>
+        <div class="panel-head"><h3>Blue Jays fans in Toronto and Canada's domestic use</h3><p id="jays-ch-p"></p></div>
+        <div class="legend" id="leg-jays"></div>
+        <div class="chart" id="ch-jays" style="height:240px"></div>
+      </div>
+      <div class="panel" id="jays-find-panel" hidden>
+        <div class="panel-head"><h3>Toronto Blue Jays</h3><p>Computed from the table; the ballpark amounts are assumptions, not data.</p></div>
+        <ul class="findings" id="jays-findings"></ul>
+      </div>
       <div class="flash-wrap wide"><table class="flash" id="trade-table"></table></div>
     </div>
   </section>
@@ -2171,6 +2180,49 @@
     }
   }
 
+  // bars on the left axis, a line on the right axis, by calendar year (two different units)
+  function dualYears(host, opts) {
+    host.replaceChildren();
+    const W = host.clientWidth, H = host.clientHeight;
+    if (!W) return;
+    const m = { l: 52, r: 52, t: 14, b: 24 }, iw = W - m.l - m.r, ih = H - m.t - m.b, n = opts.years.length;
+    const scale = (vals) => { const mx = Math.max(1e-9, ...vals.filter((v) => v != null)), st = niceStep(mx, 4); return { st, max: Math.ceil(mx / st) * st }; };
+    const L = scale(opts.bars.values), R = scale(opts.line.values);
+    const yl = (v) => m.t + ih - (v / L.max) * ih, yr = (v) => m.t + ih - (v / R.max) * ih;
+    const svg = makeSvg(host, W, H, opts.aria);
+    for (let v = 0; v <= L.max + 1e-9; v += L.st) {
+      el("line", { x1: m.l, x2: W - m.r, y1: yl(v), y2: yl(v), stroke: v === 0 ? css("--axis") : css("--grid") }, svg);
+      svgText(svg, { x: m.l - 8, y: yl(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, +v.toFixed(2) + (v + L.st > L.max + 1e-9 ? " " + opts.bars.unit : ""));
+    }
+    for (let v = 0; v <= R.max + 1e-9; v += R.st) svgText(svg, { x: W - m.r + 8, y: yr(v) + 4, "font-size": 11, fill: css("--muted") }, +v.toFixed(2) + (v + R.st > R.max + 1e-9 ? " " + opts.line.unit : ""));
+    const band = iw / n, bw = Math.max(6, Math.min(26, band - 8)), cx = (i) => m.l + band * (i + 0.5);
+    const pts = [];
+    opts.years.forEach((y, i) => {
+      svgText(svg, { x: cx(i), y: H - 6, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, band >= 40 ? y : "'" + y.slice(2));
+      const b = opts.bars.values[i];
+      if (b > 0) { const pth = el("path", { d: barPath(cx(i) - bw / 2, bw, yl(0), yl(b), 4) }, svg); pth.style.fill = opts.bars.color; }
+      if (opts.line.values[i] != null) pts.push([cx(i), yr(opts.line.values[i])]);
+      const rows = [{ value: b == null ? "–" : opts.bars.fmt(b), label: opts.bars.label, color: opts.bars.color, kind: "rect" },
+        { value: opts.line.values[i] == null ? "–" : opts.line.fmt(opts.line.values[i]), label: opts.line.label, color: opts.line.color }];
+      const hit = el("rect", { x: cx(i) - band / 2, y: m.t, width: band, height: ih, fill: "transparent", tabindex: 0, "aria-label": `${y}: ${rows.map((r) => r.label + " " + r.value).join(", ")}` }, svg);
+      hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, y, rows));
+      hit.addEventListener("pointerleave", hideTip);
+      hit.addEventListener("focus", () => { const r = hit.getBoundingClientRect(); showTip(r.right, r.top + 20, y, rows); });
+      hit.addEventListener("blur", hideTip);
+    });
+    if (pts.length) {
+      const line = el("path", { d: "M" + pts.map((q) => q.join(",")).join("L"), fill: "none", "stroke-width": 2, "stroke-linejoin": "round", "pointer-events": "none" }, svg);
+      line.style.stroke = opts.line.color;
+      for (const q of pts) { const c = el("circle", { cx: q[0], cy: q[1], r: 3.5, "stroke-width": 1.5, "pointer-events": "none" }, svg); c.style.fill = opts.line.color; c.style.stroke = "var(--surface)"; }
+    }
+  }
+  const rsq = (x, y) => {  // r squared over the pairs where both are present
+    const pr = x.map((v, i) => [v, y[i]]).filter(([a, b]) => a != null && b != null);
+    const mx = mean(pr.map((q) => q[0])), my = mean(pr.map((q) => q[1]));
+    const sxy = pr.reduce((s, [a, b]) => s + (a - mx) * (b - my), 0), sxx = pr.reduce((s, [a]) => s + (a - mx) ** 2, 0), syy = pr.reduce((s, [, b]) => s + (b - my) ** 2, 0);
+    return sxx && syy ? (sxy * sxy) / (sxx * syy) : null;
+  };
+
   // ---------- exports to the US (UN Comtrade, calendar years), with MLB games where the crop asks for them ----------
   function renderTrade() {
     const T = D.trade;
@@ -2196,12 +2248,17 @@
       getVals: (y) => { const i = Y.indexOf(y); return { us: us[i], rest: rest[i] }; },
       capLabel: (y) => Math.round(100 * share[Y.indexOf(y)]) + "%",
     });
-    const head = ["Thousand tonnes", "To US", "Rest of world", "Total", "US share", "US value, US$ M", "US$/t", "US-reported imports"].concat(T.mlb_games ? ["MLB games"] : []);
+    const DOM = T.domestic && T.domestic.use_kt.some((v) => v != null) ? T.domestic : null;
+    const M = (v) => v == null ? "–" : (v / 1e6).toFixed(2);
+    const head = ["Thousand tonnes", "To US", "Rest of world", "Total", "US share", "US value, US$ M", "US$/t", "US-reported imports"]
+      .concat(DOM ? ["Canada domestic use"] : [], T.mlb_games ? ["MLB games", "MLB fans, M", "Jays games in Toronto", "Jays fans in Toronto, M"] : []);
     buildTable($("trade-table"), head, [[null, Y.map((y, i) => ({ label: y, cells: [
       us[i].toFixed(1), rest[i].toFixed(1), world[i].toFixed(1), Math.round(100 * share[i]) + "%",
       (T.to_us_usd[i] / 1e6).toFixed(1), Math.round(T.to_us_usd[i] / (us[i] * 1000)).toLocaleString(),
       T.us_reported_kt[i] == null ? "–" : T.us_reported_kt[i].toFixed(1),
-    ].concat(T.mlb_games ? [T.mlb_games[i] == null ? "–" : T.mlb_games[i].toLocaleString()] : []) }))]], [1, 4]);
+    ].concat(DOM ? [DOM.use_kt[i] == null ? "–" : DOM.use_kt[i].toFixed(1)] : [],
+      T.mlb_games ? [T.mlb_games[i] == null ? "–" : T.mlb_games[i].toLocaleString(), M(T.mlb_attendance[i]), T.jays_toronto_games[i] == null ? "–" : String(T.jays_toronto_games[i]), M(T.jays_toronto_attendance[i])] : []) }))]],
+      [1, 4].concat(DOM ? [8] : [], T.mlb_games ? [DOM ? 9 : 8] : []));
 
     // findings, all computed from the series above
     const ul = $("trade-findings");
@@ -2209,23 +2266,59 @@
     const li = (lead, text) => { const l = document.createElement("li"); const bb = document.createElement("b"); bb.textContent = lead + " "; l.append(bb, text); ul.appendChild(l); };
     const chg = us[last] / us[0] - 1;
     li("US demand.", `Canada shipped ${kt1(us[last])} of ${NAME.toLowerCase()} to the US in ${Y[last]}, ${fmtPct(chg)} on ${Y[0]} (trend ${b >= 0 ? "+" : "−"}${Math.abs(b).toFixed(1)} kt a year). The US took ${Math.round(100 * share[last])}% of Canada's exports (${Math.round(100 * Math.min(...share))}–${Math.round(100 * Math.max(...share))}% since ${Y[0]}). US import records agree with Canada's export records to within ${(100 * agree).toFixed(1)}% every year.`);
+    $("jays-ch-panel").hidden = $("jays-find-panel").hidden = !(T.mlb_games && DOM);
     if (T.mlb_games) {
-      const g = T.mlb_games, full = [...g].filter((v) => v != null).sort((p, q) => p - q)[Math.floor(g.filter((v) => v != null).length / 2)];
-      const short_ = g.map((v, i) => v != null && v < 0.75 * full ? i : -1).filter((i) => i > 0 && i < last);
-      const gm = mean(g), um = mean(us);
-      const r = g.reduce((s, v, i) => s + (v - gm) * (us[i] - um), 0) / Math.sqrt(g.reduce((s, v) => s + (v - gm) ** 2, 0) * us.reduce((s, u) => s + (u - um) ** 2, 0));
+      const g = T.mlb_games, fans = T.mlb_attendance, P = T.ballpark;
+      const median = (a) => { const v = a.filter((x) => x != null).sort((p, q) => p - q); return v[Math.floor(v.length / 2)]; };
+      const full = median(g), fullFans = median(fans);
+      const normal = Y.map((y, i) => i).filter((i) => g[i] >= 0.9 * full && fans[i] >= 0.9 * fullFans);
+      const perFan = P.hot_dogs_per_season / mean(normal.map((i) => fans[i]));  // hot dogs per fan, from the assumed season total
+      const seedPerFan = perFan * P.g_mustard_per_hot_dog * P.seed_share_of_prepared_mustard / 1e6;  // t of seed per fan
       $("trade-find-h").textContent = "Does baseball move mustard demand?";
       $("trade-find-p").textContent = "Computed from the table; the ballpark amounts are assumptions, not data.";
-      for (const i of short_) {
+      const odd = g.map((v, i) => i).filter((i) => i > 0 && i < last && (g[i] < 0.75 * full || fans[i] < 0.75 * fullFans));
+      for (const i of odd) {
         const dev = us[i] - (us[i - 1] + us[i + 1]) / 2;
-        li("The one test.", `A full MLB season is about ${full.toLocaleString()} regular-season games; ${Y[i]} had ${g[i].toLocaleString()} (${fmtPct(g[i] / full - 1)}). US imports that year were ${kt1(us[i])}, ${dev >= 0 ? "+" : "−"}${kt1(Math.abs(dev))} against the average of ${Y[i - 1]} and ${Y[i + 1]}, ` +
-          (Math.abs(dev) < swing ? `inside the normal year-to-year swing of ±${kt1(swing)}: no sign of the shorter season.` : `outside the normal swing of ±${kt1(swing)}.`));
+        li(`${Y[i]}.`, `${g[i].toLocaleString()} games (${fmtPct(g[i] / full - 1)} on a full season of about ${full.toLocaleString()}) and ${fans[i] ? `${M(fans[i])} million fans (${fmtPct(fans[i] / fullFans - 1)})` : "no fans in the stands"}. US imports were ${kt1(us[i])}, ${dev >= 0 ? "+" : "−"}${kt1(Math.abs(dev))} against the average of ${Y[i - 1]} and ${Y[i + 1]}, ` +
+          (Math.abs(dev) < swing ? `inside the normal year-to-year swing of ±${kt1(swing)}: no sign of the missing fans.` : `outside the normal swing of ±${kt1(swing)}.`));
       }
-      li("Across all years,", `games played explain ${Math.round(100 * r * r)}% of the change in US imports${Math.abs(r) < 0.3 ? ", which is nothing" : ""}.`);
-      const P = T.ballpark, seed = P.hot_dogs_per_season * P.g_mustard_per_hot_dog * P.seed_share_of_prepared_mustard / 1e6;
-      li("Ballpark mustard (assumptions).", `${(P.hot_dogs_per_season / 1e6).toFixed(0)} million hot dogs a season × ${P.g_mustard_per_hot_dog} g of prepared mustard × ${Math.round(100 * P.seed_share_of_prepared_mustard)}% seed ≈ ${Math.round(seed)} t of seed, ${(100 * seed / (us[last] * 1000)).toFixed(2)}% of ${Y[last]}'s US imports from Canada.`);
+      const r2g = rsq(g, us), r2f = rsq(fans, us);
+      li("Across all years,", `games played explain ${Math.round(100 * r2g)}% of the change in US imports and fans in the stands ${Math.round(100 * r2f)}%${Math.max(r2g, r2f) < 0.1 ? ": nothing" : ""}.`);
+      const seed = P.hot_dogs_per_season * P.g_mustard_per_hot_dog * P.seed_share_of_prepared_mustard / 1e6;
+      li("Ballpark mustard (assumptions).", `${(P.hot_dogs_per_season / 1e6).toFixed(0)} million hot dogs a season (${perFan.toFixed(2)} per fan) × ${P.g_mustard_per_hot_dog} g of prepared mustard × ${Math.round(100 * P.seed_share_of_prepared_mustard)}% seed ≈ ${Math.round(seed)} t of seed, ${(100 * seed / (us[last] * 1000)).toFixed(2)}% of ${Y[last]}'s US imports from Canada.`);
       const next = T.years[last] + 1;
       li("If MLB games were cut in half,", `about ${Math.round(seed / 2)} t less seed a year at most. US demand would follow its trend instead: about ${kt1(fit(next))} in ${next}, ±${kt1(swing)} (a straight-line trend, not a backtested forecast).`);
+
+      if (DOM) {
+        // Toronto Blue Jays: fans at Rogers Centre against Canada's domestic use (StatCan, a residual)
+        const jf = T.jays_toronto_attendance, jg = T.jays_toronto_games, use = DOM.use_kt, prod = DOM.prod_prev_kt;
+        const idx = Y.map((y, i) => i).filter((i) => use[i] != null);
+        const yrs = idx.map((i) => Y[i]);
+        $("jays-ch-p").textContent = `Bars: Blue Jays regular-season fans at Rogers Centre, millions. Line: Canada's domestic use of ${NAME.toLowerCase()}, kt (StatCan "other domestic disappearance", calendar years; StatCan does not publish it before ${yrs[0]}).`;
+        legend($("leg-jays"), [{ label: "Jays fans in Toronto, M", color: "var(--process)", kind: "rect" }, { label: "Canada domestic use, kt", color: "var(--exports)" }]);
+        dualYears($("ch-jays"), {
+          years: yrs, aria: `Blue Jays fans in Toronto and Canada's domestic ${NAME.toLowerCase()} use by year`,
+          bars: { values: idx.map((i) => jf[i] / 1e6), unit: "M", label: "Jays fans in Toronto", color: "var(--process)", fmt: (v) => v.toFixed(2) + " M" },
+          line: { values: idx.map((i) => use[i]), unit: "kt", label: "Canada domestic use", color: "var(--exports)", fmt: (v) => v.toFixed(1) + " kt" },
+        });
+        const ul2 = $("jays-findings");
+        ul2.replaceChildren();
+        const li2 = (lead, text) => { const l = document.createElement("li"); const bb = document.createElement("b"); bb.textContent = lead + " "; l.append(bb, text); ul2.appendChild(l); };
+        const jFull = idx.filter((i) => jg[i] >= 70), jAvg = mean(jFull.map((i) => jf[i]));
+        const gone = idx.filter((i) => jg[i] < 70);
+        li2("Fans in Toronto.", `About ${M(jAvg)} million a season in full years (${Math.round(100 * mean(jFull.map((i) => jf[i] / fans[i])))}% of all MLB fans). ` +
+          gone.map((i) => jg[i] === 0 ? `${Y[i]}: no games in Toronto` : `${Y[i]}: ${jg[i]} games in Toronto, ${M(jf[i])} million fans`).join("; ") + ".");
+        const r2j = rsq(idx.map((i) => jf[i]), idx.map((i) => use[i])), r2p = rsq(idx.map((i) => prod[i]), idx.map((i) => use[i]));
+        li2("It looks related.", `Over ${yrs[0]}–${yrs[yrs.length - 1]}, Jays fans in Toronto explain ${Math.round(100 * r2j)}% of the change in Canada's domestic use, ` +
+          `${r2j > r2p ? "more than" : "against"} ${Math.round(100 * r2p)}% for the size of the previous harvest. Both fell in the years without fans and rose after.`);
+        const i0 = idx.find((i) => jg[i] === 0), ib = idx[idx.indexOf(i0) - 1];
+        if (i0 != null && ib != null) {
+          const drop = (use[ib] - use[i0]) * 1000, lost = (jf[ib] - jf[i0]) * seedPerFan;
+          li2("It isn't.", `Domestic use fell ${Math.round(drop).toLocaleString()} t from ${Y[ib]} to ${Y[i0]}. The ballpark mustard that went missing with the Jays' ${M(jf[ib])} million ${Y[ib]} fans is about ${lost.toFixed(1)} t of seed (assumptions as above), ${(100 * lost / drop).toFixed(3)}% of that drop. The timing matches; the size does not.`);
+        }
+        const jLast = idx[idx.length - 1], jSeed = jf[jLast] * seedPerFan;
+        li2("If Jays home games were cut in half,", `about ${(jSeed / 2).toFixed(1)} t less seed a year (${Y[jLast]} fans), ${(100 * jSeed / 2 / (use[jLast] * 1000)).toFixed(3)}% of Canada's domestic use. The residual moves by ±${kt1(Math.sqrt(idx.reduce((s, i, k, a) => s + (use[i] - mean(a.map((q) => use[q]))) ** 2, 0) / (idx.length - 1)))} a year on its own.`);
+      }
     } else {
       $("trade-find-p").textContent = "Computed from the table.";
     }
