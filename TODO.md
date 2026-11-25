@@ -6,8 +6,6 @@
 
 ### Other
 
-- [ ] **Chart axes in the page unit.** Text and tiles now give totals in Mt (kt on special-crop pages), but cumulative
-  charts and their panel subtitles are still in thousand tonnes. Scale the axes and tooltips to the page unit.
 - [ ] **Download only new StatCan data (maybe).** Each scheduled refresh re-downloads all 19 cached StatCan tables
   (~130 MB of its ~140 MB), three runs a week, to catch a few releases a month. StatCan's Web Data Service
   `getCubeMetadata` returns each table's `releaseTime`; `src/external.py --refresh` could fetch only tables released

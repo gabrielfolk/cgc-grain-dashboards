@@ -225,7 +225,7 @@
           </div>
         </div>
         <div class="section-head" style="margin-top:8px">
-          <div class="panel-head"><h3 id="dem-h">Grain energy needed by livestock group</h3><p>Thousand tonnes of barley-equivalent grain per crop year</p></div>
+          <div class="panel-head"><h3 id="dem-h">Grain energy needed by livestock group</h3><p>Million tonnes of barley-equivalent grain per crop year</p></div>
           <div class="seg" role="group" aria-label="Region" id="dem-region">
             <button type="button" data-region="west" aria-pressed="true">Western Canada</button>
             <button type="button" data-region="east" aria-pressed="false">Eastern Canada</button>
@@ -250,12 +250,12 @@
         <div class="panel-head"><h3>3. Corn: Canadian-grown or US imports</h3><p id="step3-p"></p></div>
         <div class="two" style="margin-top:8px">
           <div class="panel" style="border:0;padding:0">
-            <div class="panel-head"><h3>Corn fed in Western Canada, by origin</h3><p>Thousand tonnes per crop year (corn: Sep–Aug). Marker: the western corn crop.</p></div>
+            <div class="panel-head"><h3>Corn fed in Western Canada, by origin</h3><p>Million tonnes per crop year (corn: Sep–Aug). Marker: the western corn crop.</p></div>
             <div class="legend" id="leg-origin-west"></div>
             <div class="chart" id="ch-origin-west" style="height:240px"></div>
           </div>
           <div class="panel" style="border:0;padding:0">
-            <div class="panel-head"><h3>Corn fed in Eastern Canada, by origin</h3><p>Thousand tonnes per crop year (corn: Sep–Aug). Marker: the Ontario and Quebec corn crop.</p></div>
+            <div class="panel-head"><h3>Corn fed in Eastern Canada, by origin</h3><p>Million tonnes per crop year (corn: Sep–Aug). Marker: the Ontario and Quebec corn crop.</p></div>
             <div class="legend" id="leg-origin-east"></div>
             <div class="chart" id="ch-origin-east" style="height:240px"></div>
           </div>
@@ -276,7 +276,7 @@
     <div class="seg" role="group" aria-label="Commodity" id="hist-est-pick" style="justify-self:start;flex-wrap:wrap"></div>
     <div class="two">
       <div class="panel wide">
-        <div class="panel-head"><h3 id="hist-est-ch-h">Model versus StatCan</h3><p>Thousand tonnes per crop year. Bars: the model, West and East; marker: StatCan's "animal feed, waste and dockage".</p></div>
+        <div class="panel-head"><h3 id="hist-est-ch-h">Model versus StatCan</h3><p>Million tonnes per crop year. Bars: the model, West and East; marker: StatCan's "animal feed, waste and dockage".</p></div>
         <div class="legend" id="leg-hist-est"></div>
         <div class="chart" id="ch-hist-est" style="height:260px"></div>
       </div>
@@ -308,12 +308,11 @@
   // ---------- helpers ----------
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const short = (y) => y.slice(0, 5) + y.slice(7);
+  // totals in Mt, like the other pages (tables stay in kt and say so)
+  const mtDigits = (a) => a >= 10000 ? 1 : a >= 100 ? 2 : 3;
   function fmtKt(v) {
     if (v == null || !isFinite(v)) return "–";
-    const a = Math.abs(v);
-    if (a >= 1000) return (v / 1000).toFixed(a >= 10000 ? 1 : 2) + " Mt";
-    if (a >= 10) return Math.round(v).toLocaleString() + " kt";
-    return v.toFixed(1) + " kt";
+    return (v / 1000).toFixed(mtDigits(Math.abs(v))) + " Mt";
   }
   const pct = (a, b) => (a == null || b == null || b < 1) ? null : a / b - 1;
   function chip(p) {
@@ -355,10 +354,12 @@
     host.appendChild(svg);
     return svg;
   }
+  // ticks in Mt, with the unit on the top tick
   function yAxis(svg, m, W, y, min, max, step) {
     for (let v = min; v <= max + 1e-9; v += step) {
       el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: v === 0 ? css("--axis") : css("--grid") }, svg);
-      svgText(svg, { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, Math.round(v).toLocaleString());
+      const n = v / 1000, txt = (Math.abs(n) >= 100 ? Math.round(n) : +n.toFixed(2)).toLocaleString();
+      svgText(svg, { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, txt + (v + step > max + 1e-9 ? " Mt" : ""));
     }
   }
 

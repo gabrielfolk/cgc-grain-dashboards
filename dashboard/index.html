@@ -384,7 +384,7 @@
     </div>
     <div class="two">
       <div class="panel wide">
-        <div class="panel-head"><h3>Cumulative deliveries</h3><p>Thousand tonnes delivered since Aug 1, against the previous five crop years</p></div>
+        <div class="panel-head"><h3>Cumulative deliveries</h3><p><span data-u="Tot"></span> delivered since Aug 1, against the previous five crop years</p></div>
         <div class="legend" id="leg-cum"></div>
         <div class="chart" id="ch-cum" style="height:300px"></div>
       </div>
@@ -394,7 +394,7 @@
         <div class="chart" id="ch-week" style="height:220px"></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><h3>Commercial stocks</h3><p>Thousand tonnes at week end in country elevators, processors and port terminals</p></div>
+        <div class="panel-head"><h3>Commercial stocks</h3><p><span data-u="Tot"></span> at week end in country elevators, processors and port terminals</p></div>
         <div class="legend" id="leg-stock"></div>
         <div class="chart" id="ch-stock" style="height:220px"></div>
       </div>
@@ -404,7 +404,7 @@
         <div class="chart" id="ch-ship" style="height:220px"></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><h3>Net build in country elevators</h3><p>Deliveries into country elevators minus shipments out, thousand tonnes since Aug 1. Rising = country stocks building.</p></div>
+        <div class="panel-head"><h3>Net build in country elevators</h3><p>Deliveries into country elevators minus shipments out, <span data-u="tot"></span> since Aug 1. Rising = country stocks building.</p></div>
         <div class="legend" id="leg-build"></div>
         <div class="chart" id="ch-build" style="height:220px"></div>
       </div>
@@ -420,7 +420,7 @@
     </div>
     <div class="two">
       <div class="panel">
-        <div class="panel-head"><h3>Every crop year, week by week</h3><p>Cumulative thousand tonnes. Hover to compare all years at one week.</p></div>
+        <div class="panel-head"><h3>Every crop year, week by week</h3><p><span data-u="Tot"></span> since Aug 1. Hover to compare all years at one week.</p></div>
         <div class="legend" id="leg-all"></div>
         <div class="chart" id="ch-all" style="height:330px"></div>
       </div>
@@ -429,12 +429,12 @@
         <div class="chart" id="ch-rank"></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><h3>Commercial stocks, every crop year</h3><p>Thousand tonnes at week end, all locations. Hover to compare all years at one week.</p></div>
+        <div class="panel-head"><h3>Commercial stocks, every crop year</h3><p><span data-u="Tot"></span> at week end, all locations. Hover to compare all years at one week.</p></div>
         <div class="legend" id="leg-stkall"></div>
         <div class="chart" id="ch-stkall" style="height:260px"></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><h3>Crop-Year ending stocks</h3><p>Thousand tonnes in commercial storage on Jul 31, the last week of each completed crop year</p></div>
+        <div class="panel-head"><h3>Crop-Year ending stocks</h3><p><span data-u="Tot"></span> in commercial storage on Jul 31, the last week of each completed crop year</p></div>
         <div class="legend" id="leg-end"></div>
         <div class="chart" id="ch-end" style="height:260px"></div>
       </div>
@@ -517,6 +517,12 @@
     return v.toFixed(1) + " kt";
   }
   const fmtNum = (v) => v == null ? "–" : Math.abs(v) >= 100 ? Math.round(v).toLocaleString() : v.toFixed(1);
+  // charts of totals use the page unit (Mt); weekly charts stay in kt
+  const TOT_DIV = UNIT === "Mt" ? 1000 : 1;
+  const TOT_WORD = UNIT === "Mt" ? "Million tonnes" : "Thousand tonnes";
+  const fmtTot = (v) => v == null ? "–" : UNIT === "Mt" ? (v / 1000).toFixed(mtDigits(Math.abs(v))) : fmtNum(v);
+  const tick = (v, step, max, div, suffix) => { const n = v / div; return (Math.abs(n) >= 100 ? Math.round(n) : +n.toFixed(2)).toLocaleString() + (v + step > max + 1e-9 ? " " + suffix : ""); };
+  for (const s of document.querySelectorAll("[data-u]")) s.textContent = s.dataset.u === "Tot" ? TOT_WORD : TOT_WORD.toLowerCase();
   const pct = (a, b) => (a == null || b == null || b < 1) ? null : a / b - 1;
   function fmtPct(p) {
     if (p == null) return "–";
@@ -650,10 +656,12 @@
     svg.style.overflow = "visible";
     host.appendChild(svg);
 
+    // a running total or level (page unit, the default) or kt per week (kind: "weekly")
+    const isTot = opts.kind !== "weekly", fv = isTot ? fmtTot : fmtNum;
     if (!opts.compact) {
       for (let v = min; v <= max + 1e-9; v += step) {
         el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: v === 0 ? css("--axis") : css("--grid"), "stroke-width": 1 }, svg);
-        svgText(svg, { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, Math.round(v).toLocaleString());
+        svgText(svg, { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, isTot ? tick(v, step, max, TOT_DIV, UNIT) : tick(v, step, max, 1, "kt"));
       }
       for (const [name, days] of MONTH_TICKS) {
         svgText(svg, { x: x((days - 1) / 7), y: H - 6, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, name);
@@ -723,18 +731,18 @@
       cross.setAttribute("visibility", "visible");
       let rows = [];
       if (opts.stack) {
-        rows.push({ value: fmtNum(stackTot[w - 1]), label: `Total ${short(cur)}`, em: true });
-        for (const s of opts.stack.slice().reverse()) rows.push({ value: fmtNum(s.values[w - 1]), label: s.label, color: s.color, kind: "rect" });
+        rows.push({ value: fv(stackTot[w - 1]), label: `Total ${short(cur)}`, em: true });
+        for (const s of opts.stack.slice().reverse()) rows.push({ value: fv(s.values[w - 1]), label: s.label, color: s.color, kind: "rect" });
       }
-      if (opts.bars) rows.push({ value: fmtNum(opts.bars.values[w - 1]), label: opts.bars.label, color: opts.bars.color, kind: "rect" });
+      if (opts.bars) rows.push({ value: fv(opts.bars.values[w - 1]), label: opts.bars.label, color: opts.bars.color, kind: "rect" });
       for (const s of opts.series) {
         const v = s.values[w - 1];
         if (opts.sortTip && v == null) continue;
-        rows.push({ value: fmtNum(v), raw: v, label: s.label, color: s.hidden ? null : (s.tipColor || s.color), em: s.em });
+        rows.push({ value: fv(v), raw: v, label: s.label, color: s.hidden ? null : (s.tipColor || s.color), em: s.em });
       }
       if (opts.sortTip) rows.sort((a, b) => (b.raw ?? -Infinity) - (a.raw ?? -Infinity));
-      if (opts.band) rows.push({ value: `${fmtNum(opts.band.lo[w - 1])}–${fmtNum(opts.band.hi[w - 1])}`, label: opts.band.label, color: "band", kind: "band" });
-      showTip(cx, cy, `Week ${w} · ends ~${weekDate(cur, w)} · kt`, rows);
+      if (opts.band) rows.push({ value: `${fv(opts.band.lo[w - 1])}–${fv(opts.band.hi[w - 1])}`, label: opts.band.label, color: "band", kind: "band" });
+      showTip(cx, cy, `Week ${w} · ends ~${weekDate(cur, w)} · ${isTot ? UNIT : "kt per week"}`, rows);
     }
     const hide = () => { cross.setAttribute("visibility", "hidden"); hideTip(); };
     hit.addEventListener("pointermove", (e) => {
@@ -778,7 +786,7 @@
     host.appendChild(svg);
     for (let v = 0; v <= max + 1e-9; v += step) {
       el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: v === 0 ? css("--axis") : css("--grid") }, svg);
-      svgText(svg, { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, Math.round(v).toLocaleString());
+      svgText(svg, { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--muted") }, tick(v, step, max, TOT_DIV, UNIT));
     }
     const band = iw / ys.length, bw = Math.max(6, Math.min(24, band - 4));
     const labelEvery = band < 34 ? 2 : 1;
@@ -1035,7 +1043,7 @@
 
     legend($("leg-week"), [{ ...cur5, kind: "rect" }, { label: "5-yr average", color: "--avg" }]);
     weekChart($("ch-week"), {
-      aria: `${g} weekly deliveries`,
+      aria: `${g} weekly deliveries`, kind: "weekly",
       bars: { label: short(cur), color: css("--s1"), values: diff(cy) },
       series: [{ label: "5-yr average", color: css("--avg"), values: diff(st.avg), width: 1.5 }],
     });
@@ -1057,7 +1065,7 @@
     const sh5 = stat(ref.map((r) => diff(ship(r))));
     legend($("leg-ship"), [{ ...cur5, kind: "rect" }, { label: "5-yr average", color: "--avg" }, { label: "Deliveries into country elevators", color: "--s2" }]);
     weekChart($("ch-ship"), {
-      aria: `${g} weekly shipments out of country elevators`,
+      aria: `${g} weekly shipments out of country elevators`, kind: "weekly",
       bars: { label: `Shipped out, ${short(cur)}`, color: css("--s1"), values: diff(upTo(ship(cur), W_NOW)) },
       series: [{ label: "5-yr average", color: css("--avg"), values: sh5.avg, width: 1.5 },
         { label: "Delivered in", color: css("--s2"), values: diff(upTo(useArr("elevator_deliveries", g, cur), W_NOW)), width: 1.5 }],
@@ -1227,8 +1235,8 @@
     $("heat-del").setAttribute("aria-pressed", !isStk);
     $("heat-stk").setAttribute("aria-pressed", isStk);
     $("heat-sub").textContent = isStk
-      ? "Commercial stocks on Jul 31 at the end of each crop year, compared with that crop's average ending stocks. Pick a row to open that crop."
-      : "Full crop-year deliveries of each crop, compared with that crop's average over completed years. Pick a row to open that crop.";
+      ? `Commercial stocks on Jul 31 at the end of each crop year: % above or below that crop's average ending stocks, with the average in ${UNIT}. Pick a row to open that crop.`
+      : `Full crop-year deliveries of each crop: % above or below that crop's average over completed years, with the average in ${UNIT}. Pick a row to open that crop.`;
     const measure = isStk ? "ending stocks" : "delivered";
     for (const g of D.grains) {
       const vals = completed.map((yr) => isStk ? endStocks(g, yr) : finalOf(cum(g, yr)));
@@ -1602,7 +1610,7 @@
     const t = $("provwk-table");
     t.replaceChildren();
     const hr = t.createTHead().insertRow();
-    ["Province", `Wk ${W_NOW}`, "4-wk avg", "CYTD", "5-yr CYTD", "vs 5-yr", "Share", "5-yr share"].forEach((h, i) => { const th = document.createElement("th"); th.textContent = h; if (i === 3 || i === 6) th.className = "sep"; hr.appendChild(th); });
+    ["Thousand tonnes", `Wk ${W_NOW}`, "4-wk avg", "CYTD", "5-yr CYTD", "vs 5-yr", "Share", "5-yr share"].forEach((h, i) => { const th = document.createElement("th"); th.textContent = h; if (i === 3 || i === 6) th.className = "sep"; hr.appendChild(th); });
     const body = t.createTBody();
     for (const [k, label] of keys) {
       const c = series(k, cur), wk = diff(c), now = at(c, W_NOW) || 0, avg = mean(ref.map((r) => at(series(k, r), W_NOW) || 0));
