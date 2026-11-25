@@ -194,6 +194,7 @@
 
   header { display: grid; gap: 14px; }
   .asof { font-size: 13px; color: var(--muted); }
+  .asof.inputs { margin-top: 4px; font-size: 12px; }
 
   .btn, .seg {
     font: 500 13px var(--sans); color: var(--ink);
@@ -370,6 +371,7 @@
     <h1>Overview</h1>
     <p class="sub" id="lede">Producer deliveries, exports, licensed processing and commercial stocks for 15 Western Canadian crops, with selling pace measured against StatCan crop estimates.</p>
     <p class="asof" id="asof"></p>
+    <p class="asof inputs" id="inputs"></p>
     <details class="explain">
       <summary>How to read these numbers</summary>
       <ul>
@@ -1820,6 +1822,7 @@
 
   // ---------- boot ----------
   $("asof").textContent = `Crop year ${short(cur)} · week ${W_NOW} of 52, ending ${new Date(D.meta.week_ending + "T12:00").toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })} · compared with ${short(ref[0])} to ${short(lastYr)}`;
+  $("inputs").textContent = (D.meta.inputs || []).length ? "Inputs: " + D.meta.inputs.join(" · ") : "";
   $("gen").textContent = `Data through crop year ${short(cur)}, week ${W_NOW} (week ending ${D.meta.week_ending}). Built ${D.meta.generated}.`;
   setView(state.view);
   renderMainFlash();

@@ -71,7 +71,32 @@ def _statcan_csv(table: str, refresh: bool) -> pd.DataFrame:
         meta = requests.get(f"https://www150.statcan.gc.ca/t1/wds/rest/getFullTableDownloadCSV/{table}/en", timeout=60).json()
         z = zipfile.ZipFile(io.BytesIO(requests.get(meta["object"], timeout=300).content))
         path.write_bytes(z.read(f"{table}.csv"))
+        _record_release(table)
     return pd.read_csv(path, low_memory=False)
+
+
+RELEASES = RAW / "statcan_releases.json"  # {table: date StatCan last updated it, as of our download}
+
+
+def _record_release(table: str) -> str | None:
+    """Ask StatCan when it last updated a table (getCubeMetadata releaseTime) and save it. None if the call fails."""
+    try:
+        r = requests.post("https://www150.statcan.gc.ca/t1/wds/rest/getCubeMetadata",
+                          json=[{"productId": int(table)}], timeout=60)
+        released = r.json()[0]["object"]["releaseTime"][:10]
+    except (requests.RequestException, ValueError, KeyError, IndexError, TypeError):
+        return None
+    rel = json.loads(RELEASES.read_text()) if RELEASES.exists() else {}
+    rel[table] = released
+    RELEASES.write_text(json.dumps(rel, indent=1, sort_keys=True))
+    return released
+
+
+def statcan_released(table: str) -> str | None:
+    """Date (YYYY-MM-DD) StatCan last updated a cached table, as of the download. A table's date moves with any
+    update to it, including releases about other series in the same table."""
+    rel = json.loads(RELEASES.read_text()) if RELEASES.exists() else {}
+    return rel.get(table) or _record_release(table)  # tables cached before dates were recorded
 
 
 def _yahoo_weekly(symbol: str, refresh: bool) -> pd.Series:
@@ -183,6 +208,12 @@ def prices_as_of(as_of: pd.Timestamp) -> dict:
 
 
 # ---------------------------------------------------------------- feed grains page
+
+@lru_cache(maxsize=None)
+def statcan_latest(table: str) -> str:
+    """The latest REF_DATE in a cached table."""
+    return str(pd.read_csv(RAW / f"{table}.csv", usecols=["REF_DATE"])["REF_DATE"].astype(str).max())
+
 
 def statcan(table: str, refresh: bool = False) -> pd.DataFrame:
     """Any StatCan table by id (e.g. "32100013"), downloaded once and cached."""

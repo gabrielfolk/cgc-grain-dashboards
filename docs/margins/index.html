@@ -194,6 +194,7 @@
 
   header { display: grid; gap: 14px; }
   .asof { font-size: 13px; color: var(--muted); }
+  .asof.inputs { margin-top: 4px; font-size: 12px; }
 
   .btn, .seg {
     font: 500 13px var(--sans); color: var(--ink);
@@ -334,10 +335,11 @@
 </script>
 <div class="wrap">
   <header>
-    <div class="eyebrow">Saskatchewan crop budgets · CGC producer deliveries</div>
+    <div class="eyebrow" id="page-eyebrow">Saskatchewan crop budgets · CGC producer deliveries</div>
     <h1>Producer Margins</h1>
     <p class="sub" id="lede">What an acre of each crop earns at Saskatchewan farm prices after variable costs, and whether farmers are selling faster or slower where margins are good. Each crop's full delivery pace and history is on its own page.</p>
     <p class="asof" id="asof"></p>
+    <p class="asof inputs" id="inputs"></p>
   </header>
 
   <section aria-labelledby="flash-h">
@@ -1045,6 +1047,8 @@
 
   // ---------- boot ----------
   $("asof").textContent = `Crop year ${short(cur)} · week ${W_NOW} of 52, ending ${new Date(D.meta.week_ending + "T12:00").toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })} · margins at ${nowMonth} Saskatchewan farm prices`;
+  if (D.margins && D.margins.meta && D.margins.meta.zone) $("page-eyebrow").textContent = `Saskatchewan ${D.margins.meta.zone} zone budgets · CGC producer deliveries`;
+  $("inputs").textContent = (D.meta.inputs || []).length ? "Inputs: " + D.meta.inputs.join(" · ") : "";
   $("gen").textContent = `Deliveries through crop year ${short(cur)}, week ${W_NOW} (week ending ${D.meta.week_ending}); farm prices through ${nowMonth}. Built ${D.meta.generated}.`;
   const renderAll = () => { renderFlash(); renderMargins(); renderQuad(); };
   renderAll();

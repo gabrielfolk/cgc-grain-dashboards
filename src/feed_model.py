@@ -125,6 +125,13 @@ HOG_GUIDE_YEAR = 2025  # the Manitoba farrow-finish guide's year: finishing feed
 ENERGY = {"barley": 1.00, "wheat": 1.08, "durum": 1.06, "oats": 0.85, "corn": 1.12}
 
 
+
+# StatCan livestock tables the model reads (inventories, pig crop and finishing, poultry and egg production,
+# milk, sheep, calves, cattle supply and disposition, hog meat); listed on the page's Inputs line.
+LIVESTOCK_TABLES = ("32100130", "32100160", "32100200", "32100117", "32100121", "32100113", "32100129", "32100125",
+                    "32100139", "32100126")
+
+
 def crop_year_label(y0: int) -> str:
     return f"{y0}-{y0 + 1}"
 

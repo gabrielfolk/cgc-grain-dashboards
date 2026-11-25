@@ -88,6 +88,7 @@
   a { color: var(--process); }
   header { display: grid; gap: 12px; }
   .asof { font-size: 13px; color: var(--muted); }
+  .asof.inputs { margin-top: 4px; font-size: 12px; }
 
   .btn, .seg { font: 500 13px var(--sans); color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
   .btn { padding: 6px 12px; cursor: pointer; }
@@ -188,6 +189,7 @@
     <h1>Beans Pipeline</h1>
     <p class="sub" id="lede">Western Canadian dry beans from CGC weekly data: producer deliveries, licensed processing, direct exports and commercial stocks.</p>
     <p class="asof" id="asof"></p>
+    <p class="asof inputs" id="inputs"></p>
     <details class="explain">
       <summary>How to read these numbers</summary>
       <ul id="explain-list"></ul>
@@ -1959,6 +1961,7 @@
   });
 
   $("asof").textContent = `Crop year ${short(cur)} · week ${W_NOW} of 52, ending ${new Date(D.meta.week_ending + "T12:00").toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })} · compared with ${short(ref[0])} to ${short(lastYr)}`;
+  $("inputs").textContent = (D.meta.inputs || []).length ? "Inputs: " + D.meta.inputs.join(" · ") : "";
   (function buildExplainer() {
     const ul = $("explain-list");
     const li = (text) => { const l = document.createElement("li"); l.textContent = text; ul.appendChild(l); };

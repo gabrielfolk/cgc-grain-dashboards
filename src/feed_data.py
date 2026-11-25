@@ -46,6 +46,7 @@ import pandas as pd
 
 import external
 import feed_model
+import inputs
 from db import connect
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -663,6 +664,16 @@ def main() -> None:
 
     data = {
         "meta": {"current_year": cur, "generated": dt.date.today().isoformat(),
+                 "inputs": [
+                     inputs.statcan("StatCan livestock and poultry", *feed_model.LIVESTOCK_TABLES),
+                     inputs.aafc_slaughter(),
+                     inputs.ers_cattle(),
+                     inputs.statcan("StatCan grain supply and disposition", "32100013", "32100014"),
+                     inputs.statcan("StatCan farm supply and disposition", "32100015"),
+                     inputs.production(),
+                     inputs.statcan("StatCan farm prices", "32100077"),
+                     inputs.markets("CBOT corn and USD/CAD", "ZC=F", "CAD=X"),
+                 ],
                  "assumptions": {"energy_vs_barley": ENERGY, "corn_basis_usd_bu": CORN_BASIS_USD_BU, "bu_corn_per_t": BU_CORN_PER_T},
                  "price_series": {"west": PRICE_SERIES, "east": EAST_PRICE_SERIES}},
         "regional_feed": regional,

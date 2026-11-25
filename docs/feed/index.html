@@ -172,6 +172,7 @@
   a { color: var(--process); }
   header { display: grid; gap: 12px; }
   .asof { font-size: 13px; color: var(--muted); }
+  .asof.inputs { margin-top: 4px; font-size: 12px; }
 
   .btn, .seg { font: 500 13px var(--sans); color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
   .btn { padding: 6px 12px; cursor: pointer; }
@@ -275,6 +276,7 @@
     <h1>Canadian Feed Grains</h1>
     <p class="sub" id="lede">Our own estimate of domestic feed use by commodity: barley, wheat, durum, oats and Canadian and US corn, for Western Canada (MB, SK, AB, BC) and Eastern Canada (Ontario, Quebec and the Atlantic provinces). Built from the demand side, livestock numbers and slaughter times feeding rates, split across grains by price and availability, and compared with StatCan.</p>
     <p class="asof" id="asof"></p>
+    <p class="asof inputs" id="inputs"></p>
   </header>
 
   <div class="summary" id="summary"></div>
@@ -684,7 +686,14 @@
     const t1 = tile(`Feed estimate, Canada, ${short(cur)}`);
     big(t1, (tot / 1000).toFixed(1), "million t", "hero-value");
     deltas(t1, [[pct(tot, dmTot(ly, "canada")), `vs ${short(ly)}`], [pct(tot, dmAvg(cur, "canada")), "vs 5-yr average"]]);
-    { const rg = dmRange(cur, "canada"); note(t1, `Range ${(rg[0] / 1000).toFixed(1)}–${(rg[1] / 1000).toFixed(1)} Mt (see About the data)`); }
+    { const rg = dmRange(cur, "canada"); note(t1, `Range ${(rg[0] / 1000).toFixed(1)}–${(rg[1] / 1000).toFixed(1)} Mt`); }
+    { // the judgment inputs that move the Canada total most, low to high value: up to three, leaving out any
+      // that move it less than a tenth as much as the largest (details in About the data)
+      const U = D.uncertainty || {}, sens = (U.sensitivity || {})[cur] || {};
+      const swing = Object.entries(sens).map(([k, v]) => [k, Math.abs(v.canada.total[1] - v.canada.total[0])])
+        .sort((a, b) => b[1] - a[1]).slice(0, 3).filter(([, s], i, all) => s > 0.5 && s >= all[0][1] / 10);
+      if (swing.length) note(t1, "Widest from: " + swing.map(([k, s]) => `${((U.inputs[k] || {}).label || k).split(",")[0].toLowerCase()} ${s >= 995 ? (s / 1000).toFixed(1) + " Mt" : fmtKt(s)}`).join(" · "));
+    }
     note(t1, byGrain("canada", 6));
 
     for (const r of REG) {
@@ -947,7 +956,8 @@
   });
 
   // ---------- boot ----------
-  $("asof").textContent = `Crop year ${short(cur)} · model years ${short(dmYears[0])} to ${short(cur)} · StatCan tables as published · built ${D.meta.generated}`;
+  $("asof").textContent = `Crop year ${short(cur)} · model years ${short(dmYears[0])} to ${short(cur)} · built ${D.meta.generated}`;
+  $("inputs").textContent = (D.meta.inputs || []).length ? "Inputs: " + D.meta.inputs.join(" · ") : "";
   const renderAll = () => { renderSummary(); renderDemand(); renderSteps(); renderInputs(); renderHistEstimates(); };
   renderAll();
   renderNotes();

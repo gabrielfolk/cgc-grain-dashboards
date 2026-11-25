@@ -11,6 +11,7 @@ import json
 import math
 from pathlib import Path
 
+import inputs
 from grain_data import PAGE_OF, delivery_splits, flows_sql, western_production
 from db import connect
 
@@ -138,6 +139,7 @@ def build() -> dict:
             "week_ending": week_ending.date().isoformat(),
             "generated": dt.date.today().isoformat(),
             "pages": PAGE_OF,
+            "inputs": [inputs.cgc(latest_week, week_ending.date().isoformat()), inputs.production()],
         },
         "grains": [ALL, *grains],
         "years": years,

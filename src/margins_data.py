@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 
 import dashboard_data
+import inputs
 import margins
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -23,8 +24,14 @@ def main() -> None:
     m = margins.build(now_harvest=int(cur[:4]))
     grains = [g for g in d["grains"] if g in {c["grain"] for c in m["crops"]}]
     pick = lambda table: {g: table[g] for g in grains if g in table}
+    meta = {**d["meta"], "inputs": [
+        d["meta"]["inputs"][0],  # CGC week (deliveries)
+        inputs.guide(margins.ZONE, m["meta"]["first_year"], m["meta"]["last_year"]),
+        inputs.statcan("StatCan farm prices", "32100077"),
+        inputs.production("StatCan yields and production"),
+    ]}
     data = {
-        "meta": d["meta"],
+        "meta": meta,
         "grains": grains,
         "years": d["years"],
         "deliveries": pick(d["deliveries"]),

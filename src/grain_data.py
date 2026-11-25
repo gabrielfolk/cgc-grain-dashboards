@@ -45,6 +45,7 @@ import sys
 from pathlib import Path
 
 import external
+import inputs
 from db import EASTERN_GRADE, connect
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -441,6 +442,8 @@ def build(con, slug: str, tbay_close: int | None = None) -> None:
             "generated": dt.date.today().isoformat(),
             "tbay_close_week": tbay_close,
             "forecast": cfg.get("forecast", False),
+            "inputs": [inputs.cgc(latest_week, week_ending.date().isoformat()), inputs.production()]
+                      + ([inputs.canola_estimate(int(years[-1][:4]))] if cfg.get("forecast") else []),
         },
         "years": years,
         "flows": flows,

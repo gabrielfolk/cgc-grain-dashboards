@@ -52,6 +52,8 @@ SK Crop Planning Guide PDFs ──> src/crop_guide.py ──> reference/sk_crop_
 - **Every number and every insight is computed from the data.** Things to watch cards, summary notes and
   rankings are generated in the page's script at load time, so they update with each refresh. Nothing on a page is
   written by hand for a particular week.
+- **Every page dates its inputs.** An "Inputs:" line under the title names each source with how far its data runs
+  and when it was last updated (`src/inputs.py`; StatCan update dates come from StatCan's table metadata).
 - **`src/build_site.py`** wraps each page in a full HTML document, adds the navigation bar and favicon, and writes
   `docs/`.
 - **GitHub Pages** serves `docs/` from `main`, and the site updates about a minute after a push.
