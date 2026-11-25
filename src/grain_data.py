@@ -212,8 +212,39 @@ GRAINS = {
         "lede": "Western Canadian mustard seed from CGC weekly data: producer deliveries, direct exports and commercial stocks.",
         "process": None, "feed": False, "hero": "exports",
         "notes": ["CGC reports no mustard seed processing at licensed facilities and virtually no terminal exports. Mustard exports are shipped from country elevators, split between containers and direct shipments to export destinations."],
+        # annual exports to the US (UN Comtrade), set against MLB games played (reference/mlb_regular_season_games.csv)
+        "trade": {"hs": "120750", "hs_label": "HS 1207.50 mustard seeds", "first_year": 2016, "mlb": True},
     },
 }
+
+# Ballpark mustard, for the mustard page's MLB comparison. Assumptions, not data: shown on the page as such.
+BALLPARK = {"hot_dogs_per_season": 20e6, "g_mustard_per_hot_dog": 8, "seed_share_of_prepared_mustard": 0.2}
+MLB_GAMES = ROOT / "reference" / "mlb_regular_season_games.csv"
+
+
+def trade_data(cfg: dict) -> dict | None:
+    """Annual Canada-US trade in the crop's HS code (UN Comtrade), in kt and US$, with MLB games if asked for."""
+    tr = cfg.get("trade")
+    if not tr:
+        return None
+    raw = external.comtrade_canada_us(tr["hs"], tr["first_year"])
+    kt = lambda r: round(r["kg"] / 1e6, 2) if r else None
+    years = sorted(y for y, v in raw.items() if v.get("to_us") and v.get("to_world"))
+    if not years:
+        return None
+    out = {
+        "hs": tr["hs"], "hs_label": tr["hs_label"], "years": years,
+        "to_us_kt": [kt(raw[y]["to_us"]) for y in years],
+        "to_world_kt": [kt(raw[y]["to_world"]) for y in years],
+        "to_us_usd": [round(raw[y]["to_us"]["usd"]) for y in years],
+        "us_reported_kt": [kt(raw[y].get("us_reported")) for y in years],
+    }
+    if tr.get("mlb"):
+        import csv
+        games = {int(r["season"]): int(r["games"]) for r in csv.DictReader(MLB_GAMES.open())}
+        out["mlb_games"] = [games.get(y) for y in years]
+        out["ballpark"] = BALLPARK
+    return out
 
 PAGE_OF = {cfg["grain"]: slug for slug, cfg in GRAINS.items()}
 
@@ -447,7 +478,8 @@ def build(con, slug: str, tbay_close: int | None = None) -> None:
             "forecast": cfg.get("forecast", False),
             "unit": "kt" if slug in SPECIAL_CROPS else "Mt",
             "inputs": [inputs.cgc(latest_week, week_ending.date().isoformat()), inputs.production()]
-                      + ([inputs.canola_estimate(int(years[-1][:4]))] if cfg.get("forecast") else []),
+                      + ([inputs.canola_estimate(int(years[-1][:4]))] if cfg.get("forecast") else [])
+                      + (inputs.trade(cfg["trade"]) if cfg.get("trade") else []),
         },
         "years": years,
         "flows": flows,
@@ -456,6 +488,7 @@ def build(con, slug: str, tbay_close: int | None = None) -> None:
         "channel": channel.get(cfg["grain"], {}),
         "production": western_production([cfg["grain"]], int(years[0][:4])).get(cfg["grain"], {}),
         "grades": export_grades(con, cfg["grain"], years),
+        "trade": trade_data(cfg),
     }
     out = ROOT / "dashboard" / slug
     out.mkdir(parents=True, exist_ok=True)

@@ -192,6 +192,8 @@
   .tile .label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
   .hero-value { font-size: 48px; font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; }
   .scope { font-size: 12px; color: var(--muted); margin-top: -2px; }
+  .findings { margin: 0; padding-left: 18px; display: grid; gap: 8px; font-size: 13px; color: var(--ink-2); }
+  .findings b { color: var(--ink); font-weight: 600; }
   .fc-base { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
   .fc-base th, .fc-base td { padding: 5px 6px; border-bottom: 1px solid var(--grid); text-align: left; }
   .fc-base th { font: 500 11px var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
@@ -457,6 +459,29 @@
         <div class="legend" id="leg-grade"></div>
         <div class="chart" id="ch-grade" style="height:260px"></div>
       </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="trade-h" id="trade-section" hidden>
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="trade-eyebrow"></div>
+        <h2 id="trade-h">Exports to the United States</h2>
+        <p class="sub" id="trade-sub"></p>
+      </div>
+      <button type="button" class="btn" data-copy="trade-table">Copy table</button>
+    </div>
+    <div class="two">
+      <div class="panel">
+        <div class="panel-head"><h3>Canada's exports by destination</h3><p id="trade-ch-p"></p></div>
+        <div class="legend" id="leg-trade"></div>
+        <div class="chart" id="ch-trade" style="height:240px"></div>
+      </div>
+      <div class="panel" id="trade-find-panel">
+        <div class="panel-head"><h3 id="trade-find-h">What the numbers show</h3><p id="trade-find-p"></p></div>
+        <ul class="findings" id="trade-findings"></ul>
+      </div>
+      <div class="flash-wrap wide"><table class="flash" id="trade-table"></table></div>
     </div>
   </section>
 
@@ -854,7 +879,7 @@
     const labelEvery = band < 34 ? 2 : 1;
     ys.forEach((yr, i) => {
       const cx = m.l + band * (i + 0.5), x0 = cx - bw / 2;
-      if ((ys.length - 1 - i) % labelEvery === 0) svgText(svg, { x: cx, y: H - 6, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, band >= 44 ? short(yr) : "'" + yr.slice(2, 4));
+      if ((ys.length - 1 - i) % labelEvery === 0) svgText(svg, { x: cx, y: H - 6, "text-anchor": "middle", "font-size": 11, fill: css("--muted") }, opts.label ? opts.label(yr) : band >= 44 ? short(yr) : "'" + yr.slice(2, 4));
       const vals = opts.getVals(yr);
       const segs = opts.keys.filter((k) => vals[k.key] > 0);
       let acc = 0;
@@ -874,16 +899,16 @@
         const my = y(marks[i]);
         el("line", { x1: x0 - 5, x2: x0 + bw + 5, y1: my, y2: my, stroke: css("--ink"), "stroke-width": 2, "stroke-linecap": "round" }, svg);
       }
-      const hit = el("rect", { x: cx - band / 2, y: m.t, width: band, height: ih, fill: "transparent", tabindex: 0, "aria-label": `${short(yr)}: ` + opts.keys.map((k) => `${k.label} ${fmtKt(vals[k.key])}`).join(", ") }, svg);
+      const hit = el("rect", { x: cx - band / 2, y: m.t, width: band, height: ih, fill: "transparent", tabindex: 0, "aria-label": `${(opts.label || short)(yr)}: ` + opts.keys.map((k) => `${k.label} ${fmtKt(vals[k.key])}`).join(", ") }, svg);
       const rows = () => [
         ...opts.keys.slice().reverse().map((k) => ({ value: fmtKt(vals[k.key]), label: k.label, color: k.color, kind: "rect" })),
         { value: fmtKt(totals[i]), label: "Total", em: true },
         ...(opts.marker && marks[i] != null ? [{ value: fmtKt(marks[i]), label: opts.marker.label, kind: "mark" }] : []),
         ...(opts.tipExtra ? opts.tipExtra(yr) : []),
       ];
-      hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, short(yr), rows()));
+      hit.addEventListener("pointermove", (e) => showTip(e.clientX, e.clientY, (opts.label || short)(yr), rows()));
       hit.addEventListener("pointerleave", hideTip);
-      hit.addEventListener("focus", () => { const r = hit.getBoundingClientRect(); showTip(r.right, r.top + 20, short(yr), rows()); });
+      hit.addEventListener("focus", () => { const r = hit.getBoundingClientRect(); showTip(r.right, r.top + 20, (opts.label || short)(yr), rows()); });
       hit.addEventListener("blur", hideTip);
     });
   }
@@ -2146,6 +2171,66 @@
     }
   }
 
+  // ---------- exports to the US (UN Comtrade, calendar years), with MLB games where the crop asks for them ----------
+  function renderTrade() {
+    const T = D.trade;
+    $("trade-section").hidden = !T;
+    if (!T) return;
+    const Y = T.years.map(String), n = Y.length, last = n - 1;
+    const us = T.to_us_kt, world = T.to_world_kt, rest = world.map((w, i) => w - us[i]);
+    const share = us.map((u, i) => u / world[i]);
+    // straight-line trend of US imports, and the typical year-to-year swing around it
+    const xs = T.years, xm = mean(xs), ym = mean(us);
+    const b = xs.reduce((s, x, i) => s + (x - xm) * (us[i] - ym), 0) / xs.reduce((s, x) => s + (x - xm) ** 2, 0);
+    const a = ym - b * xm, fit = (x) => a + b * x;
+    const swing = Math.sqrt(us.reduce((s, u, i) => s + (u - fit(xs[i])) ** 2, 0) / (n - 2));
+    const agree = Math.max(...us.map((u, i) => T.us_reported_kt[i] ? Math.abs(T.us_reported_kt[i] / u - 1) : 0));
+    const kt1 = (v) => v.toFixed(1) + " kt";
+    $("trade-eyebrow").textContent = `UN Comtrade · ${T.hs_label} · calendar years ${Y[0]}–${Y[last]}`;
+    $("trade-sub").textContent = `All of Canada's ${NAME.toLowerCase()} exports by destination, from customs records, including what moves straight from processors by truck and rail, which CGC's weekly data does not see. Thousand tonnes per calendar year.`;
+    $("trade-ch-p").textContent = "Thousand tonnes per calendar year. The label is the US share.";
+    legend($("leg-trade"), [{ label: "United States", color: "var(--exports)", kind: "rect" }, { label: "Rest of world", color: EAST_TONE, kind: "rect" }]);
+    yearStack($("ch-trade"), {
+      years: Y, label: (y) => y, aria: `${NAME} exports to the US and the rest of the world by calendar year`,
+      keys: [{ key: "us", label: "United States", color: "var(--exports)" }, { key: "rest", label: "Rest of world", color: EAST_TONE }],
+      getVals: (y) => { const i = Y.indexOf(y); return { us: us[i], rest: rest[i] }; },
+      capLabel: (y) => Math.round(100 * share[Y.indexOf(y)]) + "%",
+    });
+    const head = ["Thousand tonnes", "To US", "Rest of world", "Total", "US share", "US value, US$ M", "US$/t", "US-reported imports"].concat(T.mlb_games ? ["MLB games"] : []);
+    buildTable($("trade-table"), head, [[null, Y.map((y, i) => ({ label: y, cells: [
+      us[i].toFixed(1), rest[i].toFixed(1), world[i].toFixed(1), Math.round(100 * share[i]) + "%",
+      (T.to_us_usd[i] / 1e6).toFixed(1), Math.round(T.to_us_usd[i] / (us[i] * 1000)).toLocaleString(),
+      T.us_reported_kt[i] == null ? "–" : T.us_reported_kt[i].toFixed(1),
+    ].concat(T.mlb_games ? [T.mlb_games[i] == null ? "–" : T.mlb_games[i].toLocaleString()] : []) }))]], [1, 4]);
+
+    // findings, all computed from the series above
+    const ul = $("trade-findings");
+    ul.replaceChildren();
+    const li = (lead, text) => { const l = document.createElement("li"); const bb = document.createElement("b"); bb.textContent = lead + " "; l.append(bb, text); ul.appendChild(l); };
+    const chg = us[last] / us[0] - 1;
+    li("US demand.", `Canada shipped ${kt1(us[last])} of ${NAME.toLowerCase()} to the US in ${Y[last]}, ${fmtPct(chg)} on ${Y[0]} (trend ${b >= 0 ? "+" : "−"}${Math.abs(b).toFixed(1)} kt a year). The US took ${Math.round(100 * share[last])}% of Canada's exports (${Math.round(100 * Math.min(...share))}–${Math.round(100 * Math.max(...share))}% since ${Y[0]}). US import records agree with Canada's export records to within ${(100 * agree).toFixed(1)}% every year.`);
+    if (T.mlb_games) {
+      const g = T.mlb_games, full = [...g].filter((v) => v != null).sort((p, q) => p - q)[Math.floor(g.filter((v) => v != null).length / 2)];
+      const short_ = g.map((v, i) => v != null && v < 0.75 * full ? i : -1).filter((i) => i > 0 && i < last);
+      const gm = mean(g), um = mean(us);
+      const r = g.reduce((s, v, i) => s + (v - gm) * (us[i] - um), 0) / Math.sqrt(g.reduce((s, v) => s + (v - gm) ** 2, 0) * us.reduce((s, u) => s + (u - um) ** 2, 0));
+      $("trade-find-h").textContent = "Does baseball move mustard demand?";
+      $("trade-find-p").textContent = "Computed from the table; the ballpark amounts are assumptions, not data.";
+      for (const i of short_) {
+        const dev = us[i] - (us[i - 1] + us[i + 1]) / 2;
+        li("The one test.", `A full MLB season is about ${full.toLocaleString()} regular-season games; ${Y[i]} had ${g[i].toLocaleString()} (${fmtPct(g[i] / full - 1)}). US imports that year were ${kt1(us[i])}, ${dev >= 0 ? "+" : "−"}${kt1(Math.abs(dev))} against the average of ${Y[i - 1]} and ${Y[i + 1]}, ` +
+          (Math.abs(dev) < swing ? `inside the normal year-to-year swing of ±${kt1(swing)}: no sign of the shorter season.` : `outside the normal swing of ±${kt1(swing)}.`));
+      }
+      li("Across all years,", `games played explain ${Math.round(100 * r * r)}% of the change in US imports${Math.abs(r) < 0.3 ? ", which is nothing" : ""}.`);
+      const P = T.ballpark, seed = P.hot_dogs_per_season * P.g_mustard_per_hot_dog * P.seed_share_of_prepared_mustard / 1e6;
+      li("Ballpark mustard (assumptions).", `${(P.hot_dogs_per_season / 1e6).toFixed(0)} million hot dogs a season × ${P.g_mustard_per_hot_dog} g of prepared mustard × ${Math.round(100 * P.seed_share_of_prepared_mustard)}% seed ≈ ${Math.round(seed)} t of seed, ${(100 * seed / (us[last] * 1000)).toFixed(2)}% of ${Y[last]}'s US imports from Canada.`);
+      const next = T.years[last] + 1;
+      li("If MLB games were cut in half,", `about ${Math.round(seed / 2)} t less seed a year at most. US demand would follow its trend instead: about ${kt1(fit(next))} in ${next}, ±${kt1(swing)} (a straight-line trend, not a backtested forecast).`);
+    } else {
+      $("trade-find-p").textContent = "Computed from the table.";
+    }
+  }
+
   let FORECAST = null;
   if (META.forecast) fetch("forecast.json").then((r) => r.ok ? r.json() : null).then((F) => { if (F) { FORECAST = F; renderForecast(F); } }).catch(() => {});
 
@@ -2205,10 +2290,11 @@
   renderProvWeek();
   renderElev();
   renderPorts();
+  renderTrade();
   renderWatch();
   renderHistory();
 
-  const rerender = () => { renderYear(); renderFarm(); renderProvWeek(); renderElev(); renderPorts(); renderHistory(); if (FORECAST) renderForecast(FORECAST); };
+  const rerender = () => { renderYear(); renderFarm(); renderProvWeek(); renderElev(); renderPorts(); renderTrade(); renderHistory(); if (FORECAST) renderForecast(FORECAST); };
   let rt;
   new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(rerender, 120); }).observe(document.querySelector(".wrap"));
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerender);

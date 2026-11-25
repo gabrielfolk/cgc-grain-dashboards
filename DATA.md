@@ -107,6 +107,18 @@ Table 32-10-0007 (stocks) is in the cache but not used yet.
   [The Daily](https://www150.statcan.gc.ca/n1/dai-quo/index-eng.htm).
 - StatCan's Saskatchewan soybean farm price has too many gaps to use, so the margins page leaves soybeans out.
 
+## UN Comtrade (trade by destination)
+
+- Annual trade in one HS code by partner country, calendar years, from the free preview API
+  (comtradeapi.un.org/public/v1/preview, one year per call, rate-limited: about 3.5 minutes for 10 years).
+- Used on the mustard page (HS 1207.50, mustard seeds, from 2016): Canada's exports to the US and to the world
+  (Canada reporting), and US imports from Canada (US reporting) as a cross-check. The two agree to within 0.4% a year.
+- Covers all exports from customs records, including grain shipped straight from processors by truck and rail, which
+  CGC's weekly data does not see (CGC shows 23–50 kt of mustard exports a year; Comtrade 87–121 kt).
+- `external.comtrade_canada_us(hs, first_year)`, cached in `data/raw/external/comtrade_<hs>.json`. `--refresh`
+  re-downloads it at most monthly; unpublished years are retried on each build; a failed call keeps the cache.
+- Turn it on for another crop with `"trade": {"hs": ..., "hs_label": ..., "first_year": ...}` in its `GRAINS` entry.
+
 ## Market data
 
 Weekly closes from the Yahoo Finance chart API, cached in `data/raw/external/yahoo_<symbol>.json`:
@@ -158,6 +170,9 @@ Hand-curated inputs, in git:
 - `reference/statcan_canola_vintages.csv`: StatCan's in-season canola production estimates as released (harvest
   year, release date, Mt, survey, link).
 - `reference/sk_crop_planning_guide.csv`: the parsed Crop Planning Guide budgets.
+- `reference/mlb_regular_season_games.csv`: MLB regular-season games played per season (MLB Stats API standings:
+  sum of team wins and losses ÷ 2), for the mustard page's comparison. Add each season when it ends. The ballpark
+  mustard amounts on that page (hot dogs, grams, seed share) are assumptions in `BALLPARK` in `src/grain_data.py`.
 - `reference/statcan_livestock_feed_1999.csv`: StatCan's per-animal feed rates by province, livestock subclass and
   ingredient (t per head per year; poultry per bird), from table 7 of the Livestock Feed Requirements Study 1999–2001.
   Blank values are suppressed in the source; the model uses the Canada rate for them.

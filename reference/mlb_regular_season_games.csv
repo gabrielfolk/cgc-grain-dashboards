@@ -1,0 +1,12 @@
+season,games,source
+2016,2427,"MLB Stats API standings (statsapi.mlb.com/api/v1/standings, leagueId 103,104, regularSeason): sum of team wins + losses / 2"
+2017,2430,"MLB Stats API standings (statsapi.mlb.com/api/v1/standings, leagueId 103,104, regularSeason): sum of team wins + losses / 2"
+2018,2431,"MLB Stats API standings (statsapi.mlb.com/api/v1/standings, leagueId 103,104, regularSeason): sum of team wins + losses / 2"
+2019,2429,"MLB Stats API standings (statsapi.mlb.com/api/v1/standings, leagueId 103,104, regularSeason): sum of team wins + losses / 2"
+2020,898,"MLB Stats API standings (statsapi.mlb.com/api/v1/standings, leagueId 103,104, regularSeason): sum of team wins + losses / 2"
+2021,2429,"MLB Stats API standings (statsapi.mlb.com/api/v1/standings, leagueId 103,104, regularSeason): sum of team wins + losses / 2"
+2022,2430,"MLB Stats API standings (statsapi.mlb.com/api/v1/standings, leagueId 103,104, regularSeason): sum of team wins + losses / 2"
+2023,2430,"MLB Stats API standings (statsapi.mlb.com/api/v1/standings, leagueId 103,104, regularSeason): sum of team wins + losses / 2"
+2024,2429,"MLB Stats API standings (statsapi.mlb.com/api/v1/standings, leagueId 103,104, regularSeason): sum of team wins + losses / 2"
+2025,2430,"MLB Stats API standings (statsapi.mlb.com/api/v1/standings, leagueId 103,104, regularSeason): sum of team wins + losses / 2"
+2026,2429,"MLB Stats API standings (statsapi.mlb.com/api/v1/standings, leagueId 103,104, regularSeason): sum of team wins + losses / 2"

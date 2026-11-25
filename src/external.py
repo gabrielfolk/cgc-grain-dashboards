@@ -268,6 +268,55 @@ def cgc_grade_distribution(cls: str, years: range, refresh: bool = False) -> pd.
     return pd.DataFrame(rows)
 
 
+COMTRADE = "https://comtradeapi.un.org/public/v1/preview/C/A/HS"  # free preview: one year per call, rate-limited
+COMTRADE_MAX_AGE_DAYS = 30  # annual data: re-download at most monthly
+
+
+def _comtrade_one(params: dict) -> dict | None:
+    """One Comtrade preview call (total over modes and customs procedures): {kg, usd}, or None if not published."""
+    import time
+    for _ in range(6):
+        r = requests.get(COMTRADE, params=params, timeout=60)
+        if r.status_code == 429:
+            time.sleep(4)
+            continue
+        r.raise_for_status()
+        rows = [x for x in r.json().get("data", []) if x.get("partner2Code") in (0, None)
+                and x.get("motCode") in (0, None) and x.get("customsCode") in ("C00", None)]
+        return {"kg": rows[0]["netWgt"], "usd": rows[0]["primaryValue"]} if rows and rows[0].get("netWgt") else None
+    raise RuntimeError(f"Comtrade: rate-limited ({params})")
+
+
+def comtrade_canada_us(hs: str, first_year: int, refresh: bool = False) -> dict:
+    """Annual trade in one HS code from UN Comtrade, calendar years first_year to last year:
+    {year: {"to_us": {kg, usd}, "to_world": {kg, usd}, "us_reported": {kg, usd}}}. Canada's exports to the US
+    and to the world (Canada reporting), and US imports from Canada (US reporting, a cross-check).
+    Cached in data/raw/external/comtrade_<hs>.json; years not yet published are retried on refresh.
+    If a download fails, the cached copy is kept."""
+    import time
+    path = RAW / f"comtrade_{hs}.json"
+    cached = json.loads(path.read_text()) if path.exists() else {}
+    age = (dt.datetime.now().timestamp() - path.stat().st_mtime) / 86400 if path.exists() else None
+    last = dt.date.today().year - 1
+    missing = [y for y in range(first_year, last + 1) if str(y) not in cached or not all(cached[str(y)].values())]
+    if not (refresh and (age is None or age > COMTRADE_MAX_AGE_DAYS)) and not missing:
+        return {int(y): v for y, v in cached.items()}
+    years = range(first_year, last + 1) if refresh and (age is None or age > COMTRADE_MAX_AGE_DAYS) else missing
+    out = dict(cached)
+    try:
+        for y in years:
+            rec = {}
+            for key, rep, par, flow in (("to_us", "124", "842", "X"), ("to_world", "124", "0", "X"), ("us_reported", "842", "124", "M")):
+                rec[key] = _comtrade_one({"reporterCode": rep, "partnerCode": par, "flowCode": flow, "cmdCode": hs, "period": str(y)})
+                time.sleep(1.2)
+            out[str(y)] = rec
+    except (requests.RequestException, RuntimeError, ValueError) as e:
+        print(f"WARNING: Comtrade {hs}: {e}; keeping the cached years")
+    RAW.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(out, indent=1, sort_keys=True))
+    return {int(y): v for y, v in out.items()}
+
+
 def refresh_cache(markets_only: bool = False) -> None:
     """Re-download every StatCan table and Yahoo series in the cache (whichever script first
     fetched it), plus the canola forecast's own inputs. Each script only downloads what is
@@ -281,6 +330,10 @@ def refresh_cache(markets_only: bool = False) -> None:
     for name in OPEN_CSV:
         d = open_csv(name, refresh=True)
         print(f"{name}: {len(d)} rows")
+    for p in RAW.glob("comtrade_*.json"):
+        hs = p.stem.removeprefix("comtrade_")
+        d = comtrade_canada_us(hs, min(int(y) for y in json.loads(p.read_text())), refresh=True)
+        print(f"Comtrade {hs}: to {max(d)}")
     tables = {p.stem for p in RAW.glob("[0-9]*.csv")} | set(STATCAN_TABLES.values())
     for t in sorted(tables):
         d = _statcan_csv(t, refresh=True)

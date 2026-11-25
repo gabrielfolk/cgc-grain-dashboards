@@ -88,3 +88,15 @@ def markets(label: str, *symbols: str) -> str:
 
 def guide(zone: str, first: int, last: int) -> str:
     return f"Saskatchewan Crop Planning Guide, {zone} zone budgets, {first}–{last}"
+
+
+def trade(tr: dict) -> list[str]:
+    """UN Comtrade annual trade, and MLB games if the page uses them."""
+    d = external.comtrade_canada_us(tr["hs"], tr["first_year"])
+    done = [y for y, v in d.items() if v.get("to_us") and v.get("to_world")]
+    out = [f"UN Comtrade, {tr['hs_label']}, calendar years {min(done)}–{max(done)}"] if done else []
+    if tr.get("mlb"):
+        import csv
+        seasons = [int(r["season"]) for r in csv.DictReader((external.ROOT / "reference" / "mlb_regular_season_games.csv").open())]
+        out.append(f"MLB regular-season games (MLB Stats API), {min(seasons)}–{max(seasons)}")
+    return out
