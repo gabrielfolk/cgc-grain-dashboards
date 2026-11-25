@@ -587,7 +587,7 @@
 
     const tot = dmTot(cur, "canada");
     const t1 = tile(`Feed estimate, Canada, ${short(cur)}`);
-    big(t1, (tot / 1000).toFixed(1), "million t", "hero-value");
+    big(t1, (tot / 1000).toFixed(1), "Mt", "hero-value");
     deltas(t1, [[pct(tot, dmTot(ly, "canada")), `vs ${short(ly)}`], [pct(tot, dmAvg(cur, "canada")), "vs 5-yr average"]]);
     { const rg = dmRange(cur, "canada"); note(t1, `Range ${(rg[0] / 1000).toFixed(1)}–${(rg[1] / 1000).toFixed(1)} Mt`); }
     { // the judgment inputs that move the Canada total most, low to high value: up to three, leaving out any
@@ -602,7 +602,7 @@
     for (const r of REG) {
       const e = dmTot(cur, r.key);
       const t = tile(`${r.long}, ${short(cur)}`, r.color);
-      big(t, (e / 1000).toFixed(1), "million t");
+      big(t, (e / 1000).toFixed(1), "Mt");
       deltas(t, [[pct(e, dmTot(ly, r.key)), `vs ${short(ly)}`], [pct(e, dmAvg(cur, r.key)), "vs 5-yr avg"]]);
       { const rg = dmRange(cur, r.key); note(t, `Range ${(rg[0] / 1000).toFixed(1)}–${(rg[1] / 1000).toFixed(1)} Mt · ${Math.round(100 * e / tot)}% of Canada`); }
       note(t, byGrain(r.key, 3));
@@ -610,7 +610,7 @@
 
     const sc = residual(scYear, "canada"), m = dmTot(scYear, "canada");
     const t4 = tile(`StatCan feed use, ${short(scYear)}`);
-    big(t4, (sc / 1000).toFixed(1), "million t");
+    big(t4, (sc / 1000).toFixed(1), "Mt");
     deltas(t4, [[pct(sc, m), `vs the model's ${fmtKt(m)}`]]);
     note(t4, `StatCan's residual (it also carries waste, dockage and balancing error). Its ${short(cur)} figure comes out in December, March and July.${cornStar(scYear) ? " Corn estimated until August is published." : ""}`);
   }

@@ -97,6 +97,9 @@ PROVINCES = {
     "Manitoba": "MB",
 }
 
+# Special crops: their pages give totals in kt (the others in Mt); also the nav's Special Crops menu
+SPECIAL_CROPS = ["flaxseed", "rye", "beans", "canaryseed", "chickpeas", "mustard"]
+
 GRAINS = {
     "canola": {
         "grain": "Canola", "title": "Canola Pipeline", "name": "canola",
@@ -442,6 +445,7 @@ def build(con, slug: str, tbay_close: int | None = None) -> None:
             "generated": dt.date.today().isoformat(),
             "tbay_close_week": tbay_close,
             "forecast": cfg.get("forecast", False),
+            "unit": "kt" if slug in SPECIAL_CROPS else "Mt",
             "inputs": [inputs.cgc(latest_week, week_ending.date().isoformat()), inputs.production()]
                       + ([inputs.canola_estimate(int(years[-1][:4]))] if cfg.get("forecast") else []),
         },

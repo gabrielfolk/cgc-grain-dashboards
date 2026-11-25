@@ -191,6 +191,17 @@
   .tile { background: var(--surface); padding: 18px 20px; display: grid; gap: 6px; align-content: start; }
   .tile .label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
   .hero-value { font-size: 48px; font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; }
+  .scope { font-size: 12px; color: var(--muted); margin-top: -2px; }
+  .fc-base { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+  .fc-base th, .fc-base td { padding: 5px 6px; border-bottom: 1px solid var(--grid); text-align: left; }
+  .fc-base th { font: 500 11px var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+  .fc-base .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .fc-base th, .fc-base td:first-child { white-space: normal; }
+  .fc-base td.num { white-space: nowrap; }
+  #fc-section .panel { min-width: 0; grid-template-columns: minmax(0, 1fr); }
+  .fc-base-wrap { overflow-x: auto; }
+  .fc-base tr.is-fc td { font-weight: 600; color: var(--ink); }
+  .fc-base td.best { color: var(--ink); font-weight: 600; }
   .hero-value small, .tile-value small { font-size: 0.42em; font-weight: 500; color: var(--ink-2); margin-left: 4px; letter-spacing: 0; }
   .tile-value { font-size: 28px; font-weight: 600; line-height: 1.15; }
   .deltas { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--ink-2); font-size: 13px; }
@@ -564,10 +575,13 @@
   // ---------- helpers ----------
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const short = (y) => y.slice(0, 5) + y.slice(7);
+  // totals in one unit per page: Mt, or kt on the special-crop pages (meta.unit); weekly figures are always kt
+  const UNIT = (D.meta && D.meta.unit) || "Mt";
+  const mtDigits = (a) => a >= 10000 ? 1 : a >= 100 ? 2 : 3;
   function fmtKt(v) {
     if (v == null || !isFinite(v)) return "–";
     const a = Math.abs(v);
-    if (a >= 1000) return (v / 1000).toFixed(a >= 10000 ? 1 : 2) + " Mt";
+    if (UNIT === "Mt") return (v / 1000).toFixed(mtDigits(a)) + " Mt";
     if (a >= 10) return Math.round(v).toLocaleString() + " kt";
     return v.toFixed(1) + " kt";
   }
@@ -938,12 +952,16 @@
       host.appendChild(t);
       return t;
     };
+    // the headline tile names what the figures cover; the others just give the unit
     const valueEl = (parent, v, cls) => {
       const d = document.createElement("div");
       d.className = cls;
-      if (v >= 1000) { d.textContent = (v / 1000).toFixed(2); const s = document.createElement("small"); s.textContent = "million t"; d.appendChild(s); }
-      else { d.textContent = v >= 10 ? Math.round(v).toLocaleString() : (v || 0).toFixed(1); const s = document.createElement("small"); s.textContent = "thousand t"; d.appendChild(s); }
+      d.textContent = fmtKt(v || 0).replace(/ (Mt|kt)$/, "");
+      const s = document.createElement("small");
+      s.textContent = UNIT;
+      d.appendChild(s);
       parent.appendChild(d);
+      if (cls === "hero-value") { const c = document.createElement("div"); c.className = "scope"; c.textContent = "Western Canada, licensed system"; parent.appendChild(c); }
     };
     const deltas = (parent, now, fn, w) => {
       const avg = mean(ref.map((r) => at(fn(r), w))), last = at(fn(lastYr), w);
@@ -1415,8 +1433,9 @@
     const a = document.createElement("a"); a.href = "../methods/#" + anchor; a.textContent = "how";
     d.appendChild(a); parent.appendChild(d);
   }
-  // exact enough to redo the sum: whole kt, one decimal under 100 kt
-  const fx = (v) => v == null ? "–" : Math.abs(v) >= 100 ? Math.round(v).toLocaleString("en-CA") + " kt" : v.toFixed(1) + " kt";
+  // exact enough to redo the sum: Mt to three decimals (whole kt), or kt on special-crop pages
+  const fx = (v) => v == null ? "–" : UNIT === "Mt" ? (v / 1000).toFixed(3) + " Mt"
+    : Math.abs(v) >= 100 ? Math.round(v).toLocaleString("en-CA") + " kt" : v.toFixed(1) + " kt";
   const fr = (v) => v.toFixed(v >= 10 ? 1 : 2);  // a weekly rate, kt/wk
   // share of StatCan's western production delivered by this week, against the previous five crop years
   function sizedPace() {
@@ -1883,7 +1902,7 @@
   // ---------- forecast ----------
   const FC = { crush: { label: META.process ? META.process.label : "Processing", color: "var(--process)", flow: "process" }, exports: { label: "Exports", color: "var(--exports)", flow: "exports" } };
   const tone = (c) => `color-mix(in oklab, ${c} 40%, var(--surface))`;
-  const BASE_NAMES = { last_year: "last year's total", trend: "trend", pace: "pace", run_rate: "run rate", supply_share: "StatCan supply", supply_residual: "supply after crush" };
+  const BASE_NAMES = { last_year: "last year's total", trend: "trend of past totals", pace: "pace (so far ÷ usual share by now)", run_rate: "run rate (so far + rest at recent pace)", supply_share: "StatCan crop × usual share", supply_residual: "StatCan crop less crush × usual share" };
   const fmtMt = (kt) => (kt / 1000).toFixed(kt >= 10000 ? 1 : 2) + " Mt";
 
   // full-year range: 80% band, point forecast, last year's total as a tick
@@ -1999,21 +2018,39 @@
       d.style.cssText = `background:${FC[key].color};margin-right:6px`;
       h.append(d, document.createTextNode(FC[key].label));
       head.appendChild(h);
+      // 1. next 4 weeks: the most useful part, so it leads
+      const fc4 = wk.forecast.slice(0, 4), wks = fc4.map((q) => q.week);
+      const avg4 = mean(fc4.map((q) => q.forecast));
+      const actualWk = diff(upTo(series[FC[key].flow](cur), W_NOW));
+      const last4 = mean(actualWk.slice(Math.max(0, W_NOW - 4), W_NOW));
+      const avgW = stat(ref.map((r) => diff(series[FC[key].flow](r)))).avg;
+      const usual4 = mean(wks.map((w) => avgW[w - 1]));
       const top = document.createElement("div");
       top.className = "fc-top";
       const v = document.createElement("div");
       v.className = "fc-value";
-      v.textContent = (f.forecast / 1000).toFixed(1);
+      v.textContent = Math.round(avg4).toLocaleString();
       const u = document.createElement("small");
-      u.textContent = `million t in ${short(cur)}`;
+      u.textContent = `kt/wk, weeks ${wks[0]}–${wks[wks.length - 1]}`;
       v.appendChild(u);
       const sub = document.createElement("div");
       sub.className = "fc-sub";
-      sub.append(chip(pct(f.forecast, f.last_year_actual)), document.createTextNode(` vs ${short(lastYr)} · 80% range ${fmtMt(f.low)} to ${fmtMt(f.high)}`));
+      sub.append(chip(pct(avg4, last4)), document.createTextNode(` vs the last 4 weeks (${Math.round(last4)} kt/wk) · `),
+        chip(pct(avg4, usual4)), document.createTextNode(` vs the 5-yr average for these weeks`));
       top.append(v, sub);
-      const range = document.createElement("div");
-      range.className = "chart";
-      range.style.height = "64px";
+      const perWk = document.createElement("div");
+      perWk.className = "fc-note";
+      perWk.textContent = fc4.map((q) => `W${q.week} ${Math.round(q.forecast)} (${Math.round(q.low)}–${Math.round(q.high)})`).join(" · ") + " kt, 80% range";
+      // backtest: the model against the best simple rule, averaged over 1 to 4 weeks ahead
+      const hz = ["1", "2", "3", "4"].filter((h) => wk.mae_by_horizon[h]);
+      const err = (m) => mean(hz.map((h) => wk.mae_by_horizon[h][m]));
+      const WK_NAMES = { last_year: "the same week last year", recent_4wk: "the last 4 weeks' average", seasonal_4wk: "the last 4 weeks, seasonally adjusted" };
+      const simple = Object.keys(WK_NAMES).filter((m) => err(m) != null).sort((a, b) => err(a) - err(b))[0];
+      const bt = document.createElement("div");
+      bt.className = "fc-note";
+      const mErr = err(wk.best), sErr = err(simple);
+      bt.textContent = `Backtest, 1–4 weeks ahead: typical error ±${Math.round(mErr)} kt a week, against ±${Math.round(sErr)} kt for ${WK_NAMES[simple]}` +
+        (mErr < sErr ? ` (${Math.round(100 * (1 - mErr / sErr))}% smaller).` : `, so the model does not beat it.`);
       const wl = document.createElement("div");
       wl.className = "fc-label";
       wl.textContent = `Weekly, kt: actual through week ${W_NOW}, forecast for weeks ${W_NOW + 1}–${wk.forecast[wk.forecast.length - 1].week}`;
@@ -2023,12 +2060,44 @@
       const weekly = document.createElement("div");
       weekly.className = "chart";
       weekly.style.height = "210px";
-      const acc = document.createElement("div");
-      acc.className = "fc-note";
-      const fyErr = f.mape_by_origin[bucketOf(W_NOW)].combo;
-      const wkErr = wk.mae_by_horizon["1"][wk.best];
-      acc.textContent = `Typical error at this point in the year: ±${fyErr.toFixed(0)}% on the full-year total, ±${Math.round(wkErr)} kt on next week.`;
-      host.append(head, top, range, wl, legendHost, weekly, acc);
+
+      // 2. full year, beside the simple estimates it is built from, with each one's backtest error now
+      const fyl = document.createElement("div");
+      fyl.className = "fc-label";
+      fyl.style.marginTop = "8px";
+      fyl.textContent = `Full crop year ${short(cur)}`;
+      const fyv = document.createElement("div");
+      fyv.className = "fc-sub";
+      fyv.append(document.createTextNode(`Forecast ${fmtMt(f.forecast)}, 80% range ${fmtMt(f.low)} to ${fmtMt(f.high)} · `), chip(pct(f.forecast, f.last_year_actual)), document.createTextNode(` vs ${short(lastYr)}`));
+      const range = document.createElement("div");
+      range.className = "chart";
+      range.style.height = "64px";
+      const bucket = f.mape_by_origin[bucketOf(W_NOW)];
+      const methods = [["combo", "Forecast (weighted mix)", f.forecast],
+        ...Object.keys(BASE_NAMES).filter((k) => f.baselines[k] != null && bucket[k] != null && !(key === "crush" && k === "supply_residual"))
+          .map((k) => [k, BASE_NAMES[k][0].toUpperCase() + BASE_NAMES[k].slice(1), f.baselines[k]])]
+        .sort((a, b) => bucket[a[0]] - bucket[b[0]]);
+      const tbl = document.createElement("table");
+      tbl.className = "fc-base";
+      const hr = tbl.createTHead().insertRow();
+      for (const [c, num] of [["Estimate", false], [short(cur).replace("-", "\u2011"), true], [`Typical error from week ${W_NOW}`, true]]) { const th = document.createElement("th"); th.scope = "col"; th.textContent = c; if (num) th.className = "num"; hr.appendChild(th); }
+      const tb = tbl.createTBody();
+      methods.forEach(([k, name, val], i) => {
+        const tr = tb.insertRow();
+        if (k === "combo") tr.className = "is-fc";
+        const c0 = tr.insertCell(); c0.textContent = name + (f.weights[k] > 0 ? ` · weight ${Math.round(100 * f.weights[k])}%` : "");
+        const c1 = tr.insertCell(); c1.className = "num"; c1.textContent = fmtMt(val);
+        const c2 = tr.insertCell(); c2.className = "num" + (i === 0 ? " best" : ""); c2.textContent = "±" + bucket[k].toFixed(1) + "%";
+      });
+      const verdict = document.createElement("div");
+      verdict.className = "fc-note";
+      verdict.textContent = methods[0][0] === "combo"
+        ? `From this point in the year the forecast has been the most accurate of these (±${bucket.combo.toFixed(1)}%).`
+        : `From this point in the year, "${methods[0][1]}" alone (${fmtMt(methods[0][2])}) has been more accurate than the forecast: ±${bucket[methods[0][0]].toFixed(1)}% against ±${bucket.combo.toFixed(1)}%.`;
+      const tw = document.createElement("div");
+      tw.className = "fc-base-wrap";
+      tw.appendChild(tbl);
+      host.append(head, top, perWk, bt, wl, legendHost, weekly, fyl, fyv, range, tw, verdict);
       rangeChart(range, f, FC[key].color, short(lastYr));
       forecastWeeks(weekly, key, wk.forecast, FC[key].color);
     }

@@ -366,6 +366,7 @@
     <h2 id="models">Forecasts and models</h2>
     <div class="defs">
       <div class="def" id="canola-forecast"><h3><a href="#canola-forecast">Canola crush and export forecast</a></h3><div>
+        <p>The page leads with the next four weeks, the part with a real edge: each panel compares the model's backtest error 1–4 weeks ahead with the best simple rule (the last 4 weeks' average, that average seasonally adjusted, or the same week last year). The full-year forecast is listed with the simple estimates it is built from, ranked by their backtest error from the current week, so a simple estimate that has done better at this point in the year shows above it.</p>
         <p>The weekly model is a ridge regression on recent pace, seasonality, stocks and deliveries; the export model also uses StatCan's latest production estimate. The full-year forecast is a weighted mix of simple estimates, with weights learned from earlier crop years for each week of the year. The 80% ranges come from backtest errors. Soybean-complex price inputs were tested and did not improve accuracy, so they are not used. Method and backtest: <a href="https://github.com/gabrielfolk/cgc-grain-dashboards/blob/main/reports/canola_forecast.md" target="_blank" rel="noopener">reports/canola_forecast.md</a>.</p>
       </div></div>
       <div class="def" id="feed-estimate"><h3><a href="#feed-estimate">Feed use estimate</a></h3><div>

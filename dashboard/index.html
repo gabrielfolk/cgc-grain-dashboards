@@ -111,6 +111,7 @@
   header { display: grid; gap: 14px; }
   .asof { font-size: 13px; color: var(--muted); }
   .asof.inputs { margin-top: 4px; font-size: 12px; }
+  .scope { font-size: 12px; color: var(--muted); }
   .formula { font: 12px/1.45 var(--mono); color: var(--ink-2); margin-top: 6px; }
   .formula a { font-family: var(--sans); color: var(--muted); margin-left: 6px; white-space: nowrap; }
 
@@ -498,10 +499,13 @@
   // ---------- helpers ----------
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const short = (y) => y.slice(0, 5) + y.slice(7);  // 2026-2027 -> 2026-27
+  // totals in one unit per page: Mt, or kt on the special-crop pages (meta.unit); weekly figures are always kt
+  const UNIT = (D.meta && D.meta.unit) || "Mt";
+  const mtDigits = (a) => a >= 10000 ? 1 : a >= 100 ? 2 : 3;
   function fmtKt(v) {
     if (v == null || !isFinite(v)) return "–";
     const a = Math.abs(v);
-    if (a >= 1000) return (v / 1000).toFixed(a >= 10000 ? 1 : 2) + " Mt";
+    if (UNIT === "Mt") return (v / 1000).toFixed(mtDigits(a)) + " Mt";
     if (a >= 10) return Math.round(v).toLocaleString() + " kt";
     return v.toFixed(1) + " kt";
   }
@@ -1296,8 +1300,9 @@
     const a = document.createElement("a"); a.href = "methods/#" + anchor; a.textContent = "how";
     d.appendChild(a); parent.appendChild(d);
   }
-  // exact enough to redo the sum: whole kt, one decimal under 100 kt
-  const fx = (v) => v == null ? "–" : Math.abs(v) >= 100 ? Math.round(v).toLocaleString("en-CA") + " kt" : v.toFixed(1) + " kt";
+  // exact enough to redo the sum: Mt to three decimals (whole kt)
+  const fx = (v) => v == null ? "–" : UNIT === "Mt" ? (v / 1000).toFixed(3) + " Mt"
+    : Math.abs(v) >= 100 ? Math.round(v).toLocaleString("en-CA") + " kt" : v.toFixed(1) + " kt";
   const listJoin = (a) => a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
 
   function renderInsights() {
@@ -1323,7 +1328,7 @@
     const big = (c, value, unit) => { const b = document.createElement("div"); b.className = "big"; b.textContent = value; if (unit) { const u = document.createElement("small"); u.textContent = unit; b.appendChild(u); } c.appendChild(b); };
     const list = (c, items) => {
       const r = document.createElement("div"); r.className = "rows";
-      for (const it of items) { const sp = document.createElement("span"); const n = document.createElement("span"); n.textContent = it.label; sp.append(n, chip(it.value, it.suffix)); r.appendChild(sp); }
+      for (const it of items) { const sp = document.createElement("span"); const n = document.createElement("span"); n.textContent = it.label; sp.append(n); if (it.value !== undefined) sp.append(chip(it.value, it.suffix)); r.appendChild(sp); }
       c.appendChild(r);
     };
 
@@ -1331,6 +1336,7 @@
     const verdict = allSized < -0.03 ? "Farmers are holding back" : allSized > 0.03 ? "Farmers are selling faster than usual" : "Farmers are selling at a normal pace";
     const c1 = card("Overall, sized to the crop", verdict);
     big(c1, pctTxt(allShare, 1), `of the ${harvest} crops delivered`);
+    { const s = document.createElement("div"); s.className = "scope"; s.textContent = "Western Canada, licensed system"; c1.appendChild(s); }
     formula(c1, `= ${fx(nowT.del)} delivered ÷ ${fx(nowT.prod)} western production, ${nowT.n} crops`, "share-delivered");
     para(c1, `Normally ${pctTxt(normShare, 1)} is delivered by week ${W_NOW}. Deliveries are ${fmtPct(allRaw)} against the 5-year average, but western crops are ${fmtPct(allSize)} ${allSize >= 0 ? "bigger" : "smaller"}.`);
 
@@ -1353,7 +1359,7 @@
     const held = rows.filter((r) => r.raw != null && r.sized < -0.2 && r.size > 0.05 && r.prod >= 500).sort((a, b) => b.prod - a.prod);
     if (sizeDriven.length) {
       const c4 = card("Bigger crop, not faster selling", `${listJoin(sizeDriven.slice(0, 2).map((r) => r.g))} deliveries are ${sizeDriven[0].raw > 0 ? "up" : "down"} because of crop size`);
-      list(c4, sizeDriven.slice(0, 3).map((r) => ({ label: `${r.g}: deliveries ${fmtPct(r.raw)}, crop ${fmtPct(r.size)}`, value: r.sized, suffix: " sized" })));
+      list(c4, sizeDriven.slice(0, 3).map((r) => ({ label: `${r.g}: deliveries ${fmtPct(r.raw)}, crop ${fmtPct(r.size)}; ${pctTxt(r.share, 1)} delivered vs ${pctTxt(r.normal, 1)} normal` })));
       para(c4, "Measured against the crop, these are selling at close to their usual pace.");
     }
     // skip when the holding-back card above already shows the same crop

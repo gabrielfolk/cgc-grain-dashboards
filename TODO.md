@@ -6,12 +6,10 @@
 
 ### Clarity review (2026-11-12): make it clear how each number is built
 
+- [ ] **Chart axes in the page unit.** Text and tiles now give totals in Mt (kt on special-crop pages), but cumulative
+  charts and their panel subtitles are still in thousand tonnes. Scale the axes and tooltips to the page unit.
 - [ ] **Shorten the overview** (about 2,900 words, 30 sections, much repeated on the crop pages). Lead with the
   all-crops flash table, keep the pace-vs-crop-size cards and heatmap, and leave detail to the crop pages.
-- [ ] **Plainer labels, consistent units.** Replace chips like "▲ 5% sized" with "26.8% delivered vs 26.5% normal".
-  Use Mt for totals and kt for weekly figures. Put "Western Canada, licensed system" in headline units.
-- [ ] **Present the canola forecast by usefulness.** The full-year export range (80%: 4.5–11.1 Mt at week 13) is too
-  wide to trade on. Lead with the next-4-weeks forecast and show the full-year number beside the simple baselines.
 
 ### Other
 

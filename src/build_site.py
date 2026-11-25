@@ -16,7 +16,7 @@ import shutil
 from pathlib import Path
 from urllib.parse import quote
 
-from grain_data import GRAINS
+from grain_data import GRAINS, SPECIAL_CROPS
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "dashboard"
@@ -25,7 +25,7 @@ OUT = ROOT / "docs"
 # Page folders, relative to dashboard/ and docs/ ("" is the all-crops page), in nav order.
 # A list entry is a dropdown menu: (menu label, [page folders]).
 NAV = ["", "margins", "feed", "canola", "wheat", "durum", "barley", "peas", "oats", "lentils", "soybeans", "corn",
-       ("Special Crops", ["flaxseed", "rye", "beans", "canaryseed", "chickpeas", "mustard"]), "methods"]
+       ("Special Crops", SPECIAL_CROPS), "methods"]
 LABELS = {"": "Overview", "margins": "Producer Margins", "feed": "Feed Grains", "methods": "Methods",
           **{slug: cfg["title"].removesuffix(" Pipeline") for slug, cfg in GRAINS.items()}}
 PAGES = [p for entry in NAV for p in (entry[1] if isinstance(entry, tuple) else [entry])]
