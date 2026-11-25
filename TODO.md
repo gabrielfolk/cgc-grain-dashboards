@@ -18,9 +18,14 @@
   capacity used), Quorum's monthly data tables (vessel time in port, rail volumes, car cycles and transit times since
   2013-14), and USDA's Gulf and PNW vessel lineups for US context. Check Quorum's terms before republishing. Only the
   current crop year's weekly PDFs stay online, so start archiving them early if weekly history is wanted.
-- [ ] **Re-test the canola forecast with real prices.** Get ICE canola futures and canola oil and meal prices
-  (for example from Barchart), then re-test the price features in `src/canola_forecast.py`. The free soybean-complex
-  proxies made forecasts worse.
+- [ ] **Re-test the canola forecast with real prices** (deferred 2026-11-24). Re-test the price features in
+  `src/canola_forecast.py` with ICE canola futures; the free soybean-complex proxies made forecasts worse. Sources
+  checked 2026-11-24: Yahoo RS=F still empty; Barchart free gives only 2 years of daily history; Investing.com has no
+  API and bars redistribution; Manitoba's weekly price PDFs (canola cash, meal) only go back to about 2021. Cheapest
+  workable route: finzdata.com, ICE canola daily bars since 2007 for $49 one-time, plus a free API key (last 30 days)
+  for the weekly refresh. Its licence says "for your own research and trading; not for resale", so ask
+  info@finzdata.com before publishing price-based forecasts, keep raw prices out of the repo, and spot-check it
+  against known settlements (it began selling futures history in Oct 2026). No free canola oil or meal series found.
 - [ ] **Extend the forecast to wheat and durum exports,** using StatCan production estimates the same way as canola.
 - [ ] **Add more supply data to the forecast:** StatCan's September canola estimate and on-farm stocks (table 32-10-0007).
 - [ ] **Re-score the forecast each season.** The backtest has only eight test years.
