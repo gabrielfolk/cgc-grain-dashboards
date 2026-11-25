@@ -26,7 +26,6 @@ on:
 permissions:
   contents: write  # commit docs/
   issues: write    # report a failed run
-  pages: write     # request a Pages build after the push
 
 concurrency:
   group: weekly-refresh
@@ -75,8 +74,6 @@ jobs:
 
       - name: Commit and publish
         if: steps.refresh.outputs.updated == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -84,9 +81,7 @@ jobs:
           if git diff --cached --quiet; then echo "Nothing to commit"; exit 0; fi
           git commit -F data/refresh_summary.md
           git pull --rebase  # in case something was pushed while the refresh ran
-          git push
-          # Pushes made with the workflow token may not start a Pages build on their own.
-          gh api -X POST "repos/${{ github.repository }}/pages/builds" --silent || echo "Pages build request failed; the next push will rebuild"
+          git push  # the push starts the GitHub Pages build
 
       - name: Report failure
         if: failure()
