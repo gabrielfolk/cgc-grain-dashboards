@@ -79,7 +79,17 @@ def _yahoo_weekly(symbol: str, refresh: bool) -> pd.Series:
     if refresh or not path.exists():
         RAW.mkdir(parents=True, exist_ok=True)
         url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?period1=1356998400&period2={int(dt.datetime.now().timestamp())}&interval=1wk"
-        path.write_text(requests.get(url, headers=UA, timeout=60).text)
+        text = requests.get(url, headers=UA, timeout=60).text
+        try:  # Yahoo answers a refused or rate-limited request with an error page or empty result
+            ok = bool(json.loads(text)["chart"]["result"][0]["timestamp"])
+        except (ValueError, KeyError, IndexError, TypeError):
+            ok = False
+        if not ok:
+            if not path.exists():
+                raise RuntimeError(f"Yahoo {symbol}: no data returned and nothing cached")
+            print(f"WARNING: Yahoo {symbol}: no data returned, keeping the cached series")
+        else:
+            path.write_text(text)
     res = json.loads(path.read_text())["chart"]["result"][0]
     s = pd.Series(res["indicators"]["quote"][0]["close"], index=pd.to_datetime(res["timestamp"], unit="s").normalize())
     return s.dropna()

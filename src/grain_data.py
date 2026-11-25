@@ -101,7 +101,7 @@ GRAINS = {
         "grain": "Canola", "title": "Canola Pipeline", "name": "canola",
         "lede": "Western Canadian canola supply and disappearance from CGC weekly data: producer deliveries, crush, exports by port, terminal receipts and commercial stocks, with a backtested crush and export forecast.",
         "process": {"label": "Crush", "verb": "Crushed", "site": "Crushers"},
-        "feed": False, "hero": "process",
+        "feed": False, "hero": "process", "forecast": True,  # dashboard/canola/forecast.json, from src/canola_forecast.py
         "notes": ["Crush is canola processed by licensed crushers (CGC “Milled/Mfg Grain”)."],
     },
     "wheat": {
@@ -440,6 +440,7 @@ def build(con, slug: str, tbay_close: int | None = None) -> None:
             "week_ending": week_ending.date().isoformat(),
             "generated": dt.date.today().isoformat(),
             "tbay_close_week": tbay_close,
+            "forecast": cfg.get("forecast", False),
         },
         "years": years,
         "flows": flows,

@@ -63,6 +63,7 @@ Python 3.10+.
 ```sh
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
+.venv/bin/pip install -r requirements-check.txt   # Playwright, for the render check (uses your Google Chrome)
 .venv/bin/python src/ingest.py        # downloads ~230 MB of CGC CSVs on first run
 ```
 
@@ -71,7 +72,28 @@ CGC data, and each script downloads the StatCan tables and market series it need
 
 ## Weekly refresh
 
-CGC publishes on Thursdays.
+CGC publishes on Thursdays. The refresh runs itself: the **Weekly refresh** GitHub Action
+(`.github/workflows/weekly-refresh.yml`) runs Thursday 23:00 UTC, with retries Friday and Monday 14:00 UTC. Each run
+calls `src/weekly_refresh.py`, which:
+
+1. re-downloads every source (`external.py --refresh`: StatCan, AAFC, USDA, CBOT and USD/CAD), then CGC
+   (`ingest.py`, with the checks below);
+2. stops quietly if there is no new CGC week and no source other than the market series changed;
+3. otherwise rebuilds every page and runs the render check (`src/check_site.py`), then commits `docs/`,
+   `dashboard/` and `reports/` and pushes. The commit message says what changed.
+
+A failed run publishes nothing (the site keeps the last good build) and opens a GitHub issue labelled
+`refresh-failed`, or comments on the open one, with the summary and a link to the log. It fails if a download breaks,
+CGC's file fails the ingest checks, a page fails the render check, or there is still no new CGC week once the latest
+is more than 11 days old (a missed week or a moved file; the combined Christmas report also trips this once a year).
+If Yahoo refuses a request, the cached market series are kept and the summary says so.
+
+To run it now, or to republish when nothing new came in: Actions > Weekly refresh > Run workflow (tick **force**).
+Locally, `.venv/bin/python src/weekly_refresh.py [--force]` does the same, without committing. A StatCan table that
+changes is listed in the commit message; if it is a canola production estimate, add it to
+`reference/statcan_canola_vintages.csv` (see below).
+
+The same steps by hand:
 
 ```sh
 .venv/bin/python src/external.py --markets  # CBOT corn and soy complex, USD/CAD (quick)
@@ -82,6 +104,7 @@ CGC publishes on Thursdays.
 .venv/bin/python src/feed_data.py
 .venv/bin/python src/margins_data.py        # uses the overview's deliveries, so run after dashboard_data.py
 .venv/bin/python src/build_site.py
+.venv/bin/python src/check_site.py          # render check of every page in docs/
 git add -A && git commit -m "Weekly refresh: week N" && git push
 ```
 
@@ -112,6 +135,10 @@ Dated reminders (for example, when StatCan's August farm prices come out) are in
 
 ## Checking a build
 
+`.venv/bin/python src/check_site.py` loads every page in headless Chrome at desktop and phone width (390 px). It
+fails on a script or console error, a file that fails to load, a visible chart, table or card block that is empty,
+or a page that scrolls sideways at phone width. The scheduled refresh runs it before publishing. For a closer look:
+
 ```sh
 cd docs && ../.venv/bin/python -m http.server 8000     # then open http://localhost:8000/
 ```
@@ -139,6 +166,8 @@ src/
   margins.py         producer margins by crop (price x trend yield - guide costs)
   margins_data.py    data for the Producer Margins page (margins plus deliveries of the same crops)
   build_site.py      builds docs/ (HTML wrapper, navigation bar, favicons)
+  check_site.py      render check: every page in headless Chrome, at desktop and phone width
+  weekly_refresh.py  the whole refresh (downloads, build, check); what the scheduled GitHub Action runs
 dashboard/
   index.html         overview page (edited directly)
   pipeline.html      crop page template: edit this, not dashboard/<crop>/index.html

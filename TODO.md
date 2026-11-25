@@ -24,14 +24,9 @@
 
 ### Other
 
-- [ ] **Automate the weekly refresh.** CGC publishes on Thursdays. Add a scheduled GitHub Action that runs the refresh
-  scripts and `src/build_site.py`, then commits `docs/`. The site updates on push. Pushing workflow files first
-  needs the `workflow` token scope: run `gh auth refresh -s workflow`.
-- [ ] **Add a render check to the refresh.** Load every page in headless Chrome after `src/build_site.py` and fail
-  if a page errors or a section comes up empty (the "Things to watch" cards, charts, flash tables). Run it in the
-  scheduled refresh so unattended updates can't publish a broken page.
-- [ ] **Check the site at phone width.** The province and Thunder Bay tables, the "Things to watch" cards and the
-  Special Crops menu have only been checked at desktop widths.
+- [ ] **Fix the Special Crops menu at phone width.** At 390 px the nav bar scrolls sideways and the opened menu is
+  drawn off-screen to the right (x 374–797 px) and clipped by the bar, so it can't be used (checked 2026-11-24). Every
+  page otherwise passes `src/check_site.py` at phone width, which doesn't open menus.
 - [ ] **Share the chart code between pages.** The overview, margins and crop template each carry their own copy of
   the chart helpers; move them into one shared script if more pages are added.
 - [ ] **Ports & Logistics dashboard (deferred).** Sources: Quorum's weekly Grain Monitoring Program PDF (Vancouver and

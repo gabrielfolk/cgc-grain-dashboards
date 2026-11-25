@@ -2031,7 +2031,7 @@
   }
 
   let FORECAST = null;
-  fetch("forecast.json").then((r) => r.ok ? r.json() : null).then((F) => { if (F) { FORECAST = F; renderForecast(F); } }).catch(() => {});
+  if (META.forecast) fetch("forecast.json").then((r) => r.ok ? r.json() : null).then((F) => { if (F) { FORECAST = F; renderForecast(F); } }).catch(() => {});
 
   // ---------- controls + boot ----------
   function setMode(m) {

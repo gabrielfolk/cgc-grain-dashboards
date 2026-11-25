@@ -1,0 +1,110 @@
+# Weekly refresh: download every source, rebuild the dashboards, check them in headless Chrome, and publish.
+#
+# CGC publishes Grain Statistics Weekly on Thursdays. The Thursday evening run picks it up; the Friday and
+# Monday runs are retries in case CGC was late. A run with nothing new ends quietly without a commit.
+# A failed run (a CGC file that fails ingest.py's checks, a page that fails the render check, a download
+# that breaks, or no new CGC week for more than 11 days) publishes nothing and opens an issue labelled
+# refresh-failed, or comments on the one already open.
+#
+# Run it by hand from the Actions tab (Weekly refresh > Run workflow); tick "force" to rebuild and
+# republish even if nothing new came in.
+
+name: Weekly refresh
+
+on:
+  schedule:
+    - cron: "0 23 * * 4"  # Thursday 23:00 UTC (17:00 Saskatchewan)
+    - cron: "0 14 * * 5"  # Friday 14:00 UTC, retry
+    - cron: "0 14 * * 1"  # Monday 14:00 UTC, retry
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild and publish even if nothing new came in
+        type: boolean
+        default: false
+
+permissions:
+  contents: write  # commit docs/
+  issues: write    # report a failed run
+  pages: write     # request a Pages build after the push
+
+concurrency:
+  group: weekly-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      - name: Install
+        run: pip install -r requirements.txt -r requirements-check.txt
+
+      # data/ is not in git: raw CGC CSVs (completed crop years are never re-downloaded), StatCan and
+      # market caches, and the source hashes of the last published build. Each run restores the newest
+      # copy and saves its own.
+      - name: Restore data cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data
+          key: data-${{ github.run_id }}
+          restore-keys: data-
+
+      - name: Refresh, build and check
+        id: refresh
+        run: python src/weekly_refresh.py ${{ inputs.force && '--force' || '' }}
+
+      - name: Run summary
+        if: always()
+        run: cat data/refresh_summary.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+
+      - name: Save data cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data
+          key: data-${{ github.run_id }}
+
+      - name: Commit and publish
+        if: steps.refresh.outputs.updated == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A docs dashboard reports
+          if git diff --cached --quiet; then echo "Nothing to commit"; exit 0; fi
+          git commit -F data/refresh_summary.md
+          git pull --rebase  # in case something was pushed while the refresh ran
+          git push
+          # Pushes made with the workflow token may not start a Pages build on their own.
+          gh api -X POST "repos/${{ github.repository }}/pages/builds" --silent || echo "Pages build request failed; the next push will rebuild"
+
+      - name: Report failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            [ -f data/refresh_summary.md ] && cat data/refresh_summary.md || echo "The run failed before the refresh started."
+            echo
+            echo "Run log: $RUN_URL"
+            echo
+            echo "Nothing was published; the site still shows the last good build."
+          } > issue.md
+          gh label create refresh-failed --color B60205 --description "Weekly refresh failed" --force
+          open=$(gh issue list --label refresh-failed --state open --json number --jq '.[0].number')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body-file issue.md
+          else
+            gh issue create --title "Weekly refresh failed" --label refresh-failed --body-file issue.md
+          fi
