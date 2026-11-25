@@ -24,9 +24,6 @@
 
 ### Other
 
-- [ ] **Fix the Special Crops menu at phone width.** At 390 px the nav bar scrolls sideways and the opened menu is
-  drawn off-screen to the right (x 374–797 px) and clipped by the bar, so it can't be used (checked 2026-11-24). Every
-  page otherwise passes `src/check_site.py` at phone width, which doesn't open menus.
 - [ ] **Share the chart code between pages.** The overview, margins and crop template each carry their own copy of
   the chart helpers; move them into one shared script if more pages are added.
 - [ ] **Ports & Logistics dashboard (deferred).** Sources: Quorum's weekly Grain Monitoring Program PDF (Vancouver and

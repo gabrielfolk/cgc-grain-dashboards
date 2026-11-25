@@ -104,7 +104,8 @@ HEAD = """<!doctype html>
   .site-nav a[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
   .site-nav a:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
 
-  /* dropdown: opens below on wide screens; on narrow screens the bar scrolls, so its links open inline */
+  /* dropdown: opens below its label on wide screens; on narrow screens the bar scrolls sideways, so the menu
+     opens as a full-width panel under the bar (fixed, so the scrolling bar doesn't clip it) */
   .site-nav details { display: flex; }
   .site-nav summary {
     list-style: none; cursor: pointer; padding: 13px 10px 11px; white-space: nowrap;
@@ -128,6 +129,16 @@ HEAD = """<!doctype html>
     .site-nav .menu a:hover { background: var(--hover); }
     .site-nav .menu a[aria-current="page"] { background: var(--chip); }
   }
+  @media (max-width: 1179px) {
+    .site-nav .menu {
+      position: fixed; left: 0; right: 0; top: var(--menu-top, 42px); z-index: 6;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 2px; padding: 6px 12px 10px;
+      background: var(--surface); border-bottom: 1px solid var(--border); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+    }
+    .site-nav .menu a { padding: 12px 10px; border-bottom: 0; border-radius: 4px; }
+    .site-nav .menu a:hover { background: var(--hover); }
+    .site-nav .menu a[aria-current="page"] { background: var(--chip); }
+  }
   @media (max-width: 1320px) { .site-nav .site-name { display: none; } }
   .stale-notice {
     max-width: 1240px; margin: -8px auto 24px; padding: 10px 14px; border-radius: 8px; font-size: 13px;
@@ -137,10 +148,15 @@ HEAD = """<!doctype html>
 """
 
 
-# closes an open dropdown on an outside click or Escape
+# closes an open dropdown on an outside click or Escape; places the narrow-screen panel under the bar
 NAV_SCRIPT = """<script>
 (function () {
   const menus = document.querySelectorAll(".site-nav details");
+  const nav = document.querySelector(".site-nav");
+  const place = () => nav && nav.style.setProperty("--menu-top", nav.getBoundingClientRect().bottom + "px");
+  for (const d of menus) d.addEventListener("toggle", place);
+  addEventListener("scroll", place, { passive: true });
+  addEventListener("resize", place);
   document.addEventListener("click", (e) => { for (const d of menus) if (!d.contains(e.target)) d.open = false; });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") for (const d of menus) if (d.open) { d.open = false; d.querySelector("summary").focus(); } });
 })();

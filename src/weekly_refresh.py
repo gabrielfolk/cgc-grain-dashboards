@@ -113,8 +113,10 @@ def main() -> int:
 
     year, week, ending = ingested_week()
     after_sources = source_hashes()
-    changed = [SOURCE_NAMES.get(k, f"StatCan {k[:2]}-{k[2:4]}-{k[4:]}" if k.isdigit() else k)
-               for k in after_sources if before_sources.get(k) != after_sources[k]]
+    # Only files already in the baseline count: a file that is new to the cache (an empty cache on
+    # the first run, or a table a script fetches for the first time) is not new data.
+    changed_keys = [k for k in after_sources if k in before_sources and before_sources[k] != after_sources[k]]
+    changed = [SOURCE_NAMES.get(k, f"StatCan {k[:2]}-{k[2:4]}-{k[4:]}" if k.isdigit() else k) for k in changed_keys]
     new_week = before_week is None or (year, week) > before_week
 
     if not (new_week or changed or args.force):
@@ -125,6 +127,7 @@ def main() -> int:
                                "Christmas report, it will clear when the next week is published.\n")
             print(f"\nREFRESH FAILED: no new CGC week. {stale[0]}")
             return 1
+        PUBLISHED.write_text(json.dumps({**source_hashes(), **before_sources}, indent=1))  # add new files only
         msg = f"No new data: the site already shows CGC {year} week {week}, and no source changed."
         SUMMARY.write_text(msg + "\n")
         print(f"\n{msg}")
@@ -147,13 +150,13 @@ def main() -> int:
     lines.append(f"- CGC: {year} week {week}, ending {ending}"
                  + ("" if new_week else " (no new week)"))
     lines.append("- Sources changed: " + (", ".join(changed) if changed else "none"))
-    if any(k.isdigit() and before_sources.get(k) != after_sources[k] for k in after_sources):
+    if any(k.isdigit() for k in changed_keys):
         lines.append("- A StatCan table changed. If it is a canola production estimate, add it to "
                      "reference/statcan_canola_vintages.csv (see README, Other updates).")
     lines += [f"- {w}" for w in warnings]
     lines.append("- Render check: all pages passed")
     SUMMARY.write_text("\n".join(lines) + "\n")
-    PUBLISHED.write_text(json.dumps(after_sources, indent=1))
+    PUBLISHED.write_text(json.dumps(source_hashes(), indent=1))  # after the build, which may fetch more tables
     set_output("updated", "true")
     print("\n" + "\n".join(lines))
     return 0
