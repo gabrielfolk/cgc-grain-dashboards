@@ -6,11 +6,6 @@
 
 ### Clarity review (2026-11-12): make it clear how each number is built
 
-- [ ] **Show the formula next to each derived number.** Add a one-line formula or tooltip where the number appears,
-  e.g. "Delivered 26.8% = 5.89 Mt deliveries ÷ 22.0 Mt StatCan production (Aug estimate)". Start with sized-to-crop
-  pace, full-year projection, weeks of cover and net build.
-- [ ] **One shared Methods page.** Move the definitions now repeated in "About the data" on 15 crop pages to a single
-  Methods page, linked from each page, and keep each page's own notes to what is specific to it.
 - [ ] **Shorten the overview** (about 2,900 words, 30 sections, much repeated on the crop pages). Lead with the
   all-crops flash table, keep the pace-vs-crop-size cards and heatmap, and leave detail to the crop pages.
 - [ ] **Plainer labels, consistent units.** Replace chips like "▲ 5% sized" with "26.8% delivered vs 26.5% normal".

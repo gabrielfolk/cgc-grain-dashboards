@@ -25,13 +25,13 @@ OUT = ROOT / "docs"
 # Page folders, relative to dashboard/ and docs/ ("" is the all-crops page), in nav order.
 # A list entry is a dropdown menu: (menu label, [page folders]).
 NAV = ["", "margins", "feed", "canola", "wheat", "durum", "barley", "peas", "oats", "lentils", "soybeans", "corn",
-       ("Special Crops", ["flaxseed", "rye", "beans", "canaryseed", "chickpeas", "mustard"])]
-LABELS = {"": "Overview", "margins": "Producer Margins", "feed": "Feed Grains",
+       ("Special Crops", ["flaxseed", "rye", "beans", "canaryseed", "chickpeas", "mustard"]), "methods"]
+LABELS = {"": "Overview", "margins": "Producer Margins", "feed": "Feed Grains", "methods": "Methods",
           **{slug: cfg["title"].removesuffix(" Pipeline") for slug, cfg in GRAINS.items()}}
 PAGES = [p for entry in NAV for p in (entry[1] if isinstance(entry, tuple) else [entry])]
 assert set(GRAINS) <= set(PAGES), "every crop page needs a place in NAV"
 DATA_FILES = ["data.json", "forecast.json"]
-NO_CGC_WEEKLY = {"feed"}  # pages that don't use CGC's weekly data get no stale-data notice
+NO_CGC_WEEKLY = {"feed", "methods"}  # pages that don't use CGC's weekly data get no stale-data notice
 STALE_DAYS = 11  # same threshold as src/ingest.py: CGC publishes Thursday for the week ending the Sunday before
 
 # Bar-chart favicons, embedded so every page has one without a separate file

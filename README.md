@@ -20,6 +20,7 @@ to the present.
 | **Overview** | `/` | What are farmers doing across all 15 crops? Selling pace sized to the crop, cross-crop Things to watch (elevators, exports, stocks, ports, Thunder Bay), the all-crops weekly flash (deliveries, elevator shipments, exports, processing, stocks), pace cards, a 13-year heatmap, crop mix, all-crops deliveries by province, country elevator shipments and net build, and commercial stocks. |
 | **Crop pages** (15) | `/wheat/`, `/canola/`, `/durum/`, `/barley/`, `/peas/`, `/oats/`, `/lentils/`, `/soybeans/`, `/corn/`, `/flaxseed/`, `/rye/`, `/beans/`, `/canaryseed/`, `/chickpeas/`, `/mustard/` | One crop from farm to use: generated Things to watch cards, weekly flash, pace math, farmer selling (pace sized to the crop, rank, projection, direct-to-processor and province shares), deliveries by province this week, country elevator throughput (net build, weeks of cover), port terminals (Pacific receipts vs exports, weeks of cover, Thunder Bay before freeze-up, export grade mix), exports by port, processing, feed and stocks. Canola adds a backtested crush and export forecast. |
 | **Feed Grains** | `/feed/` | Our own estimate of domestic feed use by commodity (barley, wheat, durum, oats, Canadian and US corn) for West (MB, SK, AB, BC) and East (Ontario, Quebec and the Atlantic provinces), every crop year from 2012-13, and how we got there: animal numbers and slaughter set the grain energy needed, price and availability split it across grains, and corn is split by origin. StatCan's residual feed figure is shown alongside for reference. |
+| **Methods** | `/methods/` | What every series means and how every derived number is calculated, for all pages. Each page's own notes keep only what is specific to it, and its formula lines ("= 7,915 kt delivered ÷ 26,482 kt western crop") link to the entry here. |
 | **Producer Margins** | `/margins/` | What does an acre of each crop earn after variable costs, at seeding (April) and harvest (August) prices, and are farmers selling faster where margins are good? Saskatchewan budgets, 9 crops, 2017 on. Delivery detail is on the crop pages. |
 
 Every page has summary tiles or cards, a weekly flash table (with a copy-to-spreadsheet button) and charts.
@@ -176,6 +177,7 @@ dashboard/
   <crop>/            generated page copy plus data.json per crop
   feed/index.html    Feed Grains page (edited directly)
   margins/index.html Producer Margins page (edited directly)
+  methods/index.html Methods page: shared definitions and formulas (edited directly, no data)
 reports/             forecast and estimate write-ups (canola_forecast.md, feed_estimate.md)
 reference/           hand-curated inputs: StatCan in-season canola estimates (with sources), the parsed
                      Crop Planning Guide budgets (sk_crop_planning_guide.csv) and StatCan's 1999 per-animal

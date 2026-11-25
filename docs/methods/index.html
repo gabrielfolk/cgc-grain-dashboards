@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%277%27%20fill%3D%27%23101311%27/%3E%3Crect%20x%3D%277%27%20y%3D%2717%27%20width%3D%274%27%20height%3D%278%27%20rx%3D%271.5%27%20fill%3D%27%231baf7a%27/%3E%3Crect%20x%3D%2714%27%20y%3D%2711%27%20width%3D%274%27%20height%3D%2714%27%20rx%3D%271.5%27%20fill%3D%27%23eb6834%27/%3E%3Crect%20x%3D%2721%27%20y%3D%276%27%20width%3D%274%27%20height%3D%2719%27%20rx%3D%271.5%27%20fill%3D%27%233987e5%27/%3E%3C/svg%3E">
+<style>
+  :root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: #f9f9f7; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+
+  /* titles in title case: page, section and chart titles, the reading guide and the notes heading
+     (generated card headlines such as Things To Watch cards are sentences and stay as written) */
+  h1, h2, .panel-head h3, .notes > h3, .explain summary { text-transform: capitalize; }
+
+  /* site navigation: sticks to the top, full width, uses each page's own theme tokens */
+  .site-nav {
+    position: sticky; top: 0; z-index: 5;
+    margin: -28px -16px 24px;
+    padding-top: env(safe-area-inset-top, 0px);
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .site-nav-inner {
+    max-width: 1240px; margin: 0 auto; padding: 0 16px;
+    display: flex; align-items: center; gap: 4px 20px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .site-nav-inner::-webkit-scrollbar { display: none; }
+  .site-nav .site-name {
+    font: 500 11px/1 var(--mono, ui-monospace, monospace); letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); white-space: nowrap; margin-right: auto; padding: 14px 0;
+  }
+  .site-nav ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 2px; }
+  .site-nav a {
+    display: block; padding: 13px 10px 11px; white-space: nowrap;
+    font: 500 13px/1 var(--sans, system-ui, sans-serif); color: var(--ink-2); text-decoration: none;
+    border-bottom: 2px solid transparent;
+  }
+  .site-nav a:hover { color: var(--ink); }
+  .site-nav a[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+  .site-nav a:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+
+  /* dropdown: opens below its label on wide screens; on narrow screens the bar scrolls sideways, so the menu
+     opens as a full-width panel under the bar (fixed, so the scrolling bar doesn't clip it) */
+  .site-nav details { display: flex; }
+  .site-nav summary {
+    list-style: none; cursor: pointer; padding: 13px 10px 11px; white-space: nowrap;
+    font: 500 13px/1 var(--sans, system-ui, sans-serif); color: var(--ink-2); border-bottom: 2px solid transparent;
+  }
+  .site-nav summary::-webkit-details-marker { display: none; }
+  .site-nav summary::after { content: " ▾"; font-size: 10px; }
+  .site-nav details[open] summary::after { content: " ▴"; }
+  .site-nav summary:hover { color: var(--ink); }
+  .site-nav summary:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+  .site-nav summary.current { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+  .site-nav .menu { display: flex; gap: 2px; }
+  @media (min-width: 1180px) {
+    .site-nav-inner { overflow: visible; }
+    .site-nav details { position: relative; }
+    .site-nav .menu {
+      position: absolute; top: 100%; left: 0; z-index: 6; flex-direction: column; min-width: 150px; padding: 4px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+    }
+    .site-nav .menu a { padding: 9px 10px; border-bottom: 0; border-radius: 4px; }
+    .site-nav .menu a:hover { background: var(--hover); }
+    .site-nav .menu a[aria-current="page"] { background: var(--chip); }
+  }
+  @media (max-width: 1179px) {
+    .site-nav .menu {
+      position: fixed; left: 0; right: 0; top: var(--menu-top, 42px); z-index: 6;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 2px; padding: 6px 12px 10px;
+      background: var(--surface); border-bottom: 1px solid var(--border); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+    }
+    .site-nav .menu a { padding: 12px 10px; border-bottom: 0; border-radius: 4px; }
+    .site-nav .menu a:hover { background: var(--hover); }
+    .site-nav .menu a[aria-current="page"] { background: var(--chip); }
+  }
+  @media (max-width: 1320px) { .site-nav .site-name { display: none; } }
+  .stale-notice {
+    max-width: 1240px; margin: -8px auto 24px; padding: 10px 14px; border-radius: 8px; font-size: 13px;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-left: 4px solid #d99a00;
+  }
+</style>
+<title>Methods</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --page: #f2f4f1;
+    --surface: #fcfcfb;
+    --ink: #101311;
+    --ink-2: #4c524d;
+    --muted: #767d77;
+    --grid: #e4e7e2;
+    --axis: #c3c8c1;
+    --border: rgba(16, 19, 17, 0.10);
+    --chip: #e9ece7;
+    --hover: rgba(16, 19, 17, 0.04);
+    --s1: #2a78d6;
+    --s2: #eb6834;
+    --s3: #1baf7a;
+    --s4: #eda100;
+    --s5: #e87ba4;
+    --s6: #008300;
+    --avg: #4c524d;
+    --band: rgba(76, 82, 77, 0.13);
+    --other: rgba(76, 82, 77, 0.28);
+    --div-pos: #1c5cab;
+    --div-neg: #c0392f;
+    --div-mid: #eceee9;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0e100f;
+      --surface: #181a19;
+      --ink: #f3f5f2;
+      --ink-2: #c1c7c0;
+      --muted: #8b928b;
+      --grid: #282b29;
+      --axis: #3b3f3c;
+      --border: rgba(255, 255, 255, 0.10);
+      --chip: #252826;
+      --hover: rgba(255, 255, 255, 0.05);
+      --s1: #3987e5;
+      --s2: #d95926;
+      --s3: #199e70;
+      --s4: #c98500;
+      --s5: #d55181;
+      --s6: #008300;
+      --avg: #c1c7c0;
+      --band: rgba(193, 199, 192, 0.12);
+      --other: rgba(193, 199, 192, 0.26);
+      --div-pos: #3987e5;
+      --div-neg: #e66767;
+      --div-mid: #262927;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0e100f;
+    --surface: #181a19;
+    --ink: #f3f5f2;
+    --ink-2: #c1c7c0;
+    --muted: #8b928b;
+    --grid: #282b29;
+    --axis: #3b3f3c;
+    --border: rgba(255, 255, 255, 0.10);
+    --chip: #252826;
+    --hover: rgba(255, 255, 255, 0.05);
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+    --s4: #c98500;
+    --s5: #d55181;
+    --s6: #008300;
+    --avg: #c1c7c0;
+    --band: rgba(193, 199, 192, 0.12);
+    --other: rgba(193, 199, 192, 0.26);
+    --div-pos: #3987e5;
+    --div-neg: #e66767;
+    --div-mid: #262927;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font: 14px/1.55 var(--sans);
+    padding-inline: 16px;
+    padding-block: 28px 56px;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 32px; }
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.15; }
+  h2 { font-size: 18px; font-weight: 600; }
+  h3 { font-size: 14px; font-weight: 600; }
+  p { margin: 0; }
+  .eyebrow { font: 500 11px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .sub { color: var(--ink-2); max-width: 72ch; }
+  :focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+  a { color: var(--s1); }
+  header { display: grid; gap: 14px; }
+
+  .toc { display: flex; flex-wrap: wrap; gap: 6px 8px; font-size: 13px; }
+  .toc a { padding: 3px 9px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--ink-2); text-decoration: none; }
+  .toc a:hover { color: var(--ink); background: var(--hover); }
+
+  section { display: grid; gap: 14px; }
+  .defs { display: grid; gap: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+  .def { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 4px 24px; padding: 14px 18px; border-top: 1px solid var(--border); scroll-margin-top: 64px; }
+  .def:first-child { border-top: 0; }
+  .def:target { background: var(--hover); box-shadow: inset 3px 0 0 var(--s1); }
+  .def h3 { padding-top: 1px; }
+  .def h3 a { color: inherit; text-decoration: none; }
+  .def h3 a:hover::after { content: " #"; color: var(--muted); }
+  .def > div { display: grid; gap: 6px; color: var(--ink-2); max-width: 82ch; }
+  .formula {
+    font: 13px/1.5 var(--mono); color: var(--ink); background: var(--chip);
+    border-radius: 6px; padding: 6px 10px; justify-self: start; max-width: 100%; overflow-wrap: anywhere;
+  }
+  @media (max-width: 640px) { .def { grid-template-columns: minmax(0, 1fr); } }
+  .notes { font-size: 13px; color: var(--muted); max-width: 82ch; }
+</style>
+<nav class="site-nav" aria-label="Dashboards"><div class="site-nav-inner"><span class="site-name">CGC grain dashboards</span><ul><li><a href="../">Overview</a></li><li><a href="../margins/">Producer Margins</a></li><li><a href="../feed/">Feed Grains</a></li><li><a href="../canola/">Canola</a></li><li><a href="../wheat/">Wheat</a></li><li><a href="../durum/">Durum</a></li><li><a href="../barley/">Barley</a></li><li><a href="../peas/">Peas</a></li><li><a href="../oats/">Oats</a></li><li><a href="../lentils/">Lentils</a></li><li><a href="../soybeans/">Soybeans</a></li><li><a href="../corn/">Corn</a></li><li><details><summary>Special Crops</summary><div class="menu"><a href="../flaxseed/">Flaxseed</a><a href="../rye/">Rye</a><a href="../beans/">Beans</a><a href="../canaryseed/">Canaryseed</a><a href="../chickpeas/">Chickpeas</a><a href="../mustard/">Mustard</a></div></details></li><li><a href="../methods/" aria-current="page">Methods</a></li></ul></div></nav>
+<script>
+(function () {
+  const menus = document.querySelectorAll(".site-nav details");
+  const nav = document.querySelector(".site-nav");
+  const place = () => nav && nav.style.setProperty("--menu-top", nav.getBoundingClientRect().bottom + "px");
+  for (const d of menus) d.addEventListener("toggle", place);
+  addEventListener("scroll", place, { passive: true });
+  addEventListener("resize", place);
+  document.addEventListener("click", (e) => { for (const d of menus) if (!d.contains(e.target)) d.open = false; });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") for (const d of menus) if (d.open) { d.open = false; d.querySelector("summary").focus(); } });
+})();
+</script>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">CGC grain dashboards · definitions</div>
+    <h1>Methods</h1>
+    <p class="sub">What each series means and how every derived number is calculated, for all pages. Each page's own notes cover only what is specific to it. Links on the pages jump to the entry here.</p>
+    <nav class="toc" aria-label="Sections">
+      <a href="#sources">Sources and coverage</a>
+      <a href="#comparisons">Weekly values and comparisons</a>
+      <a href="#farmer-selling">Farmer selling</a>
+      <a href="#elevators">Country elevators</a>
+      <a href="#ports">Port terminals and exports</a>
+      <a href="#uses">Processing, feed and stocks</a>
+      <a href="#generated">Things to watch</a>
+      <a href="#models">Forecasts and models</a>
+    </nav>
+  </header>
+
+  <section aria-labelledby="sources">
+    <h2 id="sources">Sources and coverage</h2>
+    <div class="defs">
+      <div class="def" id="cgc"><h3><a href="#cgc">CGC Grain Statistics Weekly</a></h3><div>
+        <p>Canadian Grain Commission, <a href="https://www.canada.ca/en/grain-commission/services/statistics/grain-statistics-weekly.html" target="_blank" rel="noopener">Grain Statistics Weekly</a>, crop years 2013-14 onward. Published on Thursdays for the week ending the Sunday before. The crop year runs Aug 1 to Jul 31: week 1 starts Aug 1 and week 52 ends Jul 31.</p>
+        <p>Each page's Inputs line gives the week it uses.</p>
+      </div></div>
+      <div class="def" id="western"><h3><a href="#western">Western Canadian grain</a></h3><div>
+        <p>Figures cover Western Canadian grain. Wheat and corn graded Canada Eastern (CE grades, grown in Ontario and Quebec and handled at eastern terminals) are left out of exports and terminal stocks, so totals are lower than CGC's all-Canada figures. Crop pages show the eastern exports as a memo line in the weekly flash; add them back to match CGC's totals.</p>
+        <p>Soybean grades, and corn grades other than CE, do not record origin, so soybean and corn exports and stocks at eastern terminals include grain grown outside Western Canada.</p>
+      </div></div>
+      <div class="def" id="production"><h3><a href="#production">Crop size (production)</a></h3><div>
+        <p>StatCan's production estimates for Manitoba, Saskatchewan, Alberta and British Columbia (table 32-10-0359), the region CGC's weekly data covers. Wheat excludes durum. The current crop year uses StatCan's latest in-season estimate, which will be revised, so anything sized to the crop moves when StatCan revises it, not only when farmers deliver.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="comparisons">
+    <h2 id="comparisons">Weekly values and comparisons</h2>
+    <div class="defs">
+      <div class="def" id="weekly"><h3><a href="#weekly">Weekly values</a></h3><div>
+        <p class="formula">week = crop-year total this week − crop-year total last week</p>
+        <p>CGC applies revisions only to its crop-year totals, so its own weekly rows add up 1–4% short, and a revision can make a week lumpy or negative. Weeks 21 and 22 are one combined holiday report. The 4-week average is the better guide to pace.</p>
+      </div></div>
+      <div class="def" id="five-year"><h3><a href="#five-year">LY, 5-yr average and range</a></h3><div>
+        <p>LY is the previous crop year. The 5-yr average and range use the five crop years before this one, at the same week of the crop year.</p>
+        <p class="formula">vs 5-yr = this year ÷ 5-yr average at the same week − 1</p>
+      </div></div>
+      <div class="def" id="pace-math"><h3><a href="#pace-math">Pace math</a></h3><div>
+        <p class="formula">pace needed = (target total − crop year to date) ÷ weeks left</p>
+        <p>Targets are last year's full-year total and the 5-year average total, compared with the current 4-week average.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="farmer-selling">
+    <h2 id="farmer-selling">Farmer selling</h2>
+    <div class="defs">
+      <div class="def" id="deliveries"><h3><a href="#deliveries">Producer deliveries</a></h3><div>
+        <p>What farmers deliver into the licensed system: licensed primary (country) elevators, straight to processors, and producer cars. Grain fed on the farm, or sold farm-to-farm or to feedlots, is not tracked by CGC, so deliveries run below production.</p>
+        <p>Province tables and charts cover elevator and producer-car deliveries only, because CGC rarely gives a province for deliveries straight to processors.</p>
+      </div></div>
+      <div class="def" id="share-delivered"><h3><a href="#share-delivered">Share of the crop delivered (sized to the crop)</a></h3><div>
+        <p class="formula">share delivered = deliveries since Aug 1 ÷ western production of this year's harvest</p>
+        <p class="formula">normal share = average share at the same week over the five previous crop years<br>vs normal = share delivered ÷ normal share − 1</p>
+        <p>The range is the lowest and highest share in those five years. It separates selling pace from crop size: deliveries can be up only because the crop is bigger. Needs at least three previous years with a production estimate. Production is the <a href="#production">crop size</a> above.</p>
+      </div></div>
+      <div class="def" id="projection"><h3><a href="#projection">Full-year delivery pace projection</a></h3><div>
+        <p class="formula">projection = deliveries since Aug 1 ÷ usual share of the year's deliveries in by this week</p>
+        <p>The usual share is the average over the five previous crop years of (deliveries by this week ÷ that year's full-year deliveries). It assumes a normal seasonal pattern from here on: simple arithmetic, not a forecast. Left blank while the usual share is under 2%.</p>
+      </div></div>
+      <div class="def" id="pace-rank"><h3><a href="#pace-rank">Pace rank</a></h3><div>
+        <p>Deliveries at this week ranked against the same week of every crop year since 2013-14.</p>
+      </div></div>
+      <div class="def" id="direct"><h3><a href="#direct">Direct to processors</a></h3><div>
+        <p class="formula">direct share = deliveries straight to processors ÷ all producer deliveries</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="elevators">
+    <h2 id="elevators">Country elevators</h2>
+    <div class="defs">
+      <div class="def" id="elevator-flows"><h3><a href="#elevator-flows">Deliveries and shipments</a></h3><div>
+        <p>CGC's primary elevator figures: grain delivered into licensed country elevators, and shipped out to every destination (port terminals, processors, domestic users and containers).</p>
+        <p class="formula">shipped per tonne delivered = shipments since Aug 1 ÷ deliveries since Aug 1</p>
+      </div></div>
+      <div class="def" id="net-build"><h3><a href="#net-build">Net build</a></h3><div>
+        <p class="formula">net build = deliveries into country elevators − shipments out, since Aug 1</p>
+        <p>Rising means elevators are filling. Grade transfers and shrink mean it will not match the change in stocks exactly.</p>
+      </div></div>
+      <div class="def" id="weeks-of-cover"><h3><a href="#weeks-of-cover">Weeks of cover</a></h3><div>
+        <p class="formula">weeks of cover = stocks ÷ 4-week average of weekly outflow</p>
+        <p>Country elevators: country elevator stocks over shipments out. Port terminals: terminal stocks at all ports over terminal exports. How long stocks would last at the recent rate. Weeks when the 4-week outflow is under a quarter of that crop year's average week (holidays, freeze-up) are left blank, because the ratio would spike.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="ports">
+    <h2 id="ports">Port terminals and exports</h2>
+    <div class="defs">
+      <div class="def" id="exports"><h3><a href="#exports">Exports</a></h3><div>
+        <p>Shipments from licensed port terminals, plus shipments from country elevators that go straight to export or to container loaders (direct exports). Before 2018-19 CGC reports Vancouver and Prince Rupert together as Pacific.</p>
+      </div></div>
+      <div class="def" id="receipts"><h3><a href="#receipts">Terminal receipts and the Pacific gap</a></h3><div>
+        <p>Receipts are unloads at licensed port terminals, mostly by rail.</p>
+        <p class="formula">Pacific gap = Pacific receipts − Pacific exports, since Aug 1</p>
+        <p>It does not reconcile exactly with Pacific terminal stocks (the gap drifts by up to about 5% of a year's exports), so read it against its own 5-year range rather than as a stock level. Thunder Bay and St. Lawrence are left out because grain moved on from Thunder Bay is received again downstream.</p>
+      </div></div>
+      <div class="def" id="thunder-bay"><h3><a href="#thunder-bay">Thunder Bay shipments</a></h3><div>
+        <p>CGC's terminal disposition figures for Thunder Bay: grain sent by lake to other terminals, to Canadian domestic users, or straight to export.</p>
+        <p>The usual last shipping week is the median, over the last five crop years, of the week before all-grain Thunder Bay shipments drop under 10% of their average.</p>
+      </div></div>
+      <div class="def" id="grades"><h3><a href="#grades">Export grades</a></h3><div>
+        <p>CGC's terminal export grades, Western grain only. CGC spells grades differently across years, so they are matched on letters and digits; grades it now reports only as OTHER are grouped in Other grades for every year.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="uses">
+    <h2 id="uses">Processing, feed and stocks</h2>
+    <div class="defs">
+      <div class="def" id="processing"><h3><a href="#processing">Processing</a></h3><div>
+        <p>CGC's "Milled/Mfg Grain": grain processed by licensed processors (crush for oilseeds, licensed milling for cereals). Each crop page says what it covers.</p>
+      </div></div>
+      <div class="def" id="feed-shipments"><h3><a href="#feed-shipments">Domestic feed shipments</a></h3><div>
+        <p>CGC's domestic feed grain table: shipments of feed grain from primary elevators. A subset of the all-grain figures, so feed grain that farmers deliver to elevators is already in producer deliveries. CGC notes that the licensed system handles only about 10–15% of feed grain use; most is fed on farms or sold farm-to-farm and farm-to-feedlot. Our estimate of all feed use is on <a href="../feed/">Feed Grains</a>.</p>
+      </div></div>
+      <div class="def" id="stocks"><h3><a href="#stocks">Commercial stocks</a></h3><div>
+        <p>Week-end stocks in licensed country elevators, processors and port terminals. Grain stored on farms is not included. Ending stocks are the Jul 31 figure.</p>
+        <p class="formula">stocks cover = commercial stocks ÷ 4-week average of the crop's uses</p>
+        <p>Uses are exports plus, where the crop page shows them, processing and domestic feed shipments.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="generated">
+    <h2 id="generated">Things to watch</h2>
+    <div class="defs">
+      <div class="def" id="watch"><h3><a href="#watch">Things to watch</a></h3><div>
+        <p>Generated from the data at each refresh; nothing is written by hand for a particular week. Crop pages compare each measure with its 5-year average at the same week and show the ones furthest from normal. Early in the crop year, small volumes can make changes look large.</p>
+        <p>The overview's cross-crop list reads each crop page's data and lists the crops furthest from their own 5-year average at the same week: country elevator shipments per tonne delivered, exports, commercial stocks, weeks of cover at port and Thunder Bay shipments. Small crops are left out of each list, and soybean and corn exports are tagged because they include eastern-grown grain.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="models">
+    <h2 id="models">Forecasts and models</h2>
+    <div class="defs">
+      <div class="def" id="canola-forecast"><h3><a href="#canola-forecast">Canola crush and export forecast</a></h3><div>
+        <p>The weekly model is a ridge regression on recent pace, seasonality, stocks and deliveries; the export model also uses StatCan's latest production estimate. The full-year forecast is a weighted mix of simple estimates, with weights learned from earlier crop years for each week of the year. The 80% ranges come from backtest errors. Soybean-complex price inputs were tested and did not improve accuracy, so they are not used. Method and backtest: <a href="https://github.com/gabrielfolk/cgc-grain-dashboards/blob/main/reports/canola_forecast.md" target="_blank" rel="noopener">reports/canola_forecast.md</a>.</p>
+      </div></div>
+      <div class="def" id="feed-estimate"><h3><a href="#feed-estimate">Feed use estimate</a></h3><div>
+        <p>A demand-side model: animal numbers and slaughter set the grain energy needed, price and availability split it across grains, and corn is split by origin. How it is built is on <a href="../feed/">Feed Grains</a>; method and limits in <a href="https://github.com/gabrielfolk/cgc-grain-dashboards/blob/main/reports/feed_estimate.md" target="_blank" rel="noopener">reports/feed_estimate.md</a>.</p>
+      </div></div>
+      <div class="def" id="margins"><h3><a href="#margins">Producer margins</a></h3><div>
+        <p class="formula">margin = farm price × trend yield − variable costs (per acre)</p>
+        <p>Saskatchewan farm prices, five-harvest trend yields and Crop Planning Guide budgets. Details on <a href="../margins/">Producer Margins</a>.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <p class="notes">Data sources, file formats and known quirks: <a href="https://github.com/gabrielfolk/cgc-grain-dashboards/blob/main/DATA.md" target="_blank" rel="noopener">DATA.md</a>.</p>
+</div>
+
+</html>

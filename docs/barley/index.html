@@ -173,6 +173,8 @@
   header { display: grid; gap: 12px; }
   .asof { font-size: 13px; color: var(--muted); }
   .asof.inputs { margin-top: 4px; font-size: 12px; }
+  .formula { font: 12px/1.45 var(--mono); color: var(--ink-2); margin-top: 6px; }
+  .formula a { font-family: var(--sans); color: var(--muted); margin-left: 6px; white-space: nowrap; }
 
   .btn, .seg { font: 500 13px var(--sans); color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
   .btn { padding: 6px 12px; cursor: pointer; }
@@ -267,7 +269,7 @@
   @media (prefers-reduced-motion: no-preference) { .btn { transition: background 0.12s; } }
 </style>
 
-<nav class="site-nav" aria-label="Dashboards"><div class="site-nav-inner"><span class="site-name">CGC grain dashboards</span><ul><li><a href="../">Overview</a></li><li><a href="../margins/">Producer Margins</a></li><li><a href="../feed/">Feed Grains</a></li><li><a href="../canola/">Canola</a></li><li><a href="../wheat/">Wheat</a></li><li><a href="../durum/">Durum</a></li><li><a href="../barley/" aria-current="page">Barley</a></li><li><a href="../peas/">Peas</a></li><li><a href="../oats/">Oats</a></li><li><a href="../lentils/">Lentils</a></li><li><a href="../soybeans/">Soybeans</a></li><li><a href="../corn/">Corn</a></li><li><details><summary>Special Crops</summary><div class="menu"><a href="../flaxseed/">Flaxseed</a><a href="../rye/">Rye</a><a href="../beans/">Beans</a><a href="../canaryseed/">Canaryseed</a><a href="../chickpeas/">Chickpeas</a><a href="../mustard/">Mustard</a></div></details></li></ul></div></nav>
+<nav class="site-nav" aria-label="Dashboards"><div class="site-nav-inner"><span class="site-name">CGC grain dashboards</span><ul><li><a href="../">Overview</a></li><li><a href="../margins/">Producer Margins</a></li><li><a href="../feed/">Feed Grains</a></li><li><a href="../canola/">Canola</a></li><li><a href="../wheat/">Wheat</a></li><li><a href="../durum/">Durum</a></li><li><a href="../barley/" aria-current="page">Barley</a></li><li><a href="../peas/">Peas</a></li><li><a href="../oats/">Oats</a></li><li><a href="../lentils/">Lentils</a></li><li><a href="../soybeans/">Soybeans</a></li><li><a href="../corn/">Corn</a></li><li><details><summary>Special Crops</summary><div class="menu"><a href="../flaxseed/">Flaxseed</a><a href="../rye/">Rye</a><a href="../beans/">Beans</a><a href="../canaryseed/">Canaryseed</a><a href="../chickpeas/">Chickpeas</a><a href="../mustard/">Mustard</a></div></details></li><li><a href="../methods/">Methods</a></li></ul></div></nav>
 <script>
 (function () {
   const menus = document.querySelectorAll(".site-nav details");
@@ -1407,6 +1409,15 @@
     if (tot <= 0) return null;
     return Object.fromEntries(PROV.map(([k]) => [k, 100 * (p[k] || 0) / tot]));
   }
+  // a one-line formula under a derived number, with a link to its definition on the Methods page
+  function formula(parent, text, anchor) {
+    const d = document.createElement("div"); d.className = "formula"; d.textContent = text;
+    const a = document.createElement("a"); a.href = "../methods/#" + anchor; a.textContent = "how";
+    d.appendChild(a); parent.appendChild(d);
+  }
+  // exact enough to redo the sum: whole kt, one decimal under 100 kt
+  const fx = (v) => v == null ? "–" : Math.abs(v) >= 100 ? Math.round(v).toLocaleString("en-CA") + " kt" : v.toFixed(1) + " kt";
+  const fr = (v) => v.toFixed(v >= 10 ? 1 : 2);  // a weekly rate, kt/wk
   // share of StatCan's western production delivered by this week, against the previous five crop years
   function sizedPace() {
     const prod = (y) => D.production?.[y.slice(0, 4)] ?? null;
@@ -1415,13 +1426,13 @@
     if (!(p > 0) || now == null || prior.length < 3) return null;
     const shares = prior.map((r) => at(series.deliveries(r), W_NOW) / prod(r));
     const share = now / p, normal = mean(shares);
-    return { share, normal, lo: Math.min(...shares), hi: Math.max(...shares), sized: share / normal - 1, prod: p, size: pct(p, mean(prior.map(prod))) };
+    return { now, share, normal, lo: Math.min(...shares), hi: Math.max(...shares), sized: share / normal - 1, prod: p, size: pct(p, mean(prior.map(prod))) };
   }
   // full-year deliveries if the rest of the year follows the usual seasonal pattern
   function paceProjection() {
     const now = at(series.deliveries(cur), W_NOW);
     const share = mean(ref.map((r) => { const f = finalOf(series.deliveries(r)), v = at(series.deliveries(r), W_NOW); return f > 0 && v != null ? v / f : null; }));
-    return { share, projected: share > 0.02 && now != null ? now / share : null, lastFull: finalOf(series.deliveries(lastYr)) };
+    return { now, share, projected: share > 0.02 && now != null ? now / share : null, lastFull: finalOf(series.deliveries(lastYr)) };
   }
 
   function renderFarm() {
@@ -1442,6 +1453,7 @@
     if (sz) {
       big(t1, (100 * sz.share).toFixed(1) + "%");
       line(t1, chip(sz.sized), " vs the usual share at this week");
+      formula(t1, `= ${fx(sz.now)} delivered ÷ ${fx(sz.prod)} western crop`, "share-delivered");
       note(t1, `Normally ${(100 * sz.normal).toFixed(1)}% by week ${W_NOW} (range ${(100 * sz.lo).toFixed(1)}–${(100 * sz.hi).toFixed(1)}%). StatCan puts the western crop at ${fmtKt(sz.prod)}, ${fmtPct(sz.size)} against the 5-yr average.`);
     } else {
       big(t1, "–");
@@ -1454,6 +1466,7 @@
     const t3 = tile("Full-year delivery pace projection");
     big(t3, fmtKt(pj.projected));
     line(t3, chip(pct(pj.projected, pj.lastFull)), ` vs ${short(lastYr)} (${fmtKt(pj.lastFull)})`);
+    if (pj.projected != null) formula(t3, `= ${fx(pj.now)} delivered ÷ ${(100 * pj.share).toFixed(1)}% usually in by week ${W_NOW}`, "projection");
     note(t3, pj.share != null ? `About ${Math.round(pj.share * 100)}% of the year's deliveries usually arrive by week ${W_NOW}. A pace estimate, not a forecast.` : "Not enough history");
 
     legend($("leg-delall"), [{ label: short(cur), color: "var(--deliveries)" }, { label: short(lastYr), color: "var(--avg)" }, { label: "Earlier years", color: "var(--other)" }]);
@@ -1547,12 +1560,14 @@
 
     const t2 = tile(`Net build since Aug 1`);
     big(t2, signedKt(bNow));
+    if (bNow != null) formula(t2, `= ${fx(at(series.pdel(cur), W_NOW))} delivered in − ${fx(at(series.pship(cur), W_NOW))} shipped out`, "net-build");
     note(t2, `Country elevator stocks are ${fmtKt(at(stock("stocks_country", cur), W_NOW))}. The 5-yr average net build by week ${W_NOW} is ${signedKt(b5)}.`);
 
     const t3 = tile("Weeks of cover");
     big(t3, cNow == null ? "–" : cNow.toFixed(1));
     const d = document.createElement("div"); d.className = "deltas";
     const sp = document.createElement("span"); sp.append(chip(cNow != null && c5 ? cNow / c5 - 1 : null), document.createTextNode(" vs 5-yr average")); d.appendChild(sp); t3.appendChild(d);
+    if (cNow) { const s = at(stock("stocks_country", cur), W_NOW); formula(t3, `= ${fx(s)} in store ÷ ${fr(s / cNow)} kt/wk shipped (4-wk avg)`, "weeks-of-cover"); }
     note(t3, `Stocks would last ${cNow == null ? "–" : cNow.toFixed(1)} weeks at the recent shipping rate (5-yr average at this week: ${c5 == null ? "–" : c5.toFixed(1)}).`);
 
     const nb = stat(ref.map(netBuild));
@@ -1650,6 +1665,7 @@
     const t2 = tile("Weeks of cover at port");
     big(t2, P.cover.now == null ? "–" : P.cover.now.toFixed(1));
     vs(t2, P.cover.now != null && P.cover.avg ? P.cover.now / P.cover.avg - 1 : null, " vs 5-yr average");
+    if (P.cover.now) formula(t2, `= ${fx(P.stNow)} terminal stocks ÷ ${fr(P.stNow / P.cover.now)} kt/wk exported (4-wk avg)`, "weeks-of-cover");
     note(t2, `Terminal stocks of ${fmtKt(P.stNow)} (5-yr average at this week ${fmtKt(P.stAvg)}) against the recent pace of terminal exports.`);
     const G = gradeStats();
     if (G) {
@@ -2043,7 +2059,8 @@
     if (!$("fc-note")) {
       const li = document.createElement("li");
       li.id = "fc-note";
-      li.textContent = "Forecasts come from src/canola_forecast.py. The weekly model is a ridge regression on recent pace, seasonality, stocks and deliveries; the export model also uses StatCan's latest production estimate. The full-year forecast is a weighted mix of simple estimates, with weights learned from earlier crop years for each week of the year. The 80% ranges come from backtest errors. Soybean-complex price inputs were tested and did not improve accuracy, so they are not used.";
+      const a = document.createElement("a"); a.href = "../methods/#canola-forecast"; a.textContent = "Methods";
+      li.append("How the forecast works: ", a, ".");
       $("notes-list").insertBefore(li, $("gen"));
     }
   }
@@ -2079,6 +2096,7 @@
     li("The full-year delivery projection is simple arithmetic: deliveries so far divided by the share that usually arrives by this week. It assumes a normal seasonal pattern and is not a forecast." + (META.slug === "canola" ? " The Forecast section is a separate, backtested model." : ""));
     li("Weekly numbers are the change in CGC's crop-year totals, which CGC revises. A single week can be lumpy or even negative after a revision; weeks 21 and 22 are one combined holiday report. The 4-week average is the better guide to pace.");
     li(`Comparisons: LY is ${short(lastYr)}; the 5-yr average and range are ${short(ref[0])} to ${short(lastYr)} at the same week of the crop year (weeks start Aug 1).`);
+    { const l = document.createElement("li"), a = document.createElement("a"); a.href = "../methods/"; a.textContent = "Methods"; l.append("Every definition and formula: ", a, "."); ul.appendChild(l); }
   })();
   (function buildNotes() {
     const ul = $("notes-list");
@@ -2091,18 +2109,8 @@
       others.forEach(([t, u], i) => src.append(link(t, u), i < others.length - 1 ? ", " : "."));
     }
     for (const n of META.notes || []) li(n);
-    li("Producer deliveries cover licensed elevators, direct deliveries to processors and producer cars. Grain fed on farms or sold directly to feedlots is not tracked by CGC. The province tables cover elevator and producer-car deliveries only, because CGC rarely gives a province for deliveries straight to processors.");
-    li("Exports are shipments from licensed port terminals, plus shipments from country elevators that go straight to export or to container loaders." + (hasTerminal() ? " Before 2018-19 CGC reports Vancouver and Prince Rupert together as Pacific." : ""));
-    if (META.feed) li("Domestic feed is CGC's domestic feed grain table: shipments of feed grain from primary elevators. It is a subset of the all-grains figures, so the feed grain farmers deliver to elevators is already in producer deliveries. CGC notes that the licensed elevator system handles only about 10–15% of feed grain use; most is fed on farms or sold farm-to-farm and farm-to-feedlot.");
-    li(`Commercial stocks cover licensed country elevators, ${(META.process ? META.process.site : "processors").toLowerCase()} and port terminals. Grain stored on farms is not included. Ending stocks are the Jul 31 figure.`);
     if (hasEastern()) li(`Western Canadian ${NAME.toLowerCase()} only: exports, terminal receipts and terminal stocks leave out grain graded Canada Eastern (CE grades, grown in Ontario and Quebec and handled at eastern terminals). Eastern exports are shown as a memo line in the weekly flash; add them back to match CGC's all-Canada totals.`);
-    li("Weekly values are week-over-week changes in CGC's crop-year totals, so revisions are included. Weeks 21–22 are one combined holiday report.");
-    li("Country elevator deliveries and shipments are CGC's primary elevator figures: grain delivered into licensed country elevators and shipped out to every destination (port terminals, processors, domestic users and containers). Net build is deliveries minus shipments; grade transfers and shrink mean it will not match the change in stocks exactly.");
-    if (hasPacific()) li("Port terminal receipts are unloads at licensed terminals, mostly by rail. Pacific receipts minus exports does not reconcile exactly with Pacific terminal stocks (the gap drifts by up to about 5% of a year's exports), so read it against its own 5-year range rather than as a stock level. Thunder Bay and St. Lawrence are left out of that gap because grain moved on from Thunder Bay is received again downstream.");
-    if (hasTerminal()) li("Weeks of cover at port is terminal stocks at all ports divided by the 4-week average of terminal exports. Weeks when exports stall below a quarter of the year's average pace (holidays, freeze-up) are left blank.");
-    if (hasTbay()) li("Thunder Bay shipments are CGC's terminal disposition figures for Thunder Bay: grain sent by lake to other terminals, to Canadian domestic users, or straight to export. The usual last shipping week is the median over the last five crop years of the week before all-grain Thunder Bay shipments drop under 10% of their average.");
-    if (GR) li("Export grades are CGC's terminal export grades, Western grain only. CGC spells grades differently across years, so they are matched on letters and digits; grades it now reports only as OTHER are grouped in Other grades for every year.");
-    li("Things to watch is generated from the data each week: each measure is compared with its 5-year average at the same week, and the ones furthest from normal are shown. Early in the crop year, small volumes can make changes look large.");
+    li("Definitions and formulas for every number on this page (deliveries, weekly values, share delivered, projection, net build, weeks of cover, port terminals, grades, stocks, Things to watch): ", link("Methods", "../methods/"), ".");
     const gen = document.createElement("li");
     gen.id = "gen";
     ul.appendChild(gen);

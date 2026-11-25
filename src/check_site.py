@@ -32,6 +32,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
+TEXT_PAGES = ["methods"]  # pages with no data or charts: checked for errors and layout only
 WIDTHS = (1280, 390)  # desktop, and phone width (where the page must not scroll sideways)
 
 # Runs in the page once it has settled: returns a list of problems.
@@ -64,7 +65,7 @@ CHECK_JS = """
 def pages(site: Path) -> list[str]:
     """Every page in the site: the overview, each crop page, feed and margins."""
     crops = json.loads((site / "data.json").read_text())["meta"]["pages"].values()
-    found = [""] + sorted(crops) + ["feed", "margins"]
+    found = [""] + sorted(crops) + ["feed", "margins"] + TEXT_PAGES
     missing = [p for p in found if not (site / p / "index.html").exists()]
     if missing:
         raise SystemExit(f"missing pages in {site.name}/: {missing}")
@@ -92,7 +93,7 @@ def check_page(browser, base: str, page_path: str, width: int) -> list[str]:
             and problems.append(f"HTTP {r.status} for {r.url}"))
     page.goto(f"{base}/{page_path}/" if page_path else f"{base}/", wait_until="networkidle")
     page.wait_for_timeout(500)  # let charts that draw after layout finish
-    problems += page.evaluate(CHECK_JS)
+    problems += [p for p in page.evaluate(CHECK_JS) if not (page_path in TEXT_PAGES and p == "no charts on the page")]
     if width < 500:
         overflow = page.evaluate("document.documentElement.scrollWidth - document.documentElement.clientWidth")
         if overflow > 1:

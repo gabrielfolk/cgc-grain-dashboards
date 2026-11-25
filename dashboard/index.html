@@ -111,6 +111,8 @@
   header { display: grid; gap: 14px; }
   .asof { font-size: 13px; color: var(--muted); }
   .asof.inputs { margin-top: 4px; font-size: 12px; }
+  .formula { font: 12px/1.45 var(--mono); color: var(--ink-2); margin-top: 6px; }
+  .formula a { font-family: var(--sans); color: var(--muted); margin-left: 6px; white-space: nowrap; }
 
   .btn, .seg {
     font: 500 13px var(--sans); color: var(--ink);
@@ -273,6 +275,7 @@
         <li>The full-year pace projection is simple arithmetic: deliveries so far divided by the share that usually arrives by this week. It assumes a normal seasonal pattern and is not a forecast. Canola's page has a separate, backtested forecast.</li>
         <li>Weekly numbers are the change in CGC's crop-year totals, which CGC revises. A single week can be lumpy or even negative after a revision; weeks 21 and 22 are one combined holiday report.</li>
         <li>Each crop's page adds its own Things To Watch, exports by port, processing, country elevator throughput, port terminals, Thunder Bay, export grades and the full history.</li>
+        <li>Every definition and formula: <a href="methods/">Methods</a>.</li>
       </ul>
     </details>
   </header>
@@ -445,14 +448,7 @@
     <h3 style="color:var(--ink)">About the data</h3>
     <ul>
       <li>Source: Canadian Grain Commission, <a href="https://www.grainscanada.gc.ca/en/grain-research/statistics/grain-statistics-weekly/" target="_blank" rel="noopener">Grain Statistics Weekly</a>, crop years 2013-14 onward. Each crop has its own page (delivery pace, uses, exports by port, stocks), linked from the tables above and the navigation bar. Feed use, livestock and feed prices: <a href="feed/">Feed Grains</a>.</li>
-      <li>Producer deliveries are the sum of deliveries into licensed primary elevators, direct deliveries to processors, and producer-car shipments.</li>
-      <li>Weekly values are the week-over-week change in CGC's crop-year-to-date totals. CGC applies revisions only to those totals, so its own weekly rows add up 1–4% short. A revision can make a week negative.</li>
-      <li>Commercial stocks are week-end stocks in licensed country elevators, processors and port terminals. Grain stored on farms is not included. Ending stocks are the Jul 31 figure.</li>
-      <li>Figures cover Western Canadian grain. Wheat and corn graded Canada Eastern (CE grades, grown in Ontario and Quebec) are left out of exports and terminal stocks, so totals are lower than CGC's all-Canada figures. Soybean grades, and corn grades other than CE, do not record origin, so soybean and corn exports and stocks at eastern terminals include grain grown outside Western Canada.</li>
-      <li>The 5-year average and range use the five crop years before this one, compared week for week.</li>
-      <li>Crop sizes are StatCan's production estimates for Manitoba, Saskatchewan, Alberta and British Columbia (table 32-10-0359), the region CGC's weekly data covers. The current year uses StatCan's latest in-season estimate, which will be revised. Wheat excludes durum.</li>
-      <li>Things to watch across crops reads each crop page's data and lists the crops furthest from their own 5-year average at the same week: country elevator shipments per tonne delivered, exports, commercial stocks, weeks of cover at port and Thunder Bay shipments. It is generated from the data each week. Small crops are left out of each list, and soybean and corn exports are tagged because they include eastern-grown grain.</li>
-      <li>The full-year projection scales deliveries so far by the share of the year's deliveries that usually arrive by this week (5-year average). It is a simple pace estimate, not a forecast.</li>
+      <li>Definitions and formulas for every number on this page (deliveries, weekly values, the 5-year comparisons, crop sizes, sized-to-crop pace, the full-year projection, stocks, the cross-crop Things to watch): <a href="methods/">Methods</a>.</li>
       <li id="gen"></li>
     </ul>
   </footer>
@@ -1001,6 +997,7 @@
     const pj = tile("Full-year pace projection");
     big(pj, fmtKt(p.projected));
     line(pj, [chip(pct(p.projected, p.lastFull)), ` vs ${short(lastYr)} (${fmtKt(p.lastFull)})`]);
+    if (p.projected != null) formula(pj, `= ${fx(p.now)} delivered ÷ ${(100 * p.share).toFixed(1)}% usually in by week ${W_NOW}`, "projection");
     note(pj, p.share != null ? `About ${Math.round(p.share * 100)}% of the year's deliveries usually arrive by week ${W_NOW}` : "Not enough history");
 
   }
@@ -1283,7 +1280,7 @@
   }
   function totals(yrs) {
     const gs = CROPS.filter((g) => yrs.every((y) => prodOf(g, y) > 0));
-    return (y, w) => ({ del: sumOf(gs.map((g) => at(cum(g, y), w) || 0)), prod: sumOf(gs.map((g) => prodOf(g, y))) });
+    return (y, w) => ({ del: sumOf(gs.map((g) => at(cum(g, y), w) || 0)), prod: sumOf(gs.map((g) => prodOf(g, y))), n: gs.length });
   }
   // full-year deliveries as a share of production, average of the five completed years
   function marketRows() {
@@ -1293,6 +1290,14 @@
     }).filter((r) => r.rate != null).sort((a, b) => b.rate - a.rate);
   }
   const pctTxt = (v, d = 0) => (100 * v).toFixed(d) + "%";
+  // a one-line formula under a derived number, with a link to its definition on the Methods page
+  function formula(parent, text, anchor) {
+    const d = document.createElement("div"); d.className = "formula"; d.textContent = text;
+    const a = document.createElement("a"); a.href = "methods/#" + anchor; a.textContent = "how";
+    d.appendChild(a); parent.appendChild(d);
+  }
+  // exact enough to redo the sum: whole kt, one decimal under 100 kt
+  const fx = (v) => v == null ? "–" : Math.abs(v) >= 100 ? Math.round(v).toLocaleString("en-CA") + " kt" : v.toFixed(1) + " kt";
   const listJoin = (a) => a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
 
   function renderInsights() {
@@ -1326,6 +1331,7 @@
     const verdict = allSized < -0.03 ? "Farmers are holding back" : allSized > 0.03 ? "Farmers are selling faster than usual" : "Farmers are selling at a normal pace";
     const c1 = card("Overall, sized to the crop", verdict);
     big(c1, pctTxt(allShare, 1), `of the ${harvest} crops delivered`);
+    formula(c1, `= ${fx(nowT.del)} delivered ÷ ${fx(nowT.prod)} western production, ${nowT.n} crops`, "share-delivered");
     para(c1, `Normally ${pctTxt(normShare, 1)} is delivered by week ${W_NOW}. Deliveries are ${fmtPct(allRaw)} against the 5-year average, but western crops are ${fmtPct(allSize)} ${allSize >= 0 ? "bigger" : "smaller"}.`);
 
     // 2. fastest and 3. slowest, relative to crop size, among crops over 1 Mt
