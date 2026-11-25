@@ -196,6 +196,13 @@
   .asof { font-size: 13px; color: var(--muted); }
   .asof.inputs { margin-top: 4px; font-size: 12px; }
   .scope { font-size: 12px; color: var(--muted); }
+  .fold > summary { cursor: pointer; list-style: none; display: grid; gap: 2px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+  .fold > summary::-webkit-details-marker { display: none; }
+  .fold > summary :is(h2, h3)::before { content: "▸ "; color: var(--muted); }
+  .fold[open] > summary :is(h2, h3)::before { content: "▾ "; }
+  .fold > summary:hover { background: var(--hover); }
+  .fold-hint { font-size: 13px; color: var(--muted); }
+  .fold[open] > summary { margin-bottom: 12px; }
   .formula { font: 12px/1.45 var(--mono); color: var(--ink-2); margin-top: 6px; }
   .formula a { font-family: var(--sans); color: var(--muted); margin-left: 6px; white-space: nowrap; }
 
@@ -389,6 +396,18 @@
     </details>
   </header>
 
+  <section aria-labelledby="mflash-h">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="mflash-eyebrow"></div>
+        <h2 id="mflash-h">Weekly flash: all crops</h2>
+      </div>
+      <button type="button" class="btn" data-copy="mflash-table">Copy table</button>
+    </div>
+    <div class="flash-wrap"><table class="flash" id="mflash-table"></table></div>
+    <p class="flash-note" id="mflash-note"></p>
+  </section>
+
   <section aria-labelledby="ins-h">
     <div class="section-head">
       <div>
@@ -416,46 +435,6 @@
     </div>
   </section>
 
-  <section aria-labelledby="xwatch-h" id="xwatch-section" hidden>
-    <div class="section-head">
-      <div>
-        <div class="eyebrow" id="xwatch-eyebrow"></div>
-        <h2 id="xwatch-h">Things to watch: handling, exports and stocks</h2>
-        <p class="sub">Crops furthest from their 5-year norm this week, from each crop page's data. Pick a crop to open it.</p>
-      </div>
-    </div>
-    <div class="insights" id="xwatch"></div>
-  </section>
-
-  <section aria-labelledby="mflash-h">
-    <div class="section-head">
-      <div>
-        <div class="eyebrow" id="mflash-eyebrow"></div>
-        <h2 id="mflash-h">Weekly flash: all crops</h2>
-      </div>
-      <button type="button" class="btn" data-copy="mflash-table">Copy table</button>
-    </div>
-    <div class="flash-wrap"><table class="flash" id="mflash-table"></table></div>
-    <p class="flash-note" id="mflash-note"></p>
-  </section>
-
-  <section aria-labelledby="pace-h">
-    <div class="section-head">
-      <div>
-        <div class="eyebrow">All commodities</div>
-        <h2 id="pace-h">Pace across crops</h2>
-        <p class="sub">Each crop's deliveries this crop year against its own 5-year pattern. Pick one to open its page.</p>
-      </div>
-      <div class="seg" role="group" aria-label="Pace view">
-        <button type="button" id="view-cards" aria-pressed="true">Charts</button>
-        <button type="button" id="view-table" aria-pressed="false">Table</button>
-      </div>
-    </div>
-    <div class="legend" id="pace-legend"></div>
-    <div class="grid" id="cards"></div>
-    <div class="table-wrap" id="pace-table" hidden></div>
-  </section>
-
   <section aria-labelledby="heat-h">
     <div class="section-head">
       <div>
@@ -471,6 +450,32 @@
       </div>
     </div>
     <div class="table-wrap" style="padding:10px" id="heat"></div>
+  </section>
+
+  <section aria-labelledby="xwatch-h" id="xwatch-section" hidden>
+    <div class="section-head">
+      <div>
+        <div class="eyebrow" id="xwatch-eyebrow"></div>
+        <h2 id="xwatch-h">Things to watch: handling, exports and stocks</h2>
+        <p class="sub">Crops furthest from their 5-year norm this week, from each crop page's data. Pick a crop to open it.</p>
+      </div>
+    </div>
+    <div class="insights" id="xwatch"></div>
+  </section>
+
+  <section aria-labelledby="pace-h">
+    <details class="fold" id="pace-fold">
+    <summary><h2 id="pace-h" style="font-size:16px">Pace across crops</h2><span class="fold-hint">Each crop's deliveries against its own 5-year pattern, 15 small charts or a table with the full-year pace projection and last year's ending stocks. Each crop's page has the full detail.</span></summary>
+    <div class="section-head">
+      <div class="seg" role="group" aria-label="Pace view">
+        <button type="button" id="view-cards" aria-pressed="true">Charts</button>
+        <button type="button" id="view-table" aria-pressed="false">Table</button>
+      </div>
+    </div>
+    <div class="legend" id="pace-legend"></div>
+    <div class="grid" id="cards"></div>
+    <div class="table-wrap" id="pace-table" hidden></div>
+    </details>
   </section>
 
   <section aria-labelledby="all-h" id="all">
@@ -511,9 +516,14 @@
         <div class="legend" id="leg-build"></div>
         <div class="chart" id="ch-build" style="height:220px"></div>
       </div>
+      <div class="panel wide">
+        <div class="panel-head"><h3>Where this year's deliveries are coming from</h3><p id="provwk-p"></p></div>
+        <div class="flash-wrap" style="border:0"><table class="flash" id="provwk-table"></table></div>
+      </div>
     </div>
-    <div class="section-head">
-      <h3 id="hist-h">Past crop years, since 2013-14</h3>
+    <details class="fold" id="hist-fold">
+    <summary><h3 id="hist-h">Past crop years, since 2013-14</h3><span class="fold-hint">8 charts and a data table: every crop year, pace rank, stocks, ending stocks, direct-to-processor share, deliveries by province</span></summary>
+    <div class="section-head" style="justify-content:flex-end">
       <button type="button" class="btn" id="toggle-table" aria-expanded="false">Show data table</button>
     </div>
     <div class="two">
@@ -545,12 +555,9 @@
         <div class="legend" id="leg-prov"></div>
         <div class="chart" id="ch-prov" style="height:220px"></div>
       </div>
-      <div class="panel wide">
-        <div class="panel-head"><h3>Where this year's deliveries are coming from</h3><p id="provwk-p"></p></div>
-        <div class="flash-wrap" style="border:0"><table class="flash" id="provwk-table"></table></div>
-      </div>
       <div class="table-wrap wide" id="hist-table" hidden></div>
     </div>
+    </details>
   </section>
 
   <footer class="notes">
@@ -1688,9 +1695,9 @@
         if (i === 0 || FLASH_COLS[i - 1][0] !== grp) td.classList.add("sep");
       });
     }
-    $("mflash-note").textContent = `Wk = week ${W_NOW} (week-over-week change in CGC crop-year totals); Chg = change from week ${W_NOW - 1}. y/y vs ${short(lastYr)} and vs 5-yr (${short(ref[0])} to ${short(lastYr)}) compare crop year to date at the same week; stock comparisons are levels. Elevator shipments = grain shipped out of licensed country elevators to all destinations; out per t in = shipments over deliveries into those elevators, crop year to date (under 100% means country stocks are building). Exports = port terminals plus direct shipments. Licensed processing covers CGC-licensed process elevators only. Sized to crop = share of StatCan's ${harvest} western production estimate delivered, against the usual share by this week. Click a column to sort, or a crop to open its page.`;
+    { const a = document.createElement("a"); a.href = "methods/"; a.textContent = "Methods";
+      $("mflash-note").replaceChildren(`Wk = week ${W_NOW}; Chg = change from week ${W_NOW - 1}. y/y (${short(lastYr)}) and vs 5-yr (${short(ref[0])} to ${short(lastYr)}) compare crop year to date at the same week; stocks compare levels. Out per t in under 100% = country stocks building. Click a column to sort, a crop to open its page. Definitions: `, a, "."); }
   }
-
 
   // ---------- where this year's deliveries are coming from (all crops) ----------
   function renderProvWeek() {
@@ -1851,6 +1858,8 @@
   let rt;
   new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(rerender, 120); }).observe(document.querySelector(".wrap"));
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerender);
+  $("hist-fold").addEventListener("toggle", () => { if ($("hist-fold").open) renderGrain(); });
+  $("pace-fold").addEventListener("toggle", () => { if ($("pace-fold").open && state.view === "cards") renderCards(); });
   new MutationObserver(rerender).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 })();
 </script>

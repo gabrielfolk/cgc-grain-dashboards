@@ -93,6 +93,9 @@ def check_page(browser, base: str, page_path: str, width: int) -> list[str]:
             and problems.append(f"HTTP {r.status} for {r.url}"))
     page.goto(f"{base}/{page_path}/" if page_path else f"{base}/", wait_until="networkidle")
     page.wait_for_timeout(500)  # let charts that draw after layout finish
+    # open folded sections (not the nav menus) so what they hold is checked too
+    page.evaluate("document.querySelectorAll('.wrap details').forEach((d) => { d.open = true; })")
+    page.wait_for_timeout(400)
     problems += [p for p in page.evaluate(CHECK_JS) if not (page_path in TEXT_PAGES and p == "no charts on the page")]
     if width < 500:
         overflow = page.evaluate("document.documentElement.scrollWidth - document.documentElement.clientWidth")

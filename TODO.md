@@ -4,15 +4,10 @@
   id to `FORMAT_IDS` in `src/crop_guide.py` (Publications Centre archive, product 122661), run
   `.venv/bin/python src/crop_guide.py`, then `src/margins_data.py` and `src/build_site.py`.
 
-### Clarity review (2026-11-12): make it clear how each number is built
+### Other
 
 - [ ] **Chart axes in the page unit.** Text and tiles now give totals in Mt (kt on special-crop pages), but cumulative
   charts and their panel subtitles are still in thousand tonnes. Scale the axes and tooltips to the page unit.
-- [ ] **Shorten the overview** (about 2,900 words, 30 sections, much repeated on the crop pages). Lead with the
-  all-crops flash table, keep the pace-vs-crop-size cards and heatmap, and leave detail to the crop pages.
-
-### Other
-
 - [ ] **Download only new StatCan data (maybe).** Each scheduled refresh re-downloads all 19 cached StatCan tables
   (~130 MB of its ~140 MB), three runs a week, to catch a few releases a month. StatCan's Web Data Service
   `getCubeMetadata` returns each table's `releaseTime`; `src/external.py --refresh` could fetch only tables released
