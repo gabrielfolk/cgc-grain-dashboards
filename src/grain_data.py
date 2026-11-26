@@ -31,7 +31,7 @@ week-end levels.
     receipts_<port> terminal receipts (unloads at port), ports grouped like exports_<port>
     eastern_exports terminal exports graded Canada Eastern (Ontario/Quebec wheat and corn).
                     Kept out of every other terminal series so they cover Western Canadian
-                    grain only; shown as a memo line so totals reconcile with CGC's.
+                    grain only; shown under the all-Canada total so it reconciles with CGC's.
     stocks_<site>   commercial stocks at country elevators, processors and port terminals
 """
 

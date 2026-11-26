@@ -250,6 +250,10 @@
   .flash tr.grp td { font: 500 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding-top: 12px; border-bottom: 1px solid var(--axis); }
   .flash tr.sub td:first-child { padding-left: 22px; color: var(--ink-2); }
   .flash tr.total td { font-weight: 600; }
+  .flash tr.sub1 td:first-child { padding-left: 22px; }
+  .flash tr.sub2 td:first-child { padding-left: 38px; color: var(--ink-2); }
+  .flash tr.sub3 td:first-child { padding-left: 54px; color: var(--muted); }
+  .flash tr.subtotal td { font-weight: 500; }
   .flash td.neg { color: var(--ink-2); }
   .flash tr.memo td { color: var(--muted); font-style: italic; }
   .flash td.sep, .flash th.sep { border-left: 1px solid var(--grid); }
@@ -1068,7 +1072,7 @@
   }
 
   // ---------- weekly flash ----------
-  // eastern-graded (Ontario/Quebec) grain in recent years: shown as a memo line and explained in the notes
+  // eastern-graded (Ontario/Quebec) grain in recent years: its own export row under the all-Canada total, explained in the notes
   const hasEastern = () => !!D.flows.eastern_exports && [cur, ...ref].some((y) => (finalOf(flow("eastern_exports", y)) || 0) > 0);
   const wkOf = (arr, w) => { const d = diff(arr); return w >= 1 ? d[w - 1] : null; };
   const lastWeek = (arr, w) => { let x = w; while (x > 1 && at(arr, x) == null) x--; return at(arr, x) == null ? null : x; };
@@ -1137,12 +1141,18 @@
         META.process ? flowRow(META.process.label, series.process) : null,
         META.feed ? flowRow("Domestic feed (elevator shipments)", series.feed) : null,
       ]]] : []),
-      ["Exports", [
-        flowRow("Total exports", series.exports, "total"),
-        ...PORT_ROWS.map(([k, l]) => flowRow(l, (y) => flow(k, y), "sub")),
-        flowRow("Direct (rail, containers)", (y) => flow("exports_direct", y), "sub"),
-        hasEastern() ? flowRow("Memo: Eastern Canadian (CE grades), excluded", (y) => flow("eastern_exports", y), "sub memo") : null,
-      ]],
+      // total, then western/eastern, then terminals/direct, then western ports; one level shallower without eastern grain
+      ["Exports", (() => {
+        const e = hasEastern(), lv = (n) => (e ? n : n - 1) ? `sub${e ? n : n - 1}` : "";
+        return [
+          e ? flowRow("Total exports, all Canada", (y) => sumArr([series.exports(y), flow("eastern_exports", y)]), "total") : null,
+          e ? flowRow("Western Canadian", series.exports, "sub1 subtotal") : flowRow("Total exports", series.exports, "total"),
+          flowRow("From port terminals", series.terminal, lv(2)),
+          ...PORT_ROWS.map(([k, l]) => flowRow(l, (y) => flow(k, y), lv(3))),
+          flowRow("Direct from primary elevators (rail, containers)", (y) => flow("exports_direct", y), lv(2)),
+          e ? flowRow("Eastern Canadian (CE grades, port terminals)", (y) => flow("eastern_exports", y), "sub1 subtotal") : null,
+        ];
+      })()],
       ["Terminal receipts", RECEIPT_ROWS.map(([k, l]) => flowRow(l, (y) => flow(k, y), "sub"))],
       ["Commercial stocks (levels)", [
         ...STOCKS.map((st) => stockRow(st.label, (y) => stock(st.key, y), "sub")),
@@ -2350,7 +2360,7 @@
     const ul = $("explain-list");
     const li = (text) => { const l = document.createElement("li"); l.textContent = text; ul.appendChild(l); };
     li("Producer deliveries are what farmers deliver into the licensed system: country elevators, straight to processors, and producer cars. Grain fed on the farm or sold farm-to-farm or to feedlots is not counted, so deliveries run below production.");
-    li(`Figures are Western Canadian grain. Exports and terminal stocks leave out grain graded Canada Eastern, so they will not match the all-Canada totals in CGC's weekly report.${hasEastern() ? " The weekly flash shows the eastern exports as a memo line." : ""}`);
+    li(`Figures are Western Canadian grain. Exports and terminal stocks leave out grain graded Canada Eastern, so they will not match the all-Canada totals in CGC's weekly report.${hasEastern() ? " The weekly flash starts its export rows from the all-Canada total and splits it into Western and Eastern Canadian; everywhere else the page uses the Western figure." : ""}`);
     li(`"Share of the crop delivered" divides deliveries by StatCan's latest western production estimate. For ${short(cur)} that estimate is still in-season, so the share moves when StatCan revises the crop, not only when farmers deliver.`);
     li("The full-year delivery projection is simple arithmetic: deliveries so far divided by the share that usually arrives by this week. It assumes a normal seasonal pattern and is not a forecast." + (META.slug === "canola" ? " The Forecast section is a separate, backtested model." : ""));
     li("Weekly numbers are the change in CGC's crop-year totals, which CGC revises. A single week can be lumpy or even negative after a revision; weeks 21 and 22 are one combined holiday report. The 4-week average is the better guide to pace.");
@@ -2368,7 +2378,7 @@
       others.forEach(([t, u], i) => src.append(link(t, u), i < others.length - 1 ? ", " : "."));
     }
     for (const n of META.notes || []) li(n);
-    if (hasEastern()) li(`Western Canadian ${NAME.toLowerCase()} only: exports, terminal receipts and terminal stocks leave out grain graded Canada Eastern (CE grades, grown in Ontario and Quebec and handled at eastern terminals). Eastern exports are shown as a memo line in the weekly flash; add them back to match CGC's all-Canada totals.`);
+    if (hasEastern()) li(`Western Canadian ${NAME.toLowerCase()} only: exports, terminal receipts and terminal stocks leave out grain graded Canada Eastern (CE grades, grown in Ontario and Quebec and handled at eastern terminals). To match CGC: its Terminal Exports total is the flash's From port terminals plus Eastern Canadian; Direct from primary elevators comes from CGC's Primary Shipment Distribution table (export destinations and containers).`);
     li("Definitions and formulas for every number on this page (deliveries, weekly values, share delivered, projection, net build, weeks of cover, port terminals, grades, stocks, Things to watch): ", link("Methods", "../methods/"), ".");
     const gen = document.createElement("li");
     gen.id = "gen";

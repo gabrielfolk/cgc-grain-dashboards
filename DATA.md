@@ -27,8 +27,8 @@ one long-format CSV per crop year, re-published every Thursday. `src/ingest.py` 
 region, kt); `src/db.py` adds DuckDB views on top.
 
 **Scope: Western Canadian grain.** Wheat, corn and (in 2013-15) barley graded Canada Eastern (CE grades, grown in
-Ontario and Quebec) are left out of exports, terminal receipts and terminal stocks. The wheat page shows eastern
-exports as a memo line; add them back to match CGC's all-Canada totals.
+Ontario and Quebec) are left out of exports, terminal receipts and terminal stocks. The crop pages' weekly flash
+splits all-Canada exports into Western and Eastern Canadian; CGC's Terminal Exports total = western terminal + eastern.
 
 | Series | Definition |
 |---|---|
@@ -156,7 +156,7 @@ stocks; `null` for weeks not yet reported.
 | File | Built by | Main keys |
 |---|---|---|
 | `dashboard/data.json` (overview) | `dashboard_data.py` | `grains`, `deliveries`, `stocks`, `province`, `channel`, `province_weekly`, `exports`, `process`, `elevator_deliveries`, `elevator_shipments` (into and out of country elevators), `production`, `groups` |
-| `dashboard/<crop>/data.json` | `grain_data.py` | `flows` (deliveries, process, feed, exports and receipts by port, Thunder Bay disposition, elevator throughput, eastern exports memo), `stocks`, `province`, `channel`, `production`, `grades`; `meta` holds the page's title, lede, notes and settings |
+| `dashboard/<crop>/data.json` | `grain_data.py` | `flows` (deliveries, process, feed, exports and receipts by port, Thunder Bay disposition, elevator throughput, eastern exports), `stocks`, `province`, `channel`, `production`, `grades`; `meta` holds the page's title, lede, notes and settings |
 | `dashboard/canola/forecast.json` | `canola_forecast.py` | `weekly` and `full_year` forecasts for crush and exports, `supply`, backtest results |
 | `dashboard/feed/data.json` | `feed_data.py`, `feed_model.py` | `demand_model` (by crop year: `by_region` grain kt incl. `corn_ca` / `corn_us`, `by_group` barley-equivalent kt, `drivers`, `base_mix`, `relative_price`, `availability`, `prices`, `corn_origin`, `meta`), `demand_model_meta` (rates, elasticities, supply), `regional_feed` (StatCan split by region), `prices` (Alberta, `ontario`, CBOT, FX), `model.fit` (share regression), `panel` (StatCan by crop year) |
 | `dashboard/margins/data.json` | `margins_data.py` | `deliveries`, `production` and `margins` (`rows` by crop and year, `now`) |
