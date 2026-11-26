@@ -160,6 +160,7 @@ stocks; `null` for weeks not yet reported.
 | `dashboard/canola/forecast.json` | `canola_forecast.py` | `weekly` and `full_year` forecasts for crush and exports, `supply`, backtest results |
 | `dashboard/feed/data.json` | `feed_data.py`, `feed_model.py` | `demand_model` (by crop year: `by_region` grain kt incl. `corn_ca` / `corn_us`, `by_group` barley-equivalent kt, `drivers`, `base_mix`, `relative_price`, `availability`, `prices`, `corn_origin`, `meta`), `demand_model_meta` (rates, elasticities, supply), `regional_feed` (StatCan split by region), `prices` (Alberta, `ontario`, CBOT, FX), `model.fit` (share regression), `panel` (StatCan by crop year) |
 | `dashboard/margins/data.json` | `margins_data.py` | `deliveries`, `production` and `margins` (`rows` by crop and year, `now`) |
+| `dashboard/methods/data.json` | `methods_data.py` | `revisions`: CGC's revision gap (crop-year total against the sum of its weekly rows) by main flow, this year and the five before at the same week and in full, plus `flags` for crops outside their own range |
 
 Series definitions inside each file are in the building script's module docstring.
 

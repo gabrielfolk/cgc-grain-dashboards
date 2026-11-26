@@ -121,6 +121,12 @@
   }
   @media (max-width: 640px) { .def { grid-template-columns: minmax(0, 1fr); } }
   .notes { font-size: 13px; color: var(--muted); max-width: 82ch; }
+  .rev-wrap { overflow-x: auto; }
+  .rev { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .rev th, .rev td { padding: 4px 10px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .rev th:first-child, .rev td:first-child { text-align: left; padding-left: 0; }
+  .rev th { font-weight: 500; color: var(--muted); }
+  .rev td.out { color: var(--ink); font-weight: 600; }
 </style>
 <div class="wrap">
   <header>
@@ -164,7 +170,11 @@
     <div class="defs">
       <div class="def" id="weekly"><h3><a href="#weekly">Weekly values</a></h3><div>
         <p class="formula">week = crop-year total this week − crop-year total last week</p>
-        <p>CGC applies revisions only to its crop-year totals, so its own weekly rows add up 1–4% short, and a revision can make a week lumpy or negative. Weeks 21 and 22 are one combined holiday report. The 4-week average is the better guide to pace.</p>
+        <p id="rev-text">CGC applies revisions only to its crop-year totals, never to its weekly rows, so the weekly rows add up short of the crop-year total, and a revision can make a week lumpy or negative.</p>
+        <p class="formula">revision gap = 1 − sum of CGC weekly rows to week w ÷ CGC crop-year total at week w</p>
+        <div class="rev-wrap" id="rev-detail" hidden><table class="rev" id="rev-table"></table></div>
+        <p id="rev-flags" hidden></p>
+        <p>Weeks 21 and 22 are one combined holiday report. The 4-week average is the better guide to pace.</p>
       </div></div>
       <div class="def" id="five-year"><h3><a href="#five-year">LY, 5-yr average and range</a></h3><div>
         <p>LY is the previous crop year. The 5-yr average and range use the five crop years before this one, at the same week of the crop year.</p>
@@ -292,3 +302,43 @@
 
   <p class="notes">Data sources, file formats and known quirks: <a href="https://github.com/gabrielfolk/cgc-grain-dashboards/blob/main/DATA.md" target="_blank" rel="noopener">DATA.md</a>.</p>
 </div>
+<script>
+// Revision gaps on CGC's weekly rows, from data.json (src/methods_data.py); the text above stands if it fails to load
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const pc = (v) => { if (v == null) return "–"; const r = Math.round(v * 1000) / 10; return (r < 0 ? "−" : "") + Math.abs(r).toFixed(1) + "%"; };
+  const TOL = 0.01; // an all-crops series counts as unusual only when at least 1 point outside its range
+  const lo = (a) => Math.min(...a.filter((x) => x != null)), hi = (a) => Math.max(...a.filter((x) => x != null));
+  const range = (a) => a.some((x) => x != null) ? `${pc(lo(a))} to ${pc(hi(a))}` : "–";
+  const short = (y) => y.slice(2, 4) + "-" + y.slice(-2);
+  fetch("data.json").then((r) => r.json()).then((d) => {
+    const m = d.meta, R = d.revisions, past = `${short(m.past_years[0])} to ${short(m.past_years[m.past_years.length - 1])}`;
+    const out = (s) => s.current != null && (s.current > hi(s.same_week) + TOL || s.current < lo(s.same_week) - TOL);
+    const t = $("rev-table");
+    const hr = t.createTHead().insertRow();
+    ["All crops", `${short(m.current_year)} to wk ${m.latest_week}`, `${past} at wk ${m.latest_week}`, `${past}, full year`].forEach((h) => {
+      const th = document.createElement("th"); th.scope = "col"; th.textContent = h; hr.appendChild(th);
+    });
+    const body = t.createTBody();
+    for (const s of R.series) {
+      const tr = body.insertRow();
+      [s.label, pc(s.current), range(s.same_week), range(s.full_year)].forEach((v, i) => {
+        const td = tr.insertCell(); td.textContent = v; if (i === 1 && out(s)) td.className = "out";
+      });
+    }
+    $("rev-detail").hidden = false;
+    const fullAll = R.series.flatMap((s) => s.full_year).filter((x) => x != null);
+    const odd = R.series.filter(out);
+    const big = R.series.reduce((a, s) => hi(s.full_year) > hi(a.full_year) ? s : a);
+    let text = `CGC applies revisions only to its crop-year totals, never to its weekly rows, so the weekly rows add up short of the crop-year total, and a revision can make a week lumpy or negative. Over ${past} the full-year gap ran ${pc(Math.min(...fullAll))} to ${pc(Math.max(...fullAll))}, depending on the series, largest for ${big.label.toLowerCase()} (up to ${pc(hi(big.full_year))}).`;
+    if (odd.length) text += ` In ${short(m.current_year)} to week ${m.latest_week}, ${odd.map((s) => `the gap for ${s.label.toLowerCase()} is ${pc(s.current)}, against ${range(s.same_week)} at the same week of ${past}`).join("; ")}. The weekly values on the pages, taken from the crop-year totals, include these revisions; CGC's own weekly figures for this year do not.`;
+    else text += ` In ${short(m.current_year)} to week ${m.latest_week} every series is within its range for the same week of ${past}.`;
+    $("rev-text").textContent = text;
+    if (R.flags.length) {
+      $("rev-flags").textContent = `Crops outside their own ${past} range at week ${m.latest_week} (at least 2 points outside; ${short(m.current_year)} flows of 100 kt or more): ` +
+        R.flags.map((f) => `${f.grain} ${f.series.toLowerCase()} ${pc(f.current)} (${pc(f.lo)} to ${pc(f.hi)})`).join(" · ") + ".";
+      $("rev-flags").hidden = false;
+    }
+  }).catch(() => {});
+})();
+</script>

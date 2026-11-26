@@ -3,7 +3,7 @@
 Steps, in order (any failure stops the refresh, and nothing is published):
     external.py --refresh    StatCan tables, AAFC and USDA files, CBOT and USD/CAD (Yahoo)
     ingest.py                CGC Grain Statistics Weekly, with its checks on the current crop year
-    dashboard_data.py, grain_data.py, canola_forecast.py, feed_data.py, margins_data.py
+    dashboard_data.py, grain_data.py, canola_forecast.py, feed_data.py, margins_data.py, methods_data.py
     build_site.py            docs/
     check_site.py            headless Chrome render check of every page in docs/
 
@@ -38,7 +38,7 @@ ROOT = Path(__file__).resolve().parent.parent
 EXTERNAL = ROOT / "data" / "raw" / "external"
 SUMMARY = ROOT / "data" / "refresh_summary.md"
 PUBLISHED = ROOT / "data" / "published_sources.json"  # source hashes as of the last successful build
-BUILD = ["dashboard_data.py", "grain_data.py", "canola_forecast.py", "feed_data.py", "margins_data.py", "build_site.py"]
+BUILD = ["dashboard_data.py", "grain_data.py", "canola_forecast.py", "feed_data.py", "margins_data.py", "methods_data.py", "build_site.py"]
 
 # Human names for the cached source files, for the summary.
 SOURCE_NAMES = {

@@ -38,8 +38,9 @@ CGC quality pages ──> src/external.py│                                    
    (cached in data/raw/external/)    ├─ src/dashboard_data.py  ─> dashboard/data.json  │ overview
                                      ├─ src/grain_data.py      ─> dashboard/<crop>/    │ crop pages (template)
                                      ├─ src/canola_forecast.py ─> dashboard/canola/forecast.json
-                                     └─ src/feed_data.py       ─> dashboard/feed/data.json
-                                          (+ src/feed_model.py, feed demand model)
+                                     ├─ src/feed_data.py       ─> dashboard/feed/data.json
+                                     │    (+ src/feed_model.py, feed demand model)
+                                     └─ src/methods_data.py    ─> dashboard/methods/data.json (CGC revision gaps)
                                                    │
                                        src/build_site.py ─> docs/ ─> GitHub Pages
 
