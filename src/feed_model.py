@@ -27,7 +27,10 @@ Feeding rates
                        "Explained in Brief: Dairy Feed Costs", 2021), so concentrate rises with milk.
       broilers, turkeys  the 1999 rate per kilogram of meat produced (StatCan 32-10-0117), so
                        heavier birds need more feed
-    Other classes (beef cows, bulls, replacement heifers, layers, sheep, veal calves) use the
+      western bulls and replacement heifers  Manitoba Agriculture, Cost of Production 2027 (cow-calf
+                       and replacement heifer guides): 7 lb/day barley for 120 days per bull, 6.5 lb/day
+                       for 224 days per heifer, at each class's 1999 grain mix
+    Other classes (beef cows, eastern bulls and heifers, layers, sheep, veal calves) use the
     1999 rate. Horses, other poultry and fish are left out (no current counts; under 0.4 Mt).
 
 Finishing weights
@@ -51,15 +54,16 @@ Cattle on feed
     Grain fed to finishing cattle = fed cattle marketed x days on feed x 18.5 lb/day.
     Fed cattle marketed = (slaughter + live international exports, StatCan 32-10-0139, by
     province, July to June) x the steer and heifer share of slaughter (FED_SHARE, AAFC federally
-    inspected slaughter). Days on feed = the region's average of cattle on feeding operations x
-    365 / fed cattle marketed, over the years with both, so the level matches StatCan's
-    inventories while the year-to-year change follows marketings. For a crop year whose
+    inspected slaughter). Days on feed: West DAYS_ON_FEED_WEST (Canfax for the Beef Cattle Research
+    Council, 2017: calf-feds and yearlings); East the region's average of cattle on feeding operations
+    x 365 / fed cattle marketed, over the years with both. The year-to-year change follows marketings. For a crop year whose
     marketings aren't published yet, last year's marketings move with the July 1 cattle on feed.
 
 Grain mix
     Each class keeps its 1999 provincial mix of wheat, oats, barley and corn, except western
     feedlot and backgrounding cattle, which follow the Manitoba guides (barley) with a share of
-    wheat and corn (see WEST_CATTLE_MIX). The mix then shifts each crop year with relative price
+    wheat and corn (see WEST_CATTLE_MIX); in those rations wheat also responds more to price, up to
+    40% of the ration (feedlot_shift()). The mix then shifts each crop year with relative price
     and availability:
         share_i  proportional to  base_share_i x price_i ^ -sigma x availability_i ^ alpha
     price_i = energy-adjusted price over its average (Alberta farm prices and US corn delivered to
@@ -116,6 +120,24 @@ HOG_FACTORS = {
 # Western feedlot and backgrounding grain mix: barley-based (Manitoba guides; Western Canadian
 # finishing diets are typically over 80% barley grain), with some wheat and corn
 WEST_CATTLE_MIX = {"barley": 0.85, "wheat": 0.08, "corn": 0.07, "oats": 0.0}  # wheat includes durum
+# Western feedlots swap wheat for barley more readily than other feeders: wheat can replace barley
+# grain in finishing diets but should be held to about 40% of the diet against digestive upsets
+# (Beef Cattle Research Council / Canfax, Feed Grains & Feed Efficiency review, 2017, citing Lardy and
+# Dhuyvetter 2016; a commercial Alberta trial fed 80% wheat). So in western feedlot and backgrounding
+# rations wheat and durum move against the other grains with a higher price elasticity, an assumption,
+# and are capped at 40% of the grain ration.
+FEEDLOT_WHEAT_SIGMA = 4.0
+FEEDLOT_WHEAT_CAP = 0.40
+# Western days on feed (Canfax, same review, Table 8): calf-feds 550 to 1,325 lb over 238 days (35% of
+# fed cattle) and yearlings 850 to 1,400 lb over 153 days (65%): 0.35 x 238 + 0.65 x 153 = 182.75.
+# The East keeps days derived from StatCan's cattle-on-feed inventories (days_on_feed()).
+DAYS_ON_FEED_WEST = 0.35 * 238 + 0.65 * 153
+# Western beef bulls and replacement heifers: Manitoba Agriculture, Cost of Production guides, 2027
+# (September 2026). Bulls: 7 lb of barley a day for 120 days (cow-calf guides). Replacement heifers:
+# 6.5 lb of barley a day for 224 days, weaning (550 lb) to bred (1,200 lb). Each class keeps its 1999
+# provincial grain mix, scaled to the guide's barley-equivalent amount per head.
+WEST_BULL_BARLEY_T = 7.0 * 120 * 0.45359237 / 1000
+WEST_HEIFER_BARLEY_T = 6.5 * 224 * 0.45359237 / 1000
 # East (Ontario/Quebec) feedlots: the 1999 Ontario finished-cattle mix
 SIGMA = 1.0   # default substitution elasticity between grains on energy-adjusted price
 # Steers and heifers as a share of cattle slaughter: AAFC federally inspected slaughter, January 1
@@ -502,7 +524,12 @@ def class_demand(pop: dict, coef: dict, kgpb: dict, region_of, durum_share: floa
                 continue
             factor = HOG_FACTORS.get(key, 1.0) * (meta["milk_factor"] if key == "Dairy Cows" else 1.0) \
                 * (meta.get("hog_weight_factor", 1.0) if key == "Feeder Pigs" else 1.0)
-            add(p, key, {g: n * sum(c[s][g] for s in subs) * factor for g in STUDY_GRAINS})
+            per_head = {g: sum(c[s][g] for s in subs) for g in STUDY_GRAINS}
+            guide = {"Bulls": WEST_BULL_BARLEY_T, "Beef Rep Heifers": WEST_HEIFER_BARLEY_T}.get(key) if west else None
+            if guide:  # the 2027 Manitoba guide's amount, at the class's 1999 grain mix
+                beq = sum(per_head[g] * ENERGY[g] for g in STUDY_GRAINS)
+                factor *= guide / beq if beq else 1.0
+            add(p, key, {g: n * per_head[g] * factor for g in STUDY_GRAINS})
         # bull calves are a third of bulls (study convention)
         if a.get("Bulls"):
             add(p, "Bulls", {g: a["Bulls"] / 3 * c["Bull Calves < 1 year"][g] for g in STUDY_GRAINS})
@@ -546,6 +573,27 @@ def price_shift(base: dict, rel: dict, avail: dict | None = None, sigma: float =
     return {g: w.get(g, 0.0) / tot for g in FEED_GRAINS} if tot else base
 
 
+def feedlot_shift(base: dict, rel: dict, avail: dict, sigma: float, alpha: float, wheat_sigma: float,
+                  cap: float = FEEDLOT_WHEAT_CAP) -> dict:
+    """A western feedlot or backgrounding mix: price_shift(), then wheat and durum move against the
+    rest with the extra elasticity wheat_sigma (feedlots swap wheat for barley readily), capped at
+    `cap` of the ration."""
+    mix = price_shift(base, rel, avail, sigma, alpha)
+    wk = [g for g in ("wheat", "durum") if mix.get(g, 0) > 0]
+    w = sum(mix[g] for g in wk)
+    if not wk or w >= 1:
+        return mix
+    others = [g for g in FEED_GRAINS if g not in wk and mix[g] > 0]
+    # wheat's energy-adjusted price index against the rest of the ration's, weighted by share
+    rw = sum(mix[g] * rel[g] for g in wk) / w
+    ro = sum(mix[g] * rel[g] for g in others) / (1 - w)
+    odds = w / (1 - w) * (rw / ro) ** -(wheat_sigma - sigma)
+    w_new = min(cap, odds / (1 + odds))
+    out = {g: mix[g] * w_new / w for g in wk}
+    out |= {g: mix[g] * (1 - w_new) / (1 - w) for g in others}
+    return {g: out.get(g, 0.0) for g in FEED_GRAINS}
+
+
 def days_on_feed(pops: dict) -> dict:
     """{region: days}: average cattle on feeding operations x 365 / fed cattle marketed, over the
     crop years with both."""
@@ -572,7 +620,8 @@ def project_marketings(pops: dict) -> None:
 
 def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_share: float = 0.0,
            availability: dict | None = None, sigma: float = SIGMA, alpha: float = 0.0, coproducts: dict | None = None,
-           forage: dict | None = None) -> dict:
+           forage: dict | None = None, feedlot_wheat_sigma: float = FEEDLOT_WHEAT_SIGMA,
+           days_on_feed_west: float | None = DAYS_ON_FEED_WEST) -> dict:
     """Feed grain demand by crop year: {crop_year: {"by_region": {region: {grain: kt}},
     "by_group": {region: {group: kt barley-eq}}, ...}}.
 
@@ -595,6 +644,9 @@ def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_
     pops = copy.deepcopy(_populations(tuple(sorted(set(years) | {min(years) - 1}))))
     project_marketings(pops)
     dof = days_on_feed(pops)
+    dof_inventory = dict(dof)
+    if days_on_feed_west:
+        dof["west"] = days_on_feed_west
     # grain per head finished moves with carcass weight
     cw = [pop["_meta"]["cattle_weight"] for pop in pops.values() if pop["_meta"]["cattle_weight"]]
     cattle_w_avg = float(np.mean(cw)) if cw else None
@@ -638,13 +690,21 @@ def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_
                     continue
                 for g in FEED_GRAINS:
                     rec["base_mix"][r][g] += row["beq"] * row["base_mix"][g]
-                mix = price_shift(row["base_mix"], rel, av, sigma, alpha)
+                if r == "west" and row["class"] in ("feedlot", "background"):
+                    mix = feedlot_shift(row["base_mix"], rel, av, sigma, alpha, feedlot_wheat_sigma)
+                else:
+                    mix = price_shift(row["base_mix"], rel, av, sigma, alpha)
                 for g in FEED_GRAINS:
                     rec["by_region"][r][g] += row["beq"] * net * mix[g] / ENERGY[g]
                 rec["by_group"][r][row["group"]] = rec["by_group"][r].get(row["group"], 0.0) + row["beq"]
                 rec["beq"][r] += row["beq"] * net
         rec["base_mix"] = {r: {g: v / rec["beq_gross"][r] for g, v in m.items()} for r, m in rec["base_mix"].items()}
-        rec["meta"] = {k: v for k, v in pops[y0]["_meta"].items()} | {"days_on_feed": {r: round(v, 1) for r, v in dof.items()}}
+        rec["meta"] = {k: v for k, v in pops[y0]["_meta"].items()} | {"days_on_feed": {r: round(v, 1) for r, v in dof.items()},
+                       "days_on_feed_inventory": {r: round(v, 1) for r, v in dof_inventory.items()}}
+        # Alberta's grain need (gross, barley-equivalent), to check against Alberta Agriculture's estimate
+        ab = [row for row in rows if row["province"] == "Alberta"]
+        rec["alberta_beq"] = {"total": round(sum(x["beq"] for x in ab), 1),
+                              "feedlot": round(sum(x["beq"] for x in ab if x["group"] == "feedlot"), 1)}
         def region_sum(r, k):
             v = [pops[y0][p].get(k) for p in PROVINCES if region_of(p) == r]
             return None if all(x is None for x in v) else round(sum(x or 0.0 for x in v), 1)

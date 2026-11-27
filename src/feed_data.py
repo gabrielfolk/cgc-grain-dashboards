@@ -521,7 +521,9 @@ def durum_share(prod: dict) -> tuple[float, list[str]]:
 
 
 def model_demand(pr: dict, years: list[str], corn_west: dict, durum: float, avail: dict, sigma: float, alpha: float, cop: dict,
-                 forage: dict | None = None, basis_usd_bu: float = CORN_BASIS_USD_BU) -> dict:
+                 forage: dict | None = None, basis_usd_bu: float = CORN_BASIS_USD_BU,
+                 feedlot_wheat_sigma: float = feed_model.FEEDLOT_WHEAT_SIGMA,
+                 days_on_feed_west: float | None = feed_model.DAYS_ON_FEED_WEST) -> dict:
     """Feed demand from animal numbers (src/feed_model.py), priced off each region's grains:
     West = Alberta farm prices and US corn delivered to southern Alberta; East = Ontario.
     durum: durum's base share of the West's wheat and durum (see durum_share); avail: the
@@ -546,7 +548,8 @@ def model_demand(pr: dict, years: list[str], corn_west: dict, durum: float, avai
                 basis[r][g][cur] = f"{pd.Timestamp(last + '-01').strftime('%b %Y')} (latest month)"
     prices["west"]["corn"] = us
     basis["west"]["corn"] = {cy: price_basis(pr["cbot_corn"]["values"], cy) for cy in years}
-    out = feed_model.demand([int(cy[:4]) for cy in years], prices, corn_west, durum, avail, sigma, alpha, cop, forage)
+    out = feed_model.demand([int(cy[:4]) for cy in years], prices, corn_west, durum, avail, sigma, alpha, cop, forage,
+                            feedlot_wheat_sigma, days_on_feed_west)
     r1 = lambda d: {k: round(v, 1) for k, v in d.items()}
     r4 = lambda d: {k: round(v, 4) for k, v in d.items()}
     return {cy: {"by_region": {r: r1(v) for r, v in rec["by_region"].items()},
@@ -555,7 +558,7 @@ def model_demand(pr: dict, years: list[str], corn_west: dict, durum: float, avai
                  "base_mix": {r: r4(v) for r, v in rec["base_mix"].items()},
                  "prices": {r: {g: round(prices[r][g][cy], 1) for g in prices[r] if cy in prices[r][g]} for r in prices},
                  "price_basis": {r: {g: basis[r][g][cy] for g in basis[r]} for r in basis},
-                 "drivers": rec["drivers"], "meta": rec["meta"], "corn_west": rec["corn_west"]}
+                 "drivers": rec["drivers"], "meta": rec["meta"], "corn_west": rec["corn_west"], "alberta_beq": rec["alberta_beq"]}
             for cy, rec in out.items()}
 
 
@@ -576,6 +579,10 @@ def ranges(durum_q: tuple) -> dict:
                             "high": COPRODUCT_YIELD * 1.2, "why": "± 20%"},
         "durum_share": {"label": "Durum share of western wheat feed", "base": None, "low": durum_q[0], "high": durum_q[2],
                         "why": "middle half of the years' western production shares"},
+        "feedlot_wheat_sigma": {"label": "Western feedlot wheat price elasticity", "base": feed_model.FEEDLOT_WHEAT_SIGMA,
+                                "low": 1.0, "high": 8.0, "why": "an assumption: from the general elasticity to twice the base"},
+        "days_on_feed_west": {"label": "Western days on feed", "base": round(feed_model.DAYS_ON_FEED_WEST, 1), "low": None, "high": 200.0,
+                              "why": "StatCan's cattle-on-feed inventories (low) to 200 days (high)"},
         "corn_basis": {"label": "US corn basis + freight, US$/bu", "base": CORN_BASIS_USD_BU, "low": CORN_BASIS_USD_BU - 0.4,
                        "high": CORN_BASIS_USD_BU + 0.4, "why": "an assumption, ± US$0.40"},
     }
@@ -650,11 +657,13 @@ def main() -> None:
     # forage: hay shortfall needs the model's beef cow numbers, so run once without it
     short, hay = hay_shortfall(model_demand(pr, yrs, corn_w, durum, avail, sigma, alpha, cop), yrs)
 
-    def run(sigma=sigma, alpha=alpha, hay_rate=HAY_GRAIN_RATE, cop_yield=COPRODUCT_YIELD, durum=durum, basis=CORN_BASIS_USD_BU):
+    def run(sigma=sigma, alpha=alpha, hay_rate=HAY_GRAIN_RATE, cop_yield=COPRODUCT_YIELD, durum=durum, basis=CORN_BASIS_USD_BU,
+            wheat_sigma=feed_model.FEEDLOT_WHEAT_SIGMA, dof_west=feed_model.DAYS_ON_FEED_WEST):
         """One full model run (steps 1-3) at the given judgment inputs."""
         av = {r: {g: s_ for g, s_ in gs.items()} for r, gs in avail.items()}
         c = {r: {cy: v * cop_yield / COPRODUCT_YIELD for cy, v in g.items()} for r, g in cop.items()}
-        d = model_demand(pr, yrs, corn_w, durum, av, sigma, alpha, c, {"west": {cy: hay_rate * v for cy, v in short.items()}}, basis)
+        d = model_demand(pr, yrs, corn_w, durum, av, sigma, alpha, c, {"west": {cy: hay_rate * v for cy, v in short.items()}}, basis,
+                         wheat_sigma, dof_west)
         for cy, o in corn_origin(d, cornd, prod).items():
             for r in REGIONS:
                 d[cy]["by_region"][r]["corn_ca"] = o[r]["ca"]
@@ -666,8 +675,9 @@ def main() -> None:
     cgc_feed = cgc_feed_shipments(con, yrs)
     R = ranges(tuple(np.percentile(list(durum_shares(prod).values()), [25, 50, 75])))
     R["durum_share"]["base"] = durum
+    R["days_on_feed_west"]["low"] = demand[cur]["meta"]["days_on_feed_inventory"]["west"]
     arg = {"price_elasticity": "sigma", "alpha": "alpha", "hay_rate": "hay_rate", "coproduct_yield": "cop_yield",
-           "durum_share": "durum", "corn_basis": "basis"}
+           "durum_share": "durum", "corn_basis": "basis", "feedlot_wheat_sigma": "wheat_sigma", "days_on_feed_west": "dof_west"}
     runs = {k: (totals(run(**{arg[k]: v["low"]})), totals(run(**{arg[k]: v["high"]}))) for k, v in R.items()}
     rng, sens = uncertainty(totals(demand), runs)
     for cy in demand:
@@ -695,6 +705,9 @@ def main() -> None:
         "demand_model_meta": {"west_cattle_mix": feed_model.WEST_CATTLE_MIX,
                               "feedlot_lb_day": feed_model.FEEDLOT_BARLEY_LB_DAY, "background_lb_day": feed_model.BACKGROUND_BARLEY_LB_DAY,
                               "background_days": feed_model.BACKGROUND_DAYS, "hog_factors": feed_model.HOG_FACTORS,
+                              "feedlot_wheat_sigma": feed_model.FEEDLOT_WHEAT_SIGMA, "feedlot_wheat_cap": feed_model.FEEDLOT_WHEAT_CAP,
+                              "days_on_feed_west": round(feed_model.DAYS_ON_FEED_WEST, 1),
+                              "west_bull_barley_t": round(feed_model.WEST_BULL_BARLEY_T, 3), "west_heifer_barley_t": round(feed_model.WEST_HEIFER_BARLEY_T, 3),
                               "durum_share_west": round(durum, 4), "durum_share_years": durum_years,
                               "sigma": round(sigma, 3), "alpha": round(alpha, 3), "fed_share": feed_model.FED_SHARE,
                               "energy": feed_model.ENERGY, "supply": supply,
