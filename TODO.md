@@ -41,9 +41,12 @@
   published only from 2021 (2024+ under /grain-harvest-export-quality/); 2012–2020 reports give top-grade sample
   counts only. Terminal receipts by grade and the Alberta milling/feed wheat spread both break in 2020-21 (tried
   2026-10-06). Could start a 2021+ series and use it once there are enough years.
-- [ ] **Check StatCan's Alberta "Wheat (except durum wheat), other" price** (the feed model's western wheat price).
-  Since 2021-22 it has been priced above milling wheat (2025-26: $299 against $284), so it may no longer be a clean
-  feed-wheat price. Find what it covers and whether a better Alberta feed-wheat series exists.
+- [x] **Western feed-wheat price** (2026-11-26): switched from Alberta's "other" wheat (priced above milling since
+  2021-22) to the Saskatchewan and Manitoba average, which stays below milling. Still worth asking StatCan what
+  Alberta's series now covers.
+- [ ] **Western wheat in feed rations** is still the model's biggest gap against StatCan (2.1 Mt a year on average).
+  Look for a current Prairie hog and feedlot ration survey (Prairie Swine Centre, Alberta Pork, feed-mill data);
+  the Manitoba government's example hog rations (undated) have no wheat in finisher feed.
 - [ ] **Update the western hog and feedlot grain mix** from a published current diet survey. The 1999 Manitoba hog
   rations have no wheat; the 2025 Manitoba swine guide gives feed amounts but no ingredients, and no Prairie source
   with current grain shares was found (2026-10-06). This is the main suspect for western wheat being understated.

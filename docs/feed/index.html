@@ -618,7 +618,6 @@
     const v = MG.map((m) => one(m.key)); return v.some((x) => x == null) ? null : sumOf(v);
   }
   const A = D.meta.assumptions;
-  const MODEL = D.model;
   const PANEL = Object.fromEntries(D.panel.map((r) => [r.cy, r]));
   const PR = D.prices;
   const ENERGY = A.energy_vs_barley;
@@ -797,7 +796,7 @@
       { label: "Met by grain (to step 2)", cls: "total", cells: [n1(DM[cy].beq.west), fmtPct(pct(DM[cy].beq.west, DM[ly].beq.west)), n1(DM[cy].beq.east), fmtPct(pct(DM[cy].beq.east, DM[ly].beq.east)), ""] }]]], { seps: [3, 5] });
 
     // step 2: mix
-    $("step2-p").textContent = `Each class starts from its ration (StatCan's 1999 feeding study by province; western cattle 85% barley, 8% wheat, 7% corn). The mix then moves each year: share ∝ ration share × price index^−${DMM.price_elasticity.toFixed(1)} × availability index^${DMM.alpha.toFixed(2)}. Price index = energy-adjusted price over its average; availability = supply over its average (West only). The price elasticity is a neutral assumption (no published Canadian estimate); the availability elasticity is fitted on StatCan's farm survey of grain fed on western farms (s.e. ${DMM.alpha_se.toFixed(2)}), not on its feed residual.`;
+    $("step2-p").textContent = `Each class starts from its ration (StatCan's 1999 feeding study by province; western cattle 85% barley, 8% wheat, 7% corn). The mix then moves each year: share ∝ ration share × price index^−${DMM.price_elasticity.toFixed(1)} × availability index^${DMM.alpha.toFixed(1)}. Price index = energy-adjusted price over its average; availability = supply over its average (West only). Both elasticities are neutral assumptions (no published Canadian estimate), tested across a range below. The model takes nothing from any agency's feed figures.`;
     const mixTable = (r, id) => {
       const rec = DM[cy], beq = rec.beq[r], pr = rec.prices[r];
       const rows = MG.filter((gg) => !(r === "east" && gg.key === "durum")).map((gg) => {
@@ -843,6 +842,17 @@
     const pick = HIST_PICKS.find((h) => h.key === histPick), gk = histPick === "total" ? null : histPick;
     const byOrigin = gk === "corn_ca" || gk === "corn_us";
     const val = (cy, r) => gk ? dmv(cy, r, gk) : dmTot(cy, r);
+    // measured comparisons, West, small grains only (corn has neither series by origin): StatCan's farm
+    // survey of grain fed on the farm that grew it, and CGC's elevator shipments for domestic feed
+    const SMALLG = ["barley", "wheat", "durum", "oats"], CGCF = D.cgc_feed_shipments || { kt: {}, week: {} };
+    const measured = (get) => (cy) => {
+      if (gk && !SMALLG.includes(gk)) return null;
+      const v = (gk ? [gk] : SMALLG).map((g) => get(cy, g));
+      return v.every((x) => x == null) ? null : sumOf(v);
+    };
+    const onFarm = measured((cy, g) => RF[cy]?.[g]?.on_farm?.west);
+    const elev = measured((cy, g) => CGCF.kt[cy] ? (CGCF.kt[cy][g] ?? 0) : null);
+    const elevTxt = (cy) => { const v = elev(cy); return v == null ? "–" : n1(v) + (cy === cur ? ` (wk ${CGCF.week[cy]})` : ""); };
     $("hist-est-eyebrow").textContent = `Model · ${short(dmYears[0])} to ${short(cur)} · kt`;
     $("hist-est-sub").textContent = `The model for every crop year, by commodity and region, next to StatCan. StatCan's figure is what is left over after exports, processing, seed and stocks, so it also carries waste, dockage and balancing error.`;
     $("hist-est-ch-h").textContent = `Model versus StatCan: ${pick.label}`;
@@ -858,14 +868,21 @@
       const m = val(y, "canada"), sc = residual(y, "canada", gk), prev = dmPrev(y);
       return { label: short(y) + (y === cur ? " (current)" : ""), cls: y === cur ? "total" : "",
         cells: [n1(m), rangeTxt(dmRange(y, "canada", gk)), fmtPct(prev ? pct(m, val(prev, "canada")) : null), n1(val(y, "west")), n1(val(y, "east")), n1(sc) + (sc != null && (!gk || gk === "corn") ? cornStar(y) : ""),
-          sc == null ? "–" : chg(sc - m), sc == null ? "–" : fmtPct(pct(sc, m)), n1(residual(y, "west", gk)), n1(residual(y, "east", gk))] };
+          sc == null ? "–" : chg(sc - m), sc == null ? "–" : fmtPct(pct(sc, m)), n1(residual(y, "west", gk)), n1(residual(y, "east", gk)),
+          n1(onFarm(y)), elevTxt(y)] };
     });
     const both = dmYears.filter((y) => residual(y, "canada", gk) != null);
     if (both.length) body.push({ label: `Average ${short(both[0])} to ${short(both[both.length - 1])}`, cls: "memo", cells: [n1(mean(both.map((y) => val(y, "canada")))), "", "", n1(mean(both.map((y) => val(y, "west")))), n1(mean(both.map((y) => val(y, "east")))),
-      n1(mean(both.map((y) => residual(y, "canada", gk)))), chg(mean(both.map((y) => residual(y, "canada", gk) - val(y, "canada")))), "", n1(mean(both.map((y) => residual(y, "west", gk)))), n1(mean(both.map((y) => residual(y, "east", gk))))] });
-    buildTable($("hist-est-table"), ["Crop year", "Model, Canada", "Range", "y/y", "Model, West", "Model, East", "StatCan", "StatCan − model", "%", "StatCan West", "StatCan East"],
-      [[pick.label, body]], { seps: [1, 4, 6, 9] });
-    $("hist-est-note").textContent = `StatCan: "animal feed, waste and dockage" (32-10-0013; corn 32-10-0014); its West/East figures are this page's estimated split: barley, wheat, durum and oats as each region's on-farm feed (32-10-0015) plus a share of the rest in proportion to production; corn from StatCan's regional corn balance. StatCan does not split corn by origin. The West's model runs below its StatCan figure (StatCan's western residual also carries dockage, waste and off-farm feed wheat the 1999 rations miss); the East's runs above it, partly from western grain shipped east. * Corn for the latest complete year is estimated until StatCan publishes August.`;
+      n1(mean(both.map((y) => residual(y, "canada", gk)))), chg(mean(both.map((y) => residual(y, "canada", gk) - val(y, "canada")))), "", n1(mean(both.map((y) => residual(y, "west", gk)))), n1(mean(both.map((y) => residual(y, "east", gk)))),
+      n1(mean(both.map(onFarm))), n1(mean(both.map(elev)))] });
+    buildTable($("hist-est-table"), ["Crop year", "Model, Canada", "Range", "y/y", "Model, West", "Model, East", "StatCan", "StatCan − model", "%", "StatCan West", "StatCan East", "West: fed on farm (StatCan survey)", "West: elevator feed shipments (CGC)"],
+      [[pick.label, body]], { seps: [1, 4, 6, 9, 11] });
+    // years where western on-farm + elevator barley exceed StatCan's whole-Canada barley residual: the agencies don't reconcile
+    const over = dmYears.filter((y) => { const f = RF[y]?.barley?.on_farm?.west, e = CGCF.kt[y]?.barley, sc = residual(y, "canada", "barley");
+      return y !== cur && f != null && e != null && sc != null && f + e > sc; });
+    const ly0 = over[over.length - 1];
+    const overNote = over.length ? `; yet for barley in ${over.length} of the published years, latest ${short(ly0)} (${n1(RF[ly0].barley.on_farm.west)} + ${n1(CGCF.kt[ly0].barley)} kt against StatCan's ${n1(residual(ly0, "canada", "barley"))} kt for all of Canada), they exceed StatCan's whole-Canada barley figure, so the agencies' numbers don't reconcile with each other` : "";
+    $("hist-est-note").textContent = `StatCan: "animal feed, waste and dockage" (32-10-0013; corn 32-10-0014); its West/East figures are this page's estimated split: barley, wheat, durum and oats as each region's on-farm feed (32-10-0015) plus a share of the rest in proportion to production; corn from StatCan's regional corn balance. StatCan does not split corn by origin. The West's model runs below its StatCan figure (StatCan's western residual also carries dockage, waste and off-farm feed wheat the 1999 rations miss); the East's runs above it, partly from western grain shipped east. * Corn for the latest complete year is estimated until StatCan publishes August. Measured comparisons, West, small grains: grain fed on the farm that grew it (StatCan's farm survey, 32-10-0015, "animal feed, waste and dockage", so it includes on-farm waste) and feed-grade grain shipped from licensed elevators for domestic feed (CGC Grain Statistics Weekly, Feed Grains table; the current year to date). Neither covers grain sold straight from farm to feeder, so together they should sit below total feed use${overNote}. The model uses none of them.`;
 
   }
 
@@ -878,7 +895,8 @@
     const statcan = "StatCan 32-10-0077";
     const rows = (r) => (r === "west" ? ["barley", "wheat", "durum", "oats", "corn"] : ["corn", "barley", "wheat", "oats"]).map((g) => {
       const isUS = r === "west" && g === "corn";
-      const series = isUS ? "US corn delivered, S. Alberta" : `${r === "west" ? "Alberta" : "Ontario"}: ${PS[r][g]}`;
+      const geos = (D.meta.price_geos?.[r]?.[g] || [r === "west" ? "Alberta" : "Ontario"]).join(" + ");
+      const series = isUS ? "US corn delivered, S. Alberta" : `${geos}${geos.includes("+") ? " avg" : ""}: ${PS[r][g]}`;
       const src = isUS ? "CBOT + basis, × USD/CAD" : statcan;
       const lm = isUS ? { m: PR.latest_market.date, v: lp.corn.price } : last(r === "west" ? PR[g].values : ONT[g].values);
       const price = rec.prices[r][g];
@@ -926,8 +944,8 @@
     li(`· Hogs: `, link("Manitoba Agriculture, Cost of Production: Swine Farrow-Finish (2025)", "https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-swine-farrow-finish.pdf"), `: 279 kg of feed per pig grown from 26 to 123 kg, 33 kg in the nursery, sows 3.0 kg a day dry and 6.5 lactating. Each stage's 1999 rate is scaled by the guide against Manitoba's 1999 rate (finishing ×${HF["Feeder Pigs"].toFixed(2)}, nursery ×${HF["Weaner Pigs"].toFixed(2)}, sows ×${HF["Sows & Bred Gilts"].toFixed(2)}). Pigs finished in each province = pig crop less live exports and deaths (StatCan 32-10-0200).`);
     li(`· Dairy cows: the 1999 rate × milk sold per cow against 1999 (StatCan 32-10-0113 and 32-10-0130), because concentrate fed per litre has stayed flat (`, link("Alberta Agriculture, Dairy Feed Costs, 2021", "https://open.alberta.ca/dataset/bd8da099-da84-4544-8613-bb64e79712ab/resource/019a53b4-3f5c-4a3d-b17c-55d0d823ef45/download/af-explained-in-brief-dairy-feed-costs-dairy-2-2021-01.pdf"), `: 2.2 litres of milk per kg of concentrate, 1997–2019).`);
     li("· Broilers and turkeys: the 1999 rate per kilogram of meat produced (32-10-0117). Beef cows, bulls, replacement heifers, veal calves (Canada calf slaughter, 32-10-0125), layers (32-10-0121) and sheep (32-10-0129): the 1999 rates. Horses, other poultry and fish are left out (no current counts; under 0.4 Mt).");
-    li(`Grain mix: share ∝ ration share × price index^−σ × availability index^α. σ = ${DMM.price_elasticity.toFixed(1)}, an assumption: no published substitution elasticity for Canadian feeding was found, and 1 means a grain's share moves in inverse proportion to its relative energy-adjusted price. α = ${DMM.alpha.toFixed(2)} (s.e. ${DMM.alpha_se.toFixed(2)}), fitted each build on StatCan's farm survey (32-10-0015: grain fed on the farm that grew it, West, reported by farmers), wheat, durum and oats against barley, ${short(MODEL.fit.train_years[0])} to ${short(MODEL.fit.train_years[1])}, with σ fixed; it comes out at 1.5 to 1.7 for any σ from 0.5 to 1.5. Price index = energy-adjusted crop-year price over its average (West: Alberta farm prices and US corn delivered to southern Alberta; East: Ontario farm prices). Availability index = Canada supply (carry-in + production + imports, 32-10-0013) over its average; the current year uses last July's stocks, StatCan's latest production estimate and last year's imports. Applied in the West only; eastern feeders buy the local crop at Ontario prices, which already reflect its size.`);
-    li(`Durum: the 1999 study reports wheat with durum included, so in the West each class's wheat is split at durum's median share of the wheat and durum fed on western farms (${(DMM.durum_share_west * 100).toFixed(1)}%, StatCan's farm survey, ${short(DMM.durum_share_years[0])} to ${short(DMM.durum_share_years[1])}), then each moves on its own price and availability. No durum is fed in the East.`);
+    li(`Grain mix: share ∝ ration share × price index^−σ × availability index^α. σ = ${DMM.price_elasticity.toFixed(1)}, an assumption: no published substitution elasticity for Canadian feeding was found, and 1 means a grain's share moves in inverse proportion to its relative energy-adjusted price. α = ${DMM.alpha.toFixed(1)}, also an assumption: 1 means a grain's share moves in proportion to its supply against normal. Neither is fitted on any agency's feed figures (StatCan's residual, its farm survey or CGC's elevator feed shipments), which are shown only for comparison. Price index = energy-adjusted crop-year price over its average (West: Alberta feed barley, durum and oats, Saskatchewan and Manitoba non-milling wheat, and US corn delivered to southern Alberta; East: Ontario farm prices). Availability index = Canada supply (carry-in + production + imports, 32-10-0013) over its average; the current year uses last July's stocks, StatCan's latest production estimate and last year's imports. Applied in the West only; eastern feeders buy the local crop at Ontario prices, which already reflect its size.`);
+    li(`Durum: the 1999 study reports wheat with durum included, so in the West each class's wheat is split at durum's median share of the wheat and durum grown in the West (${(DMM.durum_share_west * 100).toFixed(1)}%, StatCan production 32-10-0359, ${short(DMM.durum_share_years[0])} to ${short(DMM.durum_share_years[1])}): feed durum is mostly grain that missed milling grades, so it is assumed fed in proportion to what is grown. Each then moves on its own price and availability. No durum is fed in the East.`);
     li("Corn: the 1999 rations predate Manitoba's corn crop (about 0.5 Mt then, over 2 Mt now), so the West's corn is set to what it has: the western corn crop (32-10-0359) plus US corn imported into the provinces outside Ontario and Quebec over the Sep–Aug corn year (32-10-0014; March scaled to the full year until August is out). Both are measured; stock changes are left out. Years whose imports aren't out yet are projected from the corn share of energy in the last three years, shifted by price, and US corn fills what the crop doesn't. East: US corn = Ontario and Quebec imports as a share of their crop plus imports, applied to corn fed.");
     li(`Finishing weights: grain per fed animal moves with carcass weight (StatCan 32-10-0125 cattle, 32-10-0126 hogs, average cold dressed weight). Cattle against the average over the model's years, since days on feed are calibrated on that average; finishing pigs against 2025, the year of the Manitoba hog guide. Cattle carcasses rose from about 367 kg (2014) to 410 kg (2025), hogs from 94 kg (2012) to 106 kg.`);
     li(`Hay shortfall: when western tame hay (StatCan 32-10-0359, MB, SK, AB, BC) per beef cow is below its average, cows and backgrounders are fed straw and grain instead. Extra grain = (average hay per cow − this year's) × beef cows × ${DMM.hay_grain_rate.toFixed(2)} t of barley per tonne of hay short, from Saskatchewan Agriculture's Beef Cow Rations and Winter Feeding Guidelines (2021): for a 1,400 lb cow in mid-pregnancy, 30 lb of alfalfa-grass hay a day, or 9 lb of hay + 18 lb of straw + 4 lb of barley. A crop year whose hay isn't published yet repeats the latest year's hay per cow.`);
@@ -936,7 +954,7 @@
     li("Ranges: the model is rerun with each judgment input at a low and a high value, the others held at base, and the moves are combined as independent (square root of the summed squared moves, up and down). " + Object.values(D.uncertainty.inputs).map((i) => `${i.label}: ${i.why}`).join("; ") + ". Not in the range: the feeding rates themselves (1999 study and provincial guides), animal numbers and prices, which are published data; and the western wheat gap (feed wheat bought off the farm), which the model doesn't capture.");
     li("What the model counts: grain needed on 1999 feeding practice, less co-products. The mix does not track crop quality directly: a year with a lot of feed-grade wheat shows up through supply and price, and western wheat is likely understated against StatCan, whose western residual also carries dockage, waste and feed wheat bought off the farm.");
     li("StatCan's feed figure is \"animal feed, waste and dockage\" (32-10-0013; corn 32-10-0014), what is left of supply after exports, processing, seed and stocks, so it also carries waste, dockage and balancing error. Published for Canada only (Aug–Dec, Aug–Mar and the full crop year); this page's regional split is in the crop-year notes. * Corn for the latest complete crop year is estimated until StatCan publishes August: March scaled by the usual March-to-August ratio.");
-    li("Prices: StatCan farm product prices (32-10-0077). Alberta: feed barley, non-milling (\"other\") wheat, durum and oats. Ontario: corn, barley, oats and all Ontario wheat (excluding payments). CBOT corn and USD/CAD are weekly closes from Yahoo Finance.");
+    li("Prices: StatCan farm product prices (32-10-0077). West: Alberta feed barley, durum and oats; non-milling (\"other\") wheat is the average of Saskatchewan and Manitoba, because Alberta's has been priced above milling wheat since 2021-22 and no longer tracks feed wheat. Ontario: corn, barley, oats and all Ontario wheat (excluding payments). CBOT corn and USD/CAD are weekly closes from Yahoo Finance.");
     li("Definitions shared by every page (CGC series, comparisons, crop sizes): ", link("Methods", "../methods/"), ".");
     li("Related pages: ", link("Overview", "../"), ", ", link("Barley Pipeline", "../barley/"), ", ",
       link("Wheat Pipeline", "../wheat/"), ", ", link("Durum Pipeline", "../durum/"), ", ", link("Oats Pipeline", "../oats/"), ", ",

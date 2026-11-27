@@ -7,13 +7,14 @@ Run after src/ingest.py:
 
 The estimate is src/feed_model.py: animals x grain fed per head (step 1), split across grains by
 price and availability (step 2). This module assembles its inputs and adds step 3, corn by origin.
-None of it uses StatCan's feed residual, which is a balancing item, not a feed estimate:
-    prices          Alberta and Ontario farm prices (32-10-0077), US corn delivered to southern Alberta
+It takes nothing from any agency's feed figures (StatCan's residual, StatCan's farm survey of grain
+fed on farms, CGC's elevator feed shipments); those are comparisons only. Its inputs are animal
+numbers, published rations, prices and supply:
+    prices          prairie and Ontario farm prices (32-10-0077; PRICE_GEOS), US corn delivered to
+                    southern Alberta
     availability    Canada supply over its average (32-10-0013: stocks, production, imports), West only
-    elasticities    price: PRICE_ELASTICITY (an assumption); availability: fitted on StatCan's farm
-                    survey of grain fed on farms in the West (32-10-0015), not the residual
-                    (fit_elasticities())
-    durum split     durum's median share of western on-farm wheat and durum feed, same survey
+    elasticities    price and availability: PRICE_ELASTICITY and AVAILABILITY_ELASTICITY, assumptions
+    durum split     durum's median share of the wheat and durum grown in the West (32-10-0359)
     western corn    the western corn crop (32-10-0359) + US corn imports into the West (32-10-0014,
                     customs-based), both measured
     corn origin     corn imports by region (corn_origin())
@@ -70,6 +71,11 @@ PRICE_SERIES = {
     "durum": "Durum wheat",
     "oats": "Oats",
 }
+# Where each western price is taken. Feed wheat is the average of Saskatchewan's and Manitoba's
+# "other" (non-milling) wheat: Alberta's "other" wheat has been priced above milling wheat since
+# 2021-22 ($300 against $284 in 2025-26), so it no longer tracks feed wheat, while Saskatchewan's
+# and Manitoba's stay $40-60 below milling. The rest are Alberta, the feeding centre.
+PRICE_GEOS = {"barley": ["Alberta"], "wheat": ["Saskatchewan", "Manitoba"], "durum": ["Alberta"], "oats": ["Alberta"]}
 # Ontario monthly farm prices (C$/t), the Eastern benchmark. Ontario corn is the corn price in the model.
 EAST_PRICE_SERIES = {"corn": "Corn for grain", "barley": "Barley", "wheat": "Ontario wheat excluding payments", "oats": "Oats"}
 # Feeding value relative to barley (cattle energy basis)
@@ -81,6 +87,11 @@ BU_CORN_PER_T = 39.368
 # Canadian feeding was found; 1 (shares move in inverse proportion to relative price) is the
 # neutral assumption. Fitting it on the farm survey gave no stable sign.
 PRICE_ELASTICITY = 1.0
+# Availability elasticity: how a grain's share of the ration moves with its supply against normal.
+# An assumption, like the price elasticity: 1 means a grain's share moves in proportion to its
+# supply over its average. (Until 2026-11-26 it was fitted on StatCan's farm survey of grain fed on
+# farms, 1.6; the model now takes no parameter from any agency's feed figures.) Range 0 to 2.
+AVAILABILITY_ELASTICITY = 1.0
 # Grain fed per tonne of hay short: Saskatchewan Agriculture, Beef Cow Rations and Winter Feeding
 # Guidelines (2021), rations for a 1,400 lb cow in mid-pregnancy: 30 lb of alfalfa-grass hay a day,
 # or 9 lb of hay + 18 lb of straw + 4 lb of barley. 21 lb of hay is replaced by straw and 4 lb of barley.
@@ -276,7 +287,13 @@ def prices() -> dict:
         g = p[(p["GEO"] == geo) & (p["Farm products"].str.startswith(name + " [") | (p["Farm products"] == name))]
         uom = g["UOM"].iloc[0] if len(g) else ""
         return {"uom": uom, "values": {r: round(float(v), 2) for r, v in zip(g["REF_DATE"], g["VALUE"]) if not pd.isna(v) and r >= "2012-01"}}
-    out: dict = {key: monthly("Alberta", name) for key, name in PRICE_SERIES.items()}
+    def averaged(geos, name):
+        """Monthly average over the provinces that published the month."""
+        parts = [monthly(g, name) for g in geos]
+        months = sorted(set().union(*(x["values"] for x in parts)))
+        vals = {m: round(float(np.mean([x["values"][m] for x in parts if m in x["values"]])), 2) for m in months}
+        return {"uom": parts[0]["uom"], "values": vals}
+    out: dict = {key: averaged(PRICE_GEOS[key], name) for key, name in PRICE_SERIES.items()}
     out["ontario"] = {key: monthly("Ontario", name) for key, name in EAST_PRICE_SERIES.items()}
     zc = external.yahoo_weekly("ZC=F")
     fx = external.yahoo_weekly("CAD=X")
@@ -336,32 +353,6 @@ def model_panel(sd, cornd, pr, regional, years) -> pd.DataFrame:
         rec["price_corn_ontario"] = crop_year_price(pr["ontario"]["corn"]["values"], cy)
         rows.append(rec)
     return pd.DataFrame(rows).set_index("cy")
-
-
-def fit_elasticities(panel: pd.DataFrame, farm: dict, cur: str) -> dict:
-    """The grain mix's availability elasticity, fitted on StatCan's farm survey (grain fed on the
-    farm that grew it, West, 32-10-0015; reported by farmers, not a balancing residual), with the
-    price elasticity fixed at PRICE_ELASTICITY:
-        log(s_i / s_barley) + sigma x log(price ratio) = grain constant + a x log(availability ratio)
-    over wheat, durum and oats against barley. Availability is supply (carry-in + production +
-    imports) over its own average."""
-    grains = ["barley", "wheat", "durum", "oats"]
-    done = [cy for cy in panel.index if cy != cur and panel.loc[cy, [f"supply_{g}" for g in grains] + [f"price_{g}" for g in grains]].notna().all()
-            and all(farm.get(g, {}).get(cy, {}).get("west", 0) > 0 for g in grains)]
-    means = {g: panel.loc[done, f"supply_{g}"].mean() for g in grains}
-    X, y = [], []
-    for cy in done:
-        r = panel.loc[cy]
-        for i, g in enumerate(grains[1:]):
-            a = np.log((r[f"supply_{g}"] / means[g]) / (r["supply_barley"] / means["barley"]))
-            p = np.log((r[f"price_{g}"] / ENERGY[g]) / (r["price_barley"] / ENERGY["barley"]))
-            X.append([1.0 if j == i else 0.0 for j in range(3)] + [a])
-            y.append(np.log(farm[g][cy]["west"] / farm["barley"][cy]["west"]) + PRICE_ELASTICITY * p)
-    X, y = np.array(X), np.array(y)
-    b, *_ = np.linalg.lstsq(X, y, rcond=None)
-    e = y - X @ b
-    se = np.sqrt(np.diag(e @ e / (len(y) - X.shape[1]) * np.linalg.inv(X.T @ X)))
-    return {"a": float(b[-1]), "a_se": float(se[-1]), "b": -PRICE_ELASTICITY, "train_years": [done[0], done[-1]], "n": len(y)}
 
 
 def clean_json(o):
@@ -515,18 +506,17 @@ def western_corn(cornd: dict, prod: dict, years: list[str]) -> dict:
     return out
 
 
-def durum_shares(farm: dict) -> dict:
-    """Durum's share (tonnes) of the wheat and durum fed on western farms (StatCan's farm survey,
-    32-10-0015), by crop year from 2012-13."""
-    yrs = sorted(cy for cy in farm.get("durum", {}) if cy >= "2012-2013" and cy in farm.get("wheat", {})
-                 and farm["wheat"][cy]["west"] + farm["durum"][cy]["west"] > 0)
-    return {cy: farm["durum"][cy]["west"] / (farm["wheat"][cy]["west"] + farm["durum"][cy]["west"]) for cy in yrs}
+def durum_shares(prod: dict) -> dict:
+    """Durum's share (tonnes) of the wheat and durum grown in the West (StatCan production,
+    32-10-0359), by harvest year from 2012. Feed durum is mostly grain that missed milling grades,
+    so the base assumption is that it is fed in proportion to what is grown."""
+    yrs = sorted(y for y in prod["durum"]["west"] if y >= "2012" and y in prod["wheat"]["west"])
+    return {f"{y}-{int(y) + 1}": prod["durum"]["west"][y] / (prod["durum"]["west"][y] + prod["wheat"]["west"][y]) for y in yrs}
 
 
-def durum_share(farm: dict) -> tuple[float, list[str]]:
-    """The median of durum_shares(); the median keeps out quality years like 2016-17. Returns
-    (share, [first, last crop year])."""
-    sh = durum_shares(farm)
+def durum_share(prod: dict) -> tuple[float, list[str]]:
+    """The median of durum_shares(). Returns (share, [first, last crop year])."""
+    sh = durum_shares(prod)
     return float(np.median(list(sh.values()))), [min(sh), max(sh)]
 
 
@@ -573,19 +563,19 @@ def model_demand(pr: dict, years: list[str], corn_west: dict, durum: float, avai
 
 # The judgment inputs and their plausible ranges (low, high) for the uncertainty range. Each is
 # moved on its own, the rest held at base; see uncertainty().
-def ranges(alpha: float, alpha_se: float, durum_q: tuple) -> dict:
+def ranges(durum_q: tuple) -> dict:
     hay_full = (0.600 * 0.874) / (0.831 * 0.885)  # alfalfa-grass hay vs barley, TDN x dry matter (Saskatchewan guide)
     return {
         "price_elasticity": {"label": "Price elasticity", "base": PRICE_ELASTICITY, "low": 0.5, "high": 1.5,
                              "why": "an assumption; no published Canadian estimate"},
-        "alpha": {"label": "Availability elasticity", "base": alpha, "low": max(0.0, alpha - alpha_se), "high": alpha + alpha_se,
-                  "why": "± 1 standard error of the farm-survey fit"},
+        "alpha": {"label": "Availability elasticity", "base": AVAILABILITY_ELASTICITY, "low": 0.0, "high": 2.0,
+                  "why": "an assumption; no published Canadian estimate"},
         "hay_rate": {"label": "Grain per t of hay short", "base": HAY_GRAIN_RATE, "low": 0.0, "high": hay_full,
                      "why": "straw covers it all, to grain replacing all of the hay's energy"},
         "coproduct_yield": {"label": "Co-product yield, t/t processed", "base": COPRODUCT_YIELD, "low": COPRODUCT_YIELD * 0.8,
                             "high": COPRODUCT_YIELD * 1.2, "why": "± 20%"},
         "durum_share": {"label": "Durum share of western wheat feed", "base": None, "low": durum_q[0], "high": durum_q[2],
-                        "why": "middle half of the farm-survey years"},
+                        "why": "middle half of the years' western production shares"},
         "corn_basis": {"label": "US corn basis + freight, US$/bu", "base": CORN_BASIS_USD_BU, "low": CORN_BASIS_USD_BU - 0.4,
                        "high": CORN_BASIS_USD_BU + 0.4, "why": "an assumption, ± US$0.40"},
     }
@@ -620,6 +610,27 @@ def uncertainty(base: dict, runs: dict) -> tuple[dict, dict]:
     return rng, sens
 
 
+def cgc_feed_shipments(con, years: list[str]) -> tuple[dict, dict]:
+    """CGC's feed-grade grain shipped from licensed primary elevators for domestic feed (Grain
+    Statistics Weekly, Feed Grains table, MB, SK, AB and BC), kt by crop year and grain, at each
+    year's last reported week. A comparison for the page only, not a model input. Returns
+    ({cy: {grain: kt}}, {cy: last week})."""
+    names = {"Barley": "barley", "Wheat": "wheat", "Amber Durum": "durum", "Oats": "oats", "Corn": "corn"}
+    rows = con.execute("""
+        with f as (select crop_year, grain::varchar as grain, grain_week, ktonnes from gsw
+                   where worksheet = 'Feed Grains' and metric = 'Shipments' and period = 'Crop Year'),
+             last as (select crop_year, max(grain_week) as wk from gsw group by crop_year)
+        select f.crop_year, f.grain, f.grain_week, sum(f.ktonnes) from f
+        join last on f.crop_year = last.crop_year and f.grain_week = last.wk
+        group by all""").fetchall()
+    out, week = {}, {}
+    for cy, grain, wk, kt in rows:
+        if cy in years and grain in names:
+            out.setdefault(cy, {})[names[grain]] = round(kt, 1)
+            week[cy] = wk
+    return out, week
+
+
 def main() -> None:
     con = connect()
     years = [y for (y,) in con.execute("select distinct crop_year from gsw order by 1").fetchall()]
@@ -629,10 +640,9 @@ def main() -> None:
     all_years = [y for y in all_years if y >= "2012-2013"]
     regional = regional_feed(sd, farm, cornd, prod, all_years)
     panel = model_panel(sd, cornd, pr, regional, all_years)
-    # the grain mix: share ~ price ^ -PRICE_ELASTICITY x availability ^ a (a from the farm survey)
-    fit = fit_elasticities(panel, farm, cur)
-    sigma, alpha = -fit["b"], fit["a"]
-    durum, durum_years = durum_share(farm)
+    # the grain mix: share ~ price ^ -PRICE_ELASTICITY x availability ^ AVAILABILITY_ELASTICITY (both assumptions)
+    sigma, alpha = PRICE_ELASTICITY, AVAILABILITY_ELASTICITY
+    durum, durum_years = durum_share(prod)
     avail, supply = availability(sd, prod, all_years + [cur], cur)
     cop, processed = coproducts(sd, cornd, all_years + [cur])
     corn_w = western_corn(cornd, prod, all_years)
@@ -653,7 +663,8 @@ def main() -> None:
         return d
 
     demand = run()
-    R = ranges(alpha, fit["a_se"], tuple(np.percentile(list(durum_shares(farm).values()), [25, 50, 75])))
+    cgc_feed = cgc_feed_shipments(con, yrs)
+    R = ranges(tuple(np.percentile(list(durum_shares(prod).values()), [25, 50, 75])))
     R["durum_share"]["base"] = durum
     arg = {"price_elasticity": "sigma", "alpha": "alpha", "hay_rate": "hay_rate", "coproduct_yield": "cop_yield",
            "durum_share": "durum", "corn_basis": "basis"}
@@ -675,8 +686,10 @@ def main() -> None:
                      inputs.markets("CBOT corn and USD/CAD", "ZC=F", "CAD=X"),
                  ],
                  "assumptions": {"energy_vs_barley": ENERGY, "corn_basis_usd_bu": CORN_BASIS_USD_BU, "bu_corn_per_t": BU_CORN_PER_T},
-                 "price_series": {"west": PRICE_SERIES, "east": EAST_PRICE_SERIES}},
+                 "price_series": {"west": PRICE_SERIES, "east": EAST_PRICE_SERIES},
+                 "price_geos": {"west": PRICE_GEOS, "east": {g: ["Ontario"] for g in EAST_PRICE_SERIES}}},
         "regional_feed": regional,
+        "cgc_feed_shipments": {"kt": cgc_feed[0], "week": cgc_feed[1]},
         "prices": pr,
         "demand_model": demand,
         "demand_model_meta": {"west_cattle_mix": feed_model.WEST_CATTLE_MIX,
@@ -687,8 +700,7 @@ def main() -> None:
                               "energy": feed_model.ENERGY, "supply": supply,
                               "coproduct_yield": COPRODUCT_YIELD, "coproduct_energy": COPRODUCT_ENERGY, "processed": processed,
                               "hay_grain_rate": round(HAY_GRAIN_RATE, 4), "hay": hay, "price_elasticity": PRICE_ELASTICITY,
-                              "alpha_se": round(fit["a_se"], 3), "corn_west_measured": {cy: round(v, 1) for cy, v in corn_w.items()}},
-        "model": {"fit": fit},
+                              "corn_west_measured": {cy: round(v, 1) for cy, v in corn_w.items()}},
         "uncertainty": {"inputs": {k: {kk: (round(vv, 4) if isinstance(vv, float) else vv) for kk, vv in v.items()} for k, v in R.items()},
                         "sensitivity": {cur: sens[cur]}},
         "panel": panel.round(1).reset_index().to_dict(orient="records"),
@@ -697,8 +709,8 @@ def main() -> None:
     text = json.dumps(clean_json(data), separators=(",", ":"), allow_nan=False)
     OUT_PATH.write_text(text)
     print(f"Wrote {OUT_PATH.relative_to(ROOT)} ({len(text) / 1e3:.0f} KB)")
-    print(f"elasticities: price {-sigma:.3f}, availability {alpha:.3f} ({fit['train_years'][0]} to {fit['train_years'][1]})")
-    print(f"availability elasticity (farm survey): {alpha:.2f} (se {fit['a_se']:.2f}, n {fit['n']}); hay shortfall:", {cy: hay[cy]['shortfall_kt'] for cy in list(hay)[-4:]})
+    print(f"elasticities (assumed): price {sigma:.2f}, availability {alpha:.2f}; durum share {durum:.3f}; hay shortfall:",
+          {cy: hay[cy]['shortfall_kt'] for cy in list(hay)[-4:]})
     dm = demand[cur]
     print("range, Canada:", {g: dm["range"]["canada"][g] for g in ["total"] + GRAINS})
     for r in REGIONS:
