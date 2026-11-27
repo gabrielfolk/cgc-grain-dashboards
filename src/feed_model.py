@@ -500,7 +500,8 @@ def split_durum(mix: dict, durum_share: float) -> dict:
     return mix | {"wheat": w * w_e / (d_e + w_e), "durum": w * d_e / (d_e + w_e)}
 
 
-def class_demand(pop: dict, coef: dict, kgpb: dict, region_of, durum_share: float = 0.0, days_on_feed: dict | None = None) -> list[dict]:
+def class_demand(pop: dict, coef: dict, kgpb: dict, region_of, durum_share: float = 0.0, days_on_feed: dict | None = None,
+                 west_cow_factor: float = 1.0) -> list[dict]:
     """Barley-equivalent grain demand (kt) and base mix for every province and class in one crop year.
     In the West, wheat is split into wheat and durum (durum_share: durum's tonnage share).
     days_on_feed {region: days}: cattle on feed are fed cattle marketed x days on feed; without
@@ -529,6 +530,8 @@ def class_demand(pop: dict, coef: dict, kgpb: dict, region_of, durum_share: floa
             if guide:  # the 2027 Manitoba guide's amount, at the class's 1999 grain mix
                 beq = sum(per_head[g] * ENERGY[g] for g in STUDY_GRAINS)
                 factor *= guide / beq if beq else 1.0
+            if west and key == "Beef Cows":
+                factor *= west_cow_factor
             add(p, key, {g: n * per_head[g] * factor for g in STUDY_GRAINS})
         # bull calves are a third of bulls (study convention)
         if a.get("Bulls"):
@@ -621,7 +624,7 @@ def project_marketings(pops: dict) -> None:
 def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_share: float = 0.0,
            availability: dict | None = None, sigma: float = SIGMA, alpha: float = 0.0, coproducts: dict | None = None,
            forage: dict | None = None, feedlot_wheat_sigma: float = FEEDLOT_WHEAT_SIGMA,
-           days_on_feed_west: float | None = DAYS_ON_FEED_WEST) -> dict:
+           days_on_feed_west: float | None = DAYS_ON_FEED_WEST, west_cow_factor: float = 1.0) -> dict:
     """Feed grain demand by crop year: {crop_year: {"by_region": {region: {grain: kt}},
     "by_group": {region: {group: kt barley-eq}}, ...}}.
 
@@ -663,7 +666,7 @@ def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_
     out: dict = {}
     for y0 in years:
         cy = crop_year_label(y0)
-        rows = class_demand(pops[y0], coef, kgpb, region_of, durum_share, dof)
+        rows = class_demand(pops[y0], coef, kgpb, region_of, durum_share, dof, west_cow_factor)
         for r in ("west", "east"):
             extra = forage.get(r, {}).get(cy, 0.0)
             if extra > 0:
@@ -701,10 +704,6 @@ def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_
         rec["base_mix"] = {r: {g: v / rec["beq_gross"][r] for g, v in m.items()} for r, m in rec["base_mix"].items()}
         rec["meta"] = {k: v for k, v in pops[y0]["_meta"].items()} | {"days_on_feed": {r: round(v, 1) for r, v in dof.items()},
                        "days_on_feed_inventory": {r: round(v, 1) for r, v in dof_inventory.items()}}
-        # Alberta's grain need (gross, barley-equivalent), to check against Alberta Agriculture's estimate
-        ab = [row for row in rows if row["province"] == "Alberta"]
-        rec["alberta_beq"] = {"total": round(sum(x["beq"] for x in ab), 1),
-                              "feedlot": round(sum(x["beq"] for x in ab if x["group"] == "feedlot"), 1)}
         def region_sum(r, k):
             v = [pops[y0][p].get(k) for p in PROVINCES if region_of(p) == r]
             return None if all(x is None for x in v) else round(sum(x or 0.0 for x in v), 1)

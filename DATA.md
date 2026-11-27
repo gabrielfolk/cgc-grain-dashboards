@@ -180,6 +180,10 @@ Hand-curated inputs, in git:
 - `reference/statcan_livestock_feed_1999.csv`: StatCan's per-animal feed rates by province, livestock subclass and
   ingredient (t per head per year; poultry per bird), from table 7 of the Livestock Feed Requirements Study 1999–2001.
   Blank values are suppressed in the source; the model uses the Canada rate for them.
+- `reference/alberta_beef_lca_rations.csv`: an Alberta feedlot nutritionist's generic rations for calf-fed and yearling
+  cattle, diet by diet (days, barley as fed in lb per head, start and end weight), from Appendix D of the Alberta beef
+  life cycle study (Conestoga-Rovers & Associates for Alberta Agriculture, Phase 1, 2010). Used only to check the feed
+  model's feedlot rates and to set the high end of the days-on-feed range.
 
 ## Licence
 

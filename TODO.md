@@ -50,10 +50,11 @@
 - [ ] **Update the western hog and feedlot grain mix** from a published current diet survey. The 1999 Manitoba hog
   rations have no wheat; the 2025 Manitoba swine guide gives feed amounts but no ingredients, and no Prairie source
   with current grain shares was found (2026-10-06). This is the main suspect for western wheat being understated.
-- [ ] **Read Alberta's beef life-cycle study** (Alberta Agriculture, Beef LCA Phase 2 report) and the Canadian
-  Roundtable for Sustainable Beef's National Beef Sustainability Assessment for regional cattle rations and days on
-  feed, and resolve the Alberta check: the model's Alberta grain need for 2013-14 runs 13% above Alberta
-  Agriculture's 2014 estimate (feedlots 17%).
+- [x] **Alberta check resolved** (2026-11-26): the Alberta beef life cycle study's rations give 1.76 t of barley per
+  fed animal against the model's 1.72 t (2012-13), so the feedlot rates hold; Alberta Agriculture's 3.6 Mt is a
+  top-down estimate the model is not calibrated to. Rations in `reference/alberta_beef_lca_rations.csv`.
+- [ ] **Read the National Beef Sustainability Assessment** (Canadian Roundtable for Sustainable Beef) for current
+  regional rations, days on feed and the calf-fed/yearling split; the Alberta rations date from 2010.
 - [ ] **Add AAFC's Outlook for Principal Field Crops** (feed, waste and dockage by crop) to the feed page as a second
   reference next to StatCan.
 - [ ] **Net out millfeeds and imported US distillers' grains** if a source turns up.

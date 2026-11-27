@@ -769,7 +769,7 @@
     const dof = meta.days_on_feed, lbd = DMM.feedlot_lb_day, tph = (d) => (d * lbd * 0.45359237 / 1000).toFixed(2);
     const cwF = meta.cattle_weight_factor, hwF = meta.hog_weight_factor;
     const H = DMM.hay[cy];
-    $("step1-p").textContent = `Grain energy needed = animals × grain fed per head, in barley-equivalent tonnes, by province and livestock class. Cattle on feed: fed cattle marketed (slaughter + live exports going to US slaughter, ${pctTxt(meta.export_slaughter_share, 0)} of exports, × ${pctTxt(meta.fed_share.west, 0)} steers and heifers in the West, ${pctTxt(meta.fed_share.east, 0)} in the East) × ${Math.round(dof.west)} days on feed × ${lbd} lb a day = ${tph(dof.west)} t per head in the West (East ${Math.round(dof.east)} days, ${tph(dof.east)} t), × carcass weight against its average (${Math.round(meta.cattle_weight)} kg, ${fmtPct(cwF - 1)}). Hogs: per pig raised and finished, finishing feed × carcass weight against the 2025 guide (${meta.hog_weight.toFixed(1)} kg, ${fmtPct(hwF - 1)}); sows per head. Poultry: per tonne of meat. Dairy: per cow, rising with milk per cow (${Math.round((meta.milk_factor - 1) * 100)}% above 1999). Hay shortfall: when western hay per beef cow is below average, ${DMM.hay_grain_rate.toFixed(2)} t of barley is fed per tonne short (Saskatchewan ration guide: 21 lb of hay replaced by straw and 4 lb of barley); ${short(cy)}: ${H.t_per_cow.toFixed(2)} t per cow against ${H.avg_t_per_cow.toFixed(2)}${H.hay_year < +cy.slice(0, 4) ? ` (${H.hay_year} hay; ${+cy.slice(0, 4)} not yet published)` : ""}, ${fmtKt(H.shortfall_kt)} short. Then co-products are netted out: distillers' grains and corn gluten feed from grain processed for ethanol and starch (${Math.round(DMM.coproduct_yield * 100)}% of the grain processed: ${fmtKt(DMM.processed.west[cy])} in the West, ${fmtKt(DMM.processed.east[cy])} in the East; fed at barley's energy). Rates in About the data.${albertaCheck()}`;
+    $("step1-p").textContent = `Grain energy needed = animals × grain fed per head, in barley-equivalent tonnes, by province and livestock class. Cattle on feed: fed cattle marketed (slaughter + live exports going to US slaughter, ${pctTxt(meta.export_slaughter_share, 0)} of exports, × ${pctTxt(meta.fed_share.west, 0)} steers and heifers in the West, ${pctTxt(meta.fed_share.east, 0)} in the East) × ${Math.round(dof.west)} days on feed × ${lbd} lb a day = ${tph(dof.west)} t per head in the West (East ${Math.round(dof.east)} days, ${tph(dof.east)} t), × carcass weight against its average (${Math.round(meta.cattle_weight)} kg, ${fmtPct(cwF - 1)}). Hogs: per pig raised and finished, finishing feed × carcass weight against the 2025 guide (${meta.hog_weight.toFixed(1)} kg, ${fmtPct(hwF - 1)}); sows per head. Poultry: per tonne of meat. Dairy: per cow, rising with milk per cow (${Math.round((meta.milk_factor - 1) * 100)}% above 1999). Hay shortfall: when western hay per beef cow is below average, ${DMM.hay_grain_rate.toFixed(2)} t of barley is fed per tonne short (Saskatchewan ration guide: 21 lb of hay replaced by straw and 4 lb of barley); ${short(cy)}: ${H.t_per_cow.toFixed(2)} t per cow against ${H.avg_t_per_cow.toFixed(2)}${H.hay_year < +cy.slice(0, 4) ? ` (${H.hay_year} hay; ${+cy.slice(0, 4)} not yet published)` : ""}, ${fmtKt(H.shortfall_kt)} short. Then co-products are netted out: distillers' grains and corn gluten feed from grain processed for ethanol and starch (${Math.round(DMM.coproduct_yield * 100)}% of the grain processed: ${fmtKt(DMM.processed.west[cy])} in the West, ${fmtKt(DMM.processed.east[cy])} in the East; fed at barley's energy). Rates in About the data.${lcaCheck()}`;
     const DRV = [["cattle_slaughter", "Cattle slaughter, Jul–Jun", "k head"], ["cattle_exports", "Live cattle exports, Jul–Jun", "k head"],
       ["fed_marketed", "Fed cattle marketed", "k head"], ["feedlot", "Cattle on feeding operations", "k head"], ["background", "Backgrounders, Jan 1", "k head"],
       ["Beef Cows", "Beef cows", "k head"], ["Dairy Cows", "Dairy cows", "k head"], ["Sows & Bred Gilts", "Sows and gilts", "k head"], ["Weaner Pigs", "Pig crop", "k head"],
@@ -887,13 +887,13 @@
   }
 
   // ---------- prices used (step 2) ----------
-  // Alberta Agriculture (2014, cited in the BCRC feed grain review, 2017): Alberta's livestock would need about 3.6 Mt of
-  // corn a year, feedlots about 2.2 Mt. Compared with the model's gross Alberta grain need in corn terms, 2013-14.
-  function albertaCheck() {
-    const y = "2013-2014", ab = DM[y]?.alberta_beq;
-    if (!ab) return "";
-    const c = (v) => v / ENERGY.corn / 1000;
-    return ` Check: for ${short(y)} the model puts Alberta's grain need at ${c(ab.total).toFixed(1)} Mt in corn terms (feedlots ${c(ab.feedlot).toFixed(1)} Mt), against Alberta Agriculture's 2014 estimate of 3.6 Mt (feedlots 2.2 Mt), ${fmtPct(pct(c(ab.total), 3.6))} and ${fmtPct(pct(c(ab.feedlot), 2.2))}.`;
+  // Input check: grain per fed animal against the Alberta beef life cycle study's rations (feedlot nutritionist's
+  // generic Alberta rations, 2010), the closest model year to the study's finishing weights
+  function lcaCheck() {
+    const L = D.lca_check; if (!L) return "";
+    const y = "2012-2013", m = L.model_t_per_fed?.[y], now = L.model_t_per_fed?.[cur] ?? L.model_t_per_fed?.[dmYears[dmYears.length - 2]];
+    if (m == null) return "";
+    return ` Check on the rates: the Alberta beef life cycle study's rations (an Alberta feedlot nutritionist's, 2010) feed ${L.calf_fed.t_per_head.toFixed(2)} t of barley per calf-fed animal and ${L.yearling.t_per_head.toFixed(2)} t per yearling, ${L.weighted.t_per_head.toFixed(2)} t at ${Math.round(L.calf_fed_share * 100)}% calf-fed; the model gives ${m.toFixed(2)} t per western fed animal in ${short(y)}, ${fmtPct(pct(m, L.weighted.t_per_head))} (${now != null ? `${now.toFixed(2)} t now, with heavier cattle` : ""}).`;
   }
 
   function renderPriceTable(cy) {

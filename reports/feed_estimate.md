@@ -218,10 +218,18 @@ StatCan's residual for the same years: 22.1, 19.8, 20.1, 18.0 and 20.4 Mt (West,
   government's example hog rations put 45% wheat in grower and nursing-sow feed but none in finisher feed, which is
   89.7% barley). Feedlot wheat now responds to price (above), which adds wheat only in years it is cheap against
   barley. The East's model averages 8.0 Mt against 7.0 Mt, after netting out co-products.
-- **Alberta check.** Alberta Agriculture (2014, cited in the BCRC review) estimated that Alberta's livestock would
-  need about 3.6 Mt of corn a year, feedlots about 2.2 Mt. The model's gross Alberta need for 2013-14, in corn terms,
-  is 4.1 Mt (feedlots 2.6 Mt): 13% and 17% higher. At StatCan's 172 days on feed the feedlot gap would be about 10%,
-  so the Canfax days on feed move the model away from Alberta's estimate; the range keeps 172 as its low end.
+- **Check on the feedlot rates.** The Alberta beef life cycle study ([Conestoga-Rovers & Associates for Alberta Agriculture, Evaluating Environmental and Economic Impact for Beef Production in Alberta using Life Cycle Analysis, Phase 1 (2010)](https://www1.agric.gov.ab.ca/$Department/deptdocs.nsf/all/econ13238/$FILE/BeefLCAPhase1FinalReport.pdf), Appendix D)
+  lists an Alberta feedlot nutritionist's generic rations, diet by diet: calf-feds are backgrounded 96 days, then
+  finished 262 days to 1,450 lb (steers) or 1,350 lb (heifers); yearlings are backgrounded 144 days on silage, grazed
+  120 days and finished about 172 days. That is **2.22 t of barley (as fed) per calf-fed animal and 1.52 t per
+  yearling, 1.76 t at 35% calf-fed**. The model gives 1.72 t per western fed animal in 2012-13, the year closest to
+  the study's finishing weights (−2%), and 1.84 t in 2025-26 with carcasses 12% heavier. The rations are saved in
+  `reference/alberta_beef_lca_rations.csv` and the check is recomputed each build.
+- **Alberta Agriculture's 3.6 Mt is not used.** The BCRC review cites Alberta Agriculture (2014): Alberta's livestock
+  would need about 3.6 Mt of corn a year, feedlots 2.2 Mt. The model's Alberta figure for 2013-14 is 13% higher
+  (feedlots 17%). That estimate is second-hand, top-down and has no published method, and the model's per-head
+  feedlot rates match the study's rations, so the gap is not in the rates. Like StatCan's residual, other agencies'
+  feed estimates are not targets for this model, so it is not calibrated to it.
 - **The year-to-year moves track StatCan's farm survey,** though the model is no longer fitted on it. Correlation of
   y/y changes in western feed, model against on-farm feed: barley +0.79, wheat +0.64, durum +0.14, oats +0.70.
 - **2026-27 by grain:** corn 11.1 Mt (Canadian-grown 9.3, US 1.9), barley 5.8, wheat (ex-durum) 1.8, durum 0.25 (all
@@ -273,16 +281,20 @@ independent. 2026-27, Canada (kt):
 | Availability elasticity (assumption) | 0 to 2 | ±8 | ±6 | −26 / +26 | ±8 | +35 / −33 | – | ±1 |
 | Grain per t of hay short | 0 to 0.71 | −365 / +1,000 | −339 / +918 | −41 / +107 | −11 / +30 | −8 / +19 | – | +34 / −74 |
 | Co-product yield (± 20%) | 0.24 to 0.36 | ±346 | ±44 | ±36 | ±1 | ±5 | ±252 | ±8 |
-| Western days on feed | 172 (StatCan inventories) to 200 | −264 / +406 | −217 / +334 | −30 / +46 | −8 / +13 | −4 / +6 | – | −4 / +7 |
+| Western days on feed | 172 (StatCan inventories) to 204 (Alberta beef LCA rations) | −264 / +488 | −217 / +402 | −30 / +55 | −8 / +15 | −4 / +8 | – | −4 / +8 |
+| Western beef cow grain | 0 (hay only, Alberta beef LCA) to the 1999 rates | −478 / 0 | −348 / 0 | −37 / 0 | −10 / 0 | −90 / 0 | – | +9 / 0 |
 | Western feedlot wheat elasticity (assumption) | 1 to 8 | +7 / −13 | +106 / −194 | −82 / +150 | −23 / +42 | – | – | +6 / −10 |
 | Durum share (middle half of production shares) | 18.0% to 19.6% | ±0 | ±2 | +9 / −7 | −12 / +9 | – | – | ±1 |
 | US corn basis + freight (assumption) | US$1.20 to 2.00 | ±1 | ±4 | ±1 | – | – | – | ±4 |
-| **Combined range** | | **18.7–20.4 Mt** | **5.31–6.75 Mt** | **1.67–1.97 Mt** | **211–309 kt** | **349–428 kt** | **9.01–9.51 Mt** | **1.77–1.93 Mt** |
+| **Combined range** | | **18.6–20.5 Mt** | **5.19–6.77 Mt** | **1.66–1.97 Mt** | **210–310 kt** | **288–429 kt** | **9.01–9.51 Mt** | **1.77–1.93 Mt** |
 
 - **The hay rule dominates** barley and the western total: 0 (straw covers it all) to 0.71 t (grain replaces all of
   the hay's energy, Saskatchewan guide feed values: hay 60.0% TDN at 87.4% dry matter, barley 83.1% at 88.5%).
   It is widest in drought years (2021-22).
-- **Days on feed** are the next biggest input for barley and the western total.
+- **Days on feed** are the next biggest input for barley and the western total: StatCan's inventories give 172, Canfax
+  183 (the base) and the Alberta beef life cycle study's rations 204.
+- **Cow-herd grain** is uncertain in one direction: the study's cows get hay only, Manitoba's 2027 guides 131 to 184 kg
+  of barley a winter, the 1999 rates (the base) up to 247 kg in Alberta.
 - **The feedlot wheat elasticity** moves up to 0.2 Mt between barley and wheat, little in total.
 - **Co-products** set most of the range on eastern corn and the eastern total.
 - **Prices and the availability assumption hardly move the totals;** they shift tens of kilotonnes between grains.
