@@ -1,0 +1,9 @@
+system,stage,sex,on_feed_days,dmi_pct_bw,start_lb,mid_lb,end_lb,barley_dm,corn_dm,wheat_dm,oats_dm,screenings_dm,ddgs_dm
+calf_fed,finishing,steer,270,2.35,575,1008,1440,76.0,0.0,2.9,0.0,1.0,10.3
+calf_fed,finishing,heifer,270,2.35,575,1008,1440,66.8,2.6,6.4,0.7,1.0,10.3
+yearling,backgrounding,steer,113,2.35,500,650,800,22.0,0.0,0.0,4.5,0.0,19.0
+yearling,backgrounding,heifer,113,2.35,500,650,800,22.0,0.0,0.0,4.5,0.0,19.0
+yearling,finishing,steer,140,2.35,1000,1250,1500,76.0,0.0,2.9,0.0,1.0,10.3
+yearling,finishing,heifer,140,2.35,1000,1250,1500,66.8,2.6,6.4,0.7,1.0,10.3
+both,cow,cow,75,2.05,1000,1245,1490,0.6,0.0,0.0,1.8,0.0,0.2
+both,bull,bull,78,2.30,1350,1505,1660,0.6,0.0,0.0,1.9,0.0,0.2

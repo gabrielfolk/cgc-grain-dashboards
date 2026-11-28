@@ -55,7 +55,8 @@ Cattle on feed
     Fed cattle marketed = (slaughter + live international exports, StatCan 32-10-0139, by
     province, July to June) x the steer and heifer share of slaughter (FED_SHARE, AAFC federally
     inspected slaughter). Days on feed: West DAYS_ON_FEED_WEST (Canfax for the Beef Cattle Research
-    Council, 2017: calf-feds and yearlings); East the region's average of cattle on feeding operations
+    Council, 2017: calf-feds and yearlings, weighted by CALF_FED_SHARE, 45% in 2021 per the National
+    Beef Sustainability Assessment); East the region's average of cattle on feeding operations
     x 365 / fed cattle marketed, over the years with both. The year-to-year change follows marketings. For a crop year whose
     marketings aren't published yet, last year's marketings move with the July 1 cattle on feed.
 
@@ -128,14 +129,20 @@ WEST_CATTLE_MIX = {"barley": 0.85, "wheat": 0.08, "corn": 0.07, "oats": 0.0}  # 
 # and are capped at 40% of the grain ration.
 FEEDLOT_WHEAT_SIGMA = 4.0
 FEEDLOT_WHEAT_CAP = 0.40
-# Western days on feed (Canfax, same review, Table 8): calf-feds 550 to 1,325 lb over 238 days (35% of
-# fed cattle) and yearlings 850 to 1,400 lb over 153 days (65%): 0.35 x 238 + 0.65 x 153 = 182.75.
+# Western days on feed (Canfax, same review, Table 8): calf-feds 550 to 1,325 lb over 238 days and
+# yearlings 850 to 1,400 lb over 153 days, weighted by the calf-fed share of fed cattle, 45% in 2021
+# (Canfax from Alberta and Saskatchewan placement weights, in the National Beef Sustainability
+# Assessment, 2023; the 2017 review had 35%): 0.45 x 238 + 0.55 x 153 = 191.25.
 # The East keeps days derived from StatCan's cattle-on-feed inventories (days_on_feed()).
-DAYS_ON_FEED_WEST = 0.35 * 238 + 0.65 * 153
-# Western beef bulls and replacement heifers: Manitoba Agriculture, Cost of Production guides, 2027
+CALF_FED_SHARE = 0.45
+DAYS_ON_FEED_WEST = CALF_FED_SHARE * 238 + (1 - CALF_FED_SHARE) * 153
+# Western bulls and replacement heifers: Manitoba Agriculture, Cost of Production guides, 2027
 # (September 2026). Bulls: 7 lb of barley a day for 120 days (cow-calf guides). Replacement heifers:
 # 6.5 lb of barley a day for 224 days, weaning (550 lb) to bred (1,200 lb). Each class keeps its 1999
-# provincial grain mix, scaled to the guide's barley-equivalent amount per head.
+# provincial grain mix, scaled to the guide's barley-equivalent amount per head. Western beef cows keep
+# the 1999 provincial rates (97 to 198 kg barley-equivalent in the Prairies), which the same guides
+# bracket (131 kg on the hay ration, 184 kg on the silage ration); west_cow_t sets one rate instead.
+WEST_COW_GUIDE_T = (0.131, 0.184)
 WEST_BULL_BARLEY_T = 7.0 * 120 * 0.45359237 / 1000
 WEST_HEIFER_BARLEY_T = 6.5 * 224 * 0.45359237 / 1000
 # East (Ontario/Quebec) feedlots: the 1999 Ontario finished-cattle mix
@@ -501,7 +508,7 @@ def split_durum(mix: dict, durum_share: float) -> dict:
 
 
 def class_demand(pop: dict, coef: dict, kgpb: dict, region_of, durum_share: float = 0.0, days_on_feed: dict | None = None,
-                 west_cow_factor: float = 1.0) -> list[dict]:
+                 west_cow_t: float | None = None, west_bull_t: float = WEST_BULL_BARLEY_T) -> list[dict]:
     """Barley-equivalent grain demand (kt) and base mix for every province and class in one crop year.
     In the West, wheat is split into wheat and durum (durum_share: durum's tonnage share).
     days_on_feed {region: days}: cattle on feed are fed cattle marketed x days on feed; without
@@ -526,12 +533,10 @@ def class_demand(pop: dict, coef: dict, kgpb: dict, region_of, durum_share: floa
             factor = HOG_FACTORS.get(key, 1.0) * (meta["milk_factor"] if key == "Dairy Cows" else 1.0) \
                 * (meta.get("hog_weight_factor", 1.0) if key == "Feeder Pigs" else 1.0)
             per_head = {g: sum(c[s][g] for s in subs) for g in STUDY_GRAINS}
-            guide = {"Bulls": WEST_BULL_BARLEY_T, "Beef Rep Heifers": WEST_HEIFER_BARLEY_T}.get(key) if west else None
-            if guide:  # the 2027 Manitoba guide's amount, at the class's 1999 grain mix
+            guide = {"Beef Cows": west_cow_t, "Bulls": west_bull_t, "Beef Rep Heifers": WEST_HEIFER_BARLEY_T}.get(key) if west else None
+            if guide is not None:  # the per-head amount (2027 Manitoba guides at base), at the class's 1999 grain mix
                 beq = sum(per_head[g] * ENERGY[g] for g in STUDY_GRAINS)
                 factor *= guide / beq if beq else 1.0
-            if west and key == "Beef Cows":
-                factor *= west_cow_factor
             add(p, key, {g: n * per_head[g] * factor for g in STUDY_GRAINS})
         # bull calves are a third of bulls (study convention)
         if a.get("Bulls"):
@@ -624,7 +629,8 @@ def project_marketings(pops: dict) -> None:
 def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_share: float = 0.0,
            availability: dict | None = None, sigma: float = SIGMA, alpha: float = 0.0, coproducts: dict | None = None,
            forage: dict | None = None, feedlot_wheat_sigma: float = FEEDLOT_WHEAT_SIGMA,
-           days_on_feed_west: float | None = DAYS_ON_FEED_WEST, west_cow_factor: float = 1.0) -> dict:
+           days_on_feed_west: float | None = DAYS_ON_FEED_WEST, west_cow_t: float | None = None,
+           west_bull_t: float = WEST_BULL_BARLEY_T) -> dict:
     """Feed grain demand by crop year: {crop_year: {"by_region": {region: {grain: kt}},
     "by_group": {region: {group: kt barley-eq}}, ...}}.
 
@@ -666,7 +672,7 @@ def demand(years: list[int], prices: dict, corn_west: dict | None = None, durum_
     out: dict = {}
     for y0 in years:
         cy = crop_year_label(y0)
-        rows = class_demand(pops[y0], coef, kgpb, region_of, durum_share, dof, west_cow_factor)
+        rows = class_demand(pops[y0], coef, kgpb, region_of, durum_share, dof, west_cow_t, west_bull_t)
         for r in ("west", "east"):
             extra = forage.get(r, {}).get(cy, 0.0)
             if extra > 0:

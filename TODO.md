@@ -53,8 +53,11 @@
 - [x] **Alberta check resolved** (2026-11-26): the Alberta beef life cycle study's rations give 1.76 t of barley per
   fed animal against the model's 1.72 t (2012-13), so the feedlot rates hold; Alberta Agriculture's 3.6 Mt is a
   top-down estimate the model is not calibrated to. Rations in `reference/alberta_beef_lca_rations.csv`.
-- [ ] **Read the National Beef Sustainability Assessment** (Canadian Roundtable for Sustainable Beef) for current
-  regional rations, days on feed and the calf-fed/yearling split; the Alberta rations date from 2010.
+- [x] **National Beef Sustainability Assessment read** (2026-11-26): calf-fed share 45% (2021), its western rations a
+  second feedlot check (2.28 t per fed animal against the model's 1.82 t; mostly its 2.35%-of-body-weight intake) and
+  the range ends for feedlot, cow and bull grain. Rations in `reference/nbsa_2021_rations.csv`. Peer-reviewed version
+  (Aboagye et al. 2024, Canadian Journal of Animal Science) not read: the publisher blocks automated access.
 - [ ] **Add AAFC's Outlook for Principal Field Crops** (feed, waste and dockage by crop) to the feed page as a second
   reference next to StatCan.
-- [ ] **Net out millfeeds and imported US distillers' grains** if a source turns up.
+- [ ] **Net out millfeeds and imported US distillers' grains** if a source turns up. The NBSA's western rations carry
+  10% distillers' grains in finishing and 19% in backgrounding (dry matter); compare with the model's domestic co-products.

@@ -1,7 +1,7 @@
 # Feed use: our estimate by commodity, and StatCan's residual
 
 Built by `.venv/bin/python src/feed_data.py` (with `src/feed_model.py`) into `dashboard/feed/data.json` and shown
-on the Feed Grains page. Figures below are from the 2026-27 build (CGC week 15; StatCan tables as of November 2026; cattle rates updated 2026-11-26).
+on the Feed Grains page. Figures below are from the 2026-27 build (CGC week 15; StatCan tables as of November 2026; cattle rates updated 2026-11-26, calf-fed share and cattle ranges from the National Beef Sustainability Assessment the same day).
 
 The page has one estimate, the model in Part 1: domestic feed use by commodity (barley, wheat, durum, oats,
 Canadian and US corn) for Western and Eastern Canada, and how it is built. StatCan's "animal feed, waste and
@@ -35,7 +35,7 @@ boards and feed mills, "meant to reflect what was actually fed". Saved in `refer
 
 | Class | Rate | Source |
 |---|---|---|
-| Cattle on feed | fed cattle marketed × days on feed (West 183, see Animal numbers) × 18.5 lb barley/day | [Manitoba Agriculture, Cost of Production: Beef Feedlot Finishing (2026)](https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-beef-feedlot-finishing.pdf): 18.5 lb/day rolled barley |
+| Cattle on feed | fed cattle marketed × days on feed (West 191, see Animal numbers) × 18.5 lb barley/day | [Manitoba Agriculture, Cost of Production: Beef Feedlot Finishing (2026)](https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-beef-feedlot-finishing.pdf): 18.5 lb/day rolled barley |
 | Backgrounders (feeder and stocker operations, January 1) | 6.5 lb barley/day for 160 days | [Manitoba Agriculture, Cost of Production: Beef Backgrounding (2026)](https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-beef-backgrounding.pdf): 5 to 8 lb/day, 500 to 900 lb |
 | Hogs | 1999 rate × 1.09 finishing, × 0.56 nursery, × 1.25 sows | [Manitoba Agriculture, Cost of Production: Swine Farrow-Finish (2025)](https://www.gov.mb.ca/agriculture/farm-management/cost-production/pubs/cop-swine-farrow-finish.pdf): 279.3 kg feed per pig grown 26 to 123 kg, 33.2 kg nursery, sows 3.0 kg/day dry and 6.5 kg/day lactating; against Manitoba's 1999 rates |
 | Dairy cows | 1999 rate × milk sold per cow against 1999 (+55% by 2025) | StatCan 32-10-0113 and 32-10-0130. [Alberta Agriculture, Dairy Feed Costs (2021)](https://open.alberta.ca/dataset/bd8da099-da84-4544-8613-bb64e79712ab/resource/019a53b4-3f5c-4a3d-b17c-55d0d823ef45/download/af-explained-in-brief-dairy-feed-costs-dairy-2-2021-01.pdf): milk per kg of concentrate flat at 2.2 litres, 1997–2019 |
@@ -73,9 +73,12 @@ July to June, by province (StatCan 32-10-0139), × the steer and heifer share of
 - **Steer and heifer share:** West 85.8%, East 82.6% (AAFC federally inspected slaughter, January 1 to June 7, 2025:
   West 984,649 steers and heifers and 163,245 cows and bulls; East 254,965 and 53,634), moved each crop year by the
   national share in AAFC's weekly federally inspected slaughter against the same period.
-- **Days on feed, West: 183** (since 2026-11-26), from [Canfax for the Beef Cattle Research Council, Priority Area Review: Feed Grains & Feed Efficiency (June 2017)](https://www.beefresearch.ca/files/pdf/bcrc_feed_grain_and_feed_efficiency_priority_area_review_june2017.pdf), Table 8: calf-feds go
-  from 550 to 1,325 lb over 238 days (35% of fed cattle), yearlings from 850 to 1,400 lb over 153 days (65%);
-  0.35 × 238 + 0.65 × 153 = 182.75. That gives 1.53 t of barley per fed animal. StatCan's inventories give 172 days
+- **Days on feed, West: 191** (since 2026-11-26), from [Canfax for the Beef Cattle Research Council, Priority Area Review: Feed Grains & Feed Efficiency (June 2017)](https://www.beefresearch.ca/files/pdf/bcrc_feed_grain_and_feed_efficiency_priority_area_review_june2017.pdf), Table 8: calf-feds go
+  from 550 to 1,325 lb over 238 days, yearlings from 850 to 1,400 lb over 153 days. Weighted 45% calf-fed, Canfax's 2021
+  split from Alberta and Saskatchewan placement weights, given in the
+  [National Beef Sustainability Assessment (Groupe AGÉCO for the Canadian Roundtable for Sustainable Beef, 2023)](https://crsb.ca/wp-content/uploads/2023/11/FULL-REPORT_CRSB-Environmental-Social-Assessment_FINAL.pdf)
+  (the 2017 review had 35%): 0.45 × 238 + 0.55 × 153 = 191.25. That gives 1.60 t of barley per fed animal before the
+  carcass-weight factor. StatCan's inventories give 172 days
   (average cattle on feeding operations × 365 ÷ fed cattle marketed, 2012-13 to 2025-26), now the low end of the
   range. **East: 141 days,** from the inventories (133 before feeder exports were taken out). The year-to-year change
   follows marketings. When a crop year's marketings aren't out yet, last year's
@@ -199,42 +202,57 @@ Feed use by commodity, Canada (kt):
 
 | Crop year | Barley | Wheat (ex-durum) | Durum | Oats | Corn, Canadian | Corn, US | Total | West | East |
 |---|---|---|---|---|---|---|---|---|---|
-| 2021-22 | 3,749 | 1,148 | 54 | 282 | 7,705 | 5,967 | 18.9 Mt | 10.7 | 8.2 |
-| 2022-23 | 5,804 | 1,620 | 186 | 506 | 8,086 | 2,096 | 18.3 | 9.9 | 8.4 |
-| 2023-24 | 5,073 | 1,461 | 94 | 345 | 8,593 | 2,908 | 18.5 | 10.3 | 8.1 |
-| 2024-25 | 5,769 | 1,650 | 202 | 396 | 8,635 | 1,712 | 18.4 | 10.0 | 8.4 |
-| 2025-26 | 5,500 | 1,880 | 242 | 401 | 8,848 | 1,782 | 18.7 | 10.1 | 8.5 |
-| **2026-27** | **5,761** | **1,775** | **250** | **386** | **9,258** | **1,868** | **19.3** | **10.8** | **8.5** |
+| 2021-22 | 3,924 | 1,162 | 56 | 288 | 7,705 | 5,967 | 19.1 Mt | 10.9 | 8.2 |
+| 2022-23 | 5,966 | 1,636 | 190 | 509 | 8,086 | 2,096 | 18.5 | 10.1 | 8.4 |
+| 2023-24 | 5,234 | 1,476 | 96 | 349 | 8,593 | 2,908 | 18.7 | 10.5 | 8.1 |
+| 2024-25 | 5,926 | 1,667 | 206 | 399 | 8,635 | 1,712 | 18.5 | 10.2 | 8.4 |
+| 2025-26 | 5,642 | 1,903 | 247 | 404 | 8,848 | 1,782 | 18.8 | 10.3 | 8.5 |
+| **2026-27** | **5,925** | **1,797** | **256** | **389** | **9,258** | **1,872** | **19.5** | **11.0** | **8.5** |
 
 StatCan's residual for the same years: 22.1, 19.8, 20.1, 18.0 and 20.4 Mt (West, this page's split: 15.3, 12.8,
 14.3, 12.1, 13.9; East 6.7, 7.0, 5.7, 5.9, 6.5).
 
-- **Below StatCan, and less noisy.** From 2012-13 to 2025-26 the model averages 17.5 Mt and StatCan's residual
-  19.6 Mt. The residual's standard deviation is 1.59 Mt against the model's 1.16 Mt. The residual's extra swings
+- **Below StatCan, and less noisy.** From 2012-13 to 2025-26 the model averages 17.6 Mt and StatCan's residual
+  19.6 Mt. The residual's standard deviation is 1.59 Mt against the model's 1.18 Mt. The residual's extra swings
   are waste, dockage and balancing error.
-- **Most of the gap is western wheat.** The West's model averages 9.5 Mt against a residual of 12.6 Mt: barley
-  0.1 Mt below on average, oats 0.5 Mt below, wheat 2.1 Mt below. The residual carries dockage and waste, and the 1999 rations may miss
+- **Most of the gap is western wheat.** The West's model averages 9.7 Mt against a residual of 12.6 Mt: barley
+  0.1 Mt above on average, oats 0.5 Mt below, wheat 2.0 Mt below, durum 0.3 Mt below. The residual carries dockage and waste, and the 1999 rations may miss
   feed wheat that feedlots and hog barns buy; no current Prairie ration survey was found to test it (the Manitoba
   government's example hog rations put 45% wheat in grower and nursing-sow feed but none in finisher feed, which is
   89.7% barley). Feedlot wheat now responds to price (above), which adds wheat only in years it is cheap against
   barley. The East's model averages 8.0 Mt against 7.0 Mt, after netting out co-products.
-- **Check on the feedlot rates.** The Alberta beef life cycle study ([Conestoga-Rovers & Associates for Alberta Agriculture, Evaluating Environmental and Economic Impact for Beef Production in Alberta using Life Cycle Analysis, Phase 1 (2010)](https://www1.agric.gov.ab.ca/$Department/deptdocs.nsf/all/econ13238/$FILE/BeefLCAPhase1FinalReport.pdf), Appendix D)
-  lists an Alberta feedlot nutritionist's generic rations, diet by diet: calf-feds are backgrounded 96 days, then
-  finished 262 days to 1,450 lb (steers) or 1,350 lb (heifers); yearlings are backgrounded 144 days on silage, grazed
-  120 days and finished about 172 days. That is **2.22 t of barley (as fed) per calf-fed animal and 1.52 t per
-  yearling, 1.76 t at 35% calf-fed**. The model gives 1.72 t per western fed animal in 2012-13, the year closest to
-  the study's finishing weights (−2%), and 1.84 t in 2025-26 with carcasses 12% heavier. The rations are saved in
-  `reference/alberta_beef_lca_rations.csv` and the check is recomputed each build.
+- **Check on the feedlot rates: two sets of published rations bracket the model.** Grain per western fed animal,
+  backgrounding and finishing, weighted 45% calf-fed (recomputed each build):
+  - The Alberta beef life cycle study ([Conestoga-Rovers & Associates for Alberta Agriculture, Evaluating Environmental and Economic Impact for Beef Production in Alberta using Life Cycle Analysis, Phase 1 (2010)](https://www1.agric.gov.ab.ca/$Department/deptdocs.nsf/all/econ13238/$FILE/BeefLCAPhase1FinalReport.pdf), Appendix D)
+    lists an Alberta feedlot nutritionist's generic rations, diet by diet: calf-feds are backgrounded 96 days, then
+    finished 262 days to 1,450 lb (steers) or 1,350 lb (heifers); yearlings are backgrounded 144 days on silage, grazed
+    120 days and finished about 172 days. That is **2.22 t of barley (as fed) per calf-fed animal and 1.52 t per
+    yearling, 1.83 t weighted**. The model gives 1.79 t in 2012-13, the year closest to the study's finishing weights
+    (−2%). Saved in `reference/alberta_beef_lca_rations.csv`.
+  - The [National Beef Sustainability Assessment](https://crsb.ca/wp-content/uploads/2023/11/FULL-REPORT_CRSB-Environmental-Social-Assessment_FINAL.pdf)
+    (Groupe AGÉCO for the Canadian Roundtable for Sustainable Beef, April 2023, published January 2024; reference year
+    2021), Appendix D, Tables D-2 to D-6: Gowans Feed's typical western rations, dry-matter basis, reviewed by its
+    science committee. Calf-feds finish 575 to 1,440 lb over 270 days; yearlings are backgrounded 113 days (500 to
+    800 lb; 22% barley, 4.5% oats, 19% distillers' grains), then finish 1,000 to 1,500 lb over 140 days. Finishing
+    rations are 76% barley and 2.9% wheat (steers) or 67% barley, 6.4% wheat and 2.6% corn (heifers), with 10%
+    distillers' grains and 8.5% barley silage. Grain as fed = dry-matter intake (2.35% of mid-weight, every stage) ×
+    on-feed days × the grain's share ÷ (1 − moisture: barley 14%, wheat 15%, corn 16%, oats 14%, screenings 12%).
+    That is **2.67 t per calf-fed animal and 1.95 t per yearling, 2.28 t barley-equivalent weighted** (90% barley, 6%
+    wheat). The model gives 1.82 t in 2021 (average of 2020-21 and 2021-22), 20% less. Most of the gap is the intake
+    assumption: 2.35% of a 1,250 lb mid-weight is 29 lb of dry matter a day, against about 25 lb in the Alberta
+    nutritionist's finishing diet. Saved in `reference/nbsa_2021_rations.csv`.
+  - So the base stays near the Alberta rations, and the NBSA rations set the top of the days-on-feed range (240 days,
+    the days that give 2.28 t). The model gives 1.89 t now, with carcasses heavier.
 - **Alberta Agriculture's 3.6 Mt is not used.** The BCRC review cites Alberta Agriculture (2014): Alberta's livestock
-  would need about 3.6 Mt of corn a year, feedlots 2.2 Mt. The model's Alberta figure for 2013-14 is 13% higher
-  (feedlots 17%). That estimate is second-hand, top-down and has no published method, and the model's per-head
+  would need about 3.6 Mt of corn a year, feedlots 2.2 Mt. The model's Alberta figure for 2013-14 was 13% higher
+  (feedlots 17%) before the 2021 calf-fed share was taken up, a few points more since. That estimate is second-hand, top-down and has no published method, and the model's per-head
   feedlot rates match the study's rations, so the gap is not in the rates. Like StatCan's residual, other agencies'
   feed estimates are not targets for this model, so it is not calibrated to it.
 - **The year-to-year moves track StatCan's farm survey,** though the model is no longer fitted on it. Correlation of
   y/y changes in western feed, model against on-farm feed: barley +0.79, wheat +0.64, durum +0.14, oats +0.70.
-- **2026-27 by grain:** corn 11.1 Mt (Canadian-grown 9.3, US 1.9), barley 5.8, wheat (ex-durum) 1.8, durum 0.25 (all
+- **2026-27 by grain:** corn 11.1 Mt (Canadian-grown 9.3, US 1.9), barley 5.9, wheat (ex-durum) 1.8, durum 0.26 (all
   in the West), oats 0.4. By livestock (barley equivalent, before co-products): hogs 32%, feedlot and backgrounding
-  cattle 26%, dairy 18%, poultry 17%, cow herd 5%, hay shortfall 2%. The West is up 6% on last year, mostly from
+  cattle 27%, dairy 18%, poultry 17%, cow herd 5%, hay shortfall 2%. The West is up 6% on last year, mostly from
   more cattle on feed.
 
 ### What changed on 2026-11-26
@@ -255,6 +273,17 @@ Then the cattle rates were updated from current sources:
 Effect: Canada up 0.35 to 0.4 Mt a year. West, 2025-26: barley 4,754 to 4,874 kt, wheat 832 to 974, durum 207 to
 242, oats 226 to 284; feedlot grain 4.02 to 4.25 Mt barley-equivalent, cow herd 0.78 to 0.91. Wheat falls slightly
 in years it was dear against barley (2013-14, 2016-17).
+
+Then the National Beef Sustainability Assessment (2023, reference year 2021) was read:
+- Calf-fed share 45% (Canfax, 2021) instead of 35% (Canfax, 2017): western days on feed 191 instead of 183.
+- Its rations are a second check on the feedlot rates and set the top of the days-on-feed range (240 days, from 204).
+- Western cow and bull grain ranges now run down to its rations (22 and 32 kg barley-equivalent a head). Western beef
+  cows keep the 1999 provincial rates: in barley-equivalent they are Manitoba 142 kg, Saskatchewan 97, Alberta 197 and
+  British Columbia 31, which Manitoba's 2027 guides bracket (131 to 184 kg). (The page had quoted 175, 118 and 247 kg,
+  the 1999 study's totals including its complete-feed column, which the model doesn't use.)
+
+Effect: West up 0.15 to 0.2 Mt a year, all feedlot grain. 2025-26: barley 4,874 to 5,016 kt, wheat 974 to 997, durum
+242 to 248, oats 284 to 287.
 
 ## Measured comparisons
 
@@ -281,20 +310,23 @@ independent. 2026-27, Canada (kt):
 | Availability elasticity (assumption) | 0 to 2 | ±8 | ±6 | −26 / +26 | ±8 | +35 / −33 | – | ±1 |
 | Grain per t of hay short | 0 to 0.71 | −365 / +1,000 | −339 / +918 | −41 / +107 | −11 / +30 | −8 / +19 | – | +34 / −74 |
 | Co-product yield (± 20%) | 0.24 to 0.36 | ±346 | ±44 | ±36 | ±1 | ±5 | ±252 | ±8 |
-| Western days on feed | 172 (StatCan inventories) to 204 (Alberta beef LCA rations) | −264 / +488 | −217 / +402 | −30 / +55 | −8 / +15 | −4 / +8 | – | −4 / +8 |
-| Western beef cow grain | 0 (hay only, Alberta beef LCA) to the 1999 rates | −478 / 0 | −348 / 0 | −37 / 0 | −10 / 0 | −90 / 0 | – | +9 / 0 |
-| Western feedlot wheat elasticity (assumption) | 1 to 8 | +7 / −13 | +106 / −194 | −82 / +150 | −23 / +42 | – | – | +6 / −10 |
+| Western feedlot grain, as days on feed | 172 (StatCan inventories) to 240 (NBSA 2021 rations) | −464 / +1,142 | −381 / +944 | −53 / +128 | −15 / +36 | −8 / +16 | – | −8 / +17 |
+| Western beef cow grain | 22 kg (NBSA) to 184 kg (Manitoba 2027 guide) a head; base the 1999 rates | −407 / +117 | −298 / +73 | −32 / +6 | −9 / +2 | −76 / +39 | – | +8 / −3 |
+| Western bull grain | 32 kg (NBSA) to 381 kg (Manitoba 2027 guides, the base) | −66 / 0 | −41 / 0 | −4 / 0 | −1 / 0 | −21 / 0 | – | +2 / 0 |
+| Western feedlot wheat elasticity (assumption) | 1 to 8 | +8 / −14 | +112 / −205 | −86 / +158 | −24 / +44 | – | – | +6 / −10 |
 | Durum share (middle half of production shares) | 18.0% to 19.6% | ±0 | ±2 | +9 / −7 | −12 / +9 | – | – | ±1 |
 | US corn basis + freight (assumption) | US$1.20 to 2.00 | ±1 | ±4 | ±1 | – | – | – | ±4 |
-| **Combined range** | | **18.6–20.5 Mt** | **5.19–6.77 Mt** | **1.66–1.97 Mt** | **210–310 kt** | **288–429 kt** | **9.01–9.51 Mt** | **1.77–1.93 Mt** |
+| **Combined range** | | **18.7–21.1 Mt** | **5.30–7.25 Mt** | **1.67–2.03 Mt** | **214–326 kt** | **301–449 kt** | **9.01–9.51 Mt** | **1.78–1.94 Mt** |
 
-- **The hay rule dominates** barley and the western total: 0 (straw covers it all) to 0.71 t (grain replaces all of
+- **Feedlot grain per animal now sets the widest range** (−0.5 / +1.1 Mt), since the NBSA's rations feed 25% more
+  than the model; the high side is mostly barley.
+- **The hay rule is next** for barley and the western total: 0 (straw covers it all) to 0.71 t (grain replaces all of
   the hay's energy, Saskatchewan guide feed values: hay 60.0% TDN at 87.4% dry matter, barley 83.1% at 88.5%).
   It is widest in drought years (2021-22).
-- **Days on feed** are the next biggest input for barley and the western total: StatCan's inventories give 172, Canfax
-  183 (the base) and the Alberta beef life cycle study's rations 204.
-- **Cow-herd grain** is uncertain in one direction: the study's cows get hay only, Manitoba's 2027 guides 131 to 184 kg
-  of barley a winter, the 1999 rates (the base) up to 247 kg in Alberta.
+- **Days on feed:** StatCan's inventories give 172, Canfax 191 at the 2021 calf-fed share (the base), the Alberta beef
+  life cycle study's rations about the same grain per head, and the NBSA's rations the equivalent of 240.
+- **Cow-herd grain** leans down: the NBSA's 2021 western cow ration has 22 kg of grain a year and the Alberta study's
+  cows get hay only, while Manitoba's 2027 guides give 131 to 184 kg of barley a winter.
 - **The feedlot wheat elasticity** moves up to 0.2 Mt between barley and wheat, little in total.
 - **Co-products** set most of the range on eastern corn and the eastern total.
 - **Prices and the availability assumption hardly move the totals;** they shift tens of kilotonnes between grains.

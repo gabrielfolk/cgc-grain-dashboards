@@ -183,7 +183,13 @@ Hand-curated inputs, in git:
 - `reference/alberta_beef_lca_rations.csv`: an Alberta feedlot nutritionist's generic rations for calf-fed and yearling
   cattle, diet by diet (days, barley as fed in lb per head, start and end weight), from Appendix D of the Alberta beef
   life cycle study (Conestoga-Rovers & Associates for Alberta Agriculture, Phase 1, 2010). Used only to check the feed
-  model's feedlot rates and to set the high end of the days-on-feed range.
+  model's feedlot rates.
+- `reference/nbsa_2021_rations.csv`: western rations from Appendix D (Tables D-2 to D-6) of the National Beef
+  Sustainability Assessment (Groupe AGÉCO for the Canadian Roundtable for Sustainable Beef, 2023, reference year 2021;
+  Gowans Feed's typical rations): per stage and sex, on-feed days, dry-matter intake (% of body weight), start, mid and
+  end weight (lb), and the dry-matter shares (%) of barley, corn, wheat, oats, screenings and distillers' grains.
+  Used to check the feed model's feedlot rates and to set the high end of the feedlot-grain range and the low ends of
+  the western cow and bull grain ranges.
 
 ## Licence
 
