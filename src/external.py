@@ -230,12 +230,21 @@ CGC_CLASSES = {"cwrs": "canada-western-red-spring", "cwad": "canada-western-ambe
 
 
 def open_csv(name: str, refresh: bool = False) -> pd.DataFrame:
-    """One of the OPEN_CSV files, downloaded once and cached as data/raw/external/<name>.csv."""
+    """One of the OPEN_CSV files, downloaded once and cached as data/raw/external/<name>.csv.
+    On refresh, a failed download keeps the cached copy (with a WARNING, which the weekly refresh
+    puts in its summary), so one source being down doesn't stop the refresh; with no cached copy
+    it still fails."""
     path = RAW / f"{name}.csv"
     if refresh or not path.exists():
-        r = requests.get(OPEN_CSV[name], headers=UA, timeout=120)
-        r.raise_for_status()
-        path.write_bytes(r.content)
+        try:
+            r = requests.get(OPEN_CSV[name], headers=UA, timeout=120)
+            r.raise_for_status()
+            path.write_bytes(r.content)
+        except requests.RequestException as e:
+            if not path.exists():
+                raise
+            age = (dt.datetime.now() - dt.datetime.fromtimestamp(path.stat().st_mtime)).days
+            print(f"WARNING: {name}: download failed ({e}); using the cached copy from {age} days ago")
     return pd.read_csv(path, encoding="utf-8-sig")
 
 
